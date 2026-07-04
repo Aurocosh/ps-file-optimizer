@@ -7,7 +7,7 @@ Describe 'Image test manifest and fixtures' -Tag Unit {
     It 'Loads FO-ImageTest-v1 manifest' {
         $manifest = Get-FoImageTestManifest
         $manifest.Version | Should Be 'FO-ImageTest-v1'
-        @($manifest.Tiers.A.Files).Count | Should Be 31
+        @($manifest.Tiers.A.Files).Count | Should Be 34
     }
 
     It 'Resolves fixture path by id' {
@@ -20,7 +20,7 @@ Describe 'Image test manifest and fixtures' -Tag Unit {
         $check = Test-FoImageTestFixturesPresent -Tier A
         $check.Present | Should Be $true
         $check.Missing.Count | Should Be 0
-        $check.Count | Should Be 31
+        $check.Count | Should Be 34
     }
 
     It 'Copies fixture without mutating source' {

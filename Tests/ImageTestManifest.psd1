@@ -13,14 +13,15 @@
         'image-rs'
         'gb82'
         'gb82-sc'
+        'avif-conformance'
     )
 
     Tiers = @{
         A = @{
             Description = 'Bootstrap — committed under Tests/Fixtures/Images/'
             Committed   = $true
-            TotalBytes  = 44060
-            FileCount   = 31
+            TotalBytes  = 46581
+            FileCount   = 34
             Files       = @(
                 @{ Id = 'png-basn0g01'; Source = 'pngsuite/basn0g01.png'; Format = 'PNG'; Bytes = 164; Tags = @('PNG', 'grayscale') }
                 @{ Id = 'png-basn0g04'; Source = 'pngsuite/basn0g04.png'; Format = 'PNG'; Bytes = 145; Tags = @('PNG', 'grayscale') }
@@ -52,6 +53,9 @@
                 @{ Id = 'bmp-rle'; Source = 'bmp-conformance/valid/g04rle.bmp'; Format = 'BMP'; Bytes = 922; Tags = @('BMP', 'rle') }
                 @{ Id = 'bmp-1bit'; Source = 'image-rs/test-images/bmp/images/Info_1_Bit.bmp'; Format = 'BMP'; Bytes = 88; Tags = @('BMP', '1bit') }
                 @{ Id = 'ico-smile'; Source = 'image-rs/test-images/ico/images/smile.ico'; Format = 'ICO'; Bytes = 1078; Tags = @('ICO') }
+                @{ Id = 'ico-png32'; Source = 'image-rs/test-images/ico/images/png-32bpp-alpha.ico'; Format = 'ICO'; Bytes = 658; Tags = @('ICO', 'alpha') }
+                @{ Id = 'tiff-l1'; Source = 'image-rs/test-images/tiff/testsuite/l1.tiff'; Format = 'TIFF'; Bytes = 1558; Tags = @('TIFF') }
+                @{ Id = 'avif-white-1x1'; Source = 'avif-conformance/valid/libavif_white_1x1.avif'; Format = 'AVIF'; Bytes = 305; Tags = @('AVIF') }
                 @{ Id = 'jpg-exif-xmp'; Source = 'image-rs/test-images/jpg/exif-xmp-metadata.jpg'; Format = 'JPEG'; Bytes = 4263; Tags = @('JPEG', 'metadata') }
             )
         }

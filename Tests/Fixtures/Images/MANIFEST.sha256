@@ -31,4 +31,7 @@ d2086eeec2499471a9125b98c4580166aba70d03544daa3bbc7f25b4013bf5b9  apng-conforman
 c59ec6a0095eb194ae87d43b5a048ac6d37a43241c7b088e6da02fd5c7d8bafc  bmp-conformance/valid/g04rle.bmp
 5b42d528a3cc48efafd2510dc680732fa17c3f09b95bd0a8232cce81df4f604b  image-rs/test-images/bmp/images/Info_1_Bit.bmp
 e17d21133b1a9e7318cb48c036820089efebcbc09b452c7cac848498a9d7684c  image-rs/test-images/ico/images/smile.ico
+4d9bbd9530791dbb97c47256a2cac0d50577183fd5e730d660d4b47a35d60d1c  image-rs/test-images/ico/images/png-32bpp-alpha.ico
+3c1f5759931eb0041f6146a69edab51349759d6cd204f2ce187dd15d06ea26ad  image-rs/test-images/tiff/testsuite/l1.tiff
+ea4e43d1f07e4c00de16c13afa32376111bb306e51f08212cf4c1b6064df3667  avif-conformance/valid/libavif_white_1x1.avif
 5cf1b3a387429128dd5475175293fb9c8e3a2ea969740604abddec54ec176751  image-rs/test-images/jpg/exif-xmp-metadata.jpg

@@ -66,6 +66,10 @@ Invoke-Pester .\Tests\
 | `ImageOptimization.WebP.Tests.ps1` | `ImageIntegration` | Phase 4 — WebP lossless |
 | `ImageOptimization.Bmp.Tests.ps1` | `ImageIntegration` | Phase 4 — BMP lossless |
 | `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 — lossy SSIM gates |
+| `ImageOptimization.Tiff.Tests.ps1` | `ImageIntegration` | Phase 6 — TIFF |
+| `ImageOptimization.Avif.Tests.ps1` | `ImageIntegration` | Phase 6 — AVIF (SSIM) |
+| `ImageOptimization.Apng.Tests.ps1` | `ImageIntegration` | Phase 6 — APNG frames |
+| `ImageOptimization.Ico.Tests.ps1` | `ImageIntegration` | Phase 6 — ICO largest icon |
 | `ImageOptimization.Png.Tests.ps1` (level 9) | `ImageIntegration`, `Slow` | Phase 4 — optional deep PNG pass |
 | `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 |
 | `Install-FoPlugins.Integration.Tests.ps1` | — | Requires `FO_RUN_INSTALL_INTEGRATION=1` |
@@ -82,7 +86,7 @@ Machine-readable thresholds and scope rules live in `ImageTestDecisions.psd1` (l
 | ICO | Compare **largest embedded icon** only |
 | AVIF (default profile) | SSIM dissimilarity threshold (Tier C); calibrate in Phase 5 |
 | Python cross-check | Optional dev harness in Phase 7 only |
-| Committed fixtures | Tier A: 31 files (~44 KB) from [codec-corpus](https://github.com/imazen/codec-corpus) under `Fixtures/Images/` — see `ImageTestManifest.psd1` |
+| Committed fixtures | Tier A: 34 files (~46 KB) from [codec-corpus](https://github.com/imazen/codec-corpus) under `Fixtures/Images/` — see `ImageTestManifest.psd1` |
 
 Full research: `file-optimizer-dev/ps-optimizer/docs/03-image-verification-testing.md`  
 Test dataset spec: `file-optimizer-dev/ps-optimizer/docs/04-test-image-dataset.md`  

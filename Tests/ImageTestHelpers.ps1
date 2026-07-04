@@ -531,3 +531,238 @@ function Test-FoJpegImageCompare {
         CompareMode = $mode
     }
 }
+
+function Get-FoFfmpegPath {
+    [CmdletBinding()]
+    param([string]$PluginPath)
+
+    $resolved = Resolve-FoPluginExecutable -Name 'ffmpeg.exe' -SearchMode PortableFirst -PluginPath $PluginPath
+    if (-not $resolved.Found) {
+        throw 'ffmpeg.exe not found. Set FO_TEST_PLUGIN_PATH or pass -PluginPath.'
+    }
+    return $resolved.Path
+}
+
+function Get-FoApngFrameCount {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+        [string]$PluginPath,
+        [string]$WorkDirectory
+    )
+
+    $workRoot = if ($WorkDirectory) {
+        [System.IO.Path]::GetFullPath($WorkDirectory)
+    }
+    else {
+        Join-Path $env:TEMP ("FoApngCount_{0}" -f (Get-Random))
+    }
+    if (Test-Path -LiteralPath $workRoot) {
+        Remove-Item -LiteralPath $workRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    New-Item -ItemType Directory -Path $workRoot -Force | Out-Null
+
+    $ffmpeg = Get-FoFfmpegPath -PluginPath $PluginPath
+    $pattern = Join-Path $workRoot 'frame_%04d.png'
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $ffmpeg
+    $psi.Arguments = "-y -loglevel error -i `"$Path`" `"$pattern`""
+    $psi.WorkingDirectory = Split-Path -Parent $ffmpeg
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $process = [System.Diagnostics.Process]::Start($psi)
+    $process.WaitForExit()
+
+    if ($process.ExitCode -ne 0) {
+        throw "ffmpeg failed extracting APNG frames from '$Path': $($process.StandardError.ReadToEnd())"
+    }
+
+    $count = @(Get-ChildItem -LiteralPath $workRoot -Filter 'frame_*.png').Count
+    if ($count -lt 1) {
+        throw "No frames extracted from APNG '$Path'."
+    }
+
+    return $count
+}
+
+function Compare-FoApngFrames {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Before,
+        [Parameter(Mandatory)]
+        [string]$After,
+        [string]$PluginPath,
+        [string]$WorkDirectory
+    )
+
+    $workRoot = if ($WorkDirectory) {
+        [System.IO.Path]::GetFullPath($WorkDirectory)
+    }
+    else {
+        Join-Path $env:TEMP ("FoApngCompare_{0}" -f (Get-Random))
+    }
+    if (Test-Path -LiteralPath $workRoot) {
+        Remove-Item -LiteralPath $workRoot -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    New-Item -ItemType Directory -Path $workRoot -Force | Out-Null
+
+    $beforeDir = Join-Path $workRoot 'before'
+    $afterDir = Join-Path $workRoot 'after'
+    New-Item -ItemType Directory -Path $beforeDir, $afterDir -Force | Out-Null
+
+    $beforeCount = Get-FoApngFrameCount -Path $Before -PluginPath $PluginPath -WorkDirectory $beforeDir
+    $afterCount = Get-FoApngFrameCount -Path $After -PluginPath $PluginPath -WorkDirectory $afterDir
+
+    if ($beforeCount -ne $afterCount) {
+        return [PSCustomObject]@{
+            Pass         = $false
+            BeforeCount  = $beforeCount
+            AfterCount   = $afterCount
+            FrameResults = @()
+            Reason       = "Frame count mismatch: before=$beforeCount after=$afterCount"
+        }
+    }
+
+    $frameResults = @()
+    $pass = $true
+    for ($i = 1; $i -le $beforeCount; $i++) {
+        $beforeFrame = Join-Path $beforeDir ("frame_{0:D4}.png" -f $i)
+        $afterFrame = Join-Path $afterDir ("frame_{0:D4}.png" -f $i)
+        $compare = Compare-FoImage -Before $beforeFrame -After $afterFrame -Mode Pixel -PluginPath $PluginPath
+        $frameResults += [PSCustomObject]@{
+            FrameIndex  = $i - 1
+            Pass        = $compare.Pass
+            MetricValue = $compare.MetricValue
+        }
+        if (-not $compare.Pass) { $pass = $false }
+    }
+
+    return [PSCustomObject]@{
+        Pass         = $pass
+        BeforeCount  = $beforeCount
+        AfterCount   = $afterCount
+        FrameResults = $frameResults
+        Reason       = if ($pass) { $null } else { 'One or more APNG frames differ' }
+    }
+}
+
+function Get-FoIcoEmbeddedEntries {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+        [string]$PluginPath
+    )
+
+    $magick = Get-FoCompareMagickPath -PluginPath $PluginPath
+    $workDir = Split-Path -Parent $magick
+    $result = Invoke-FoMagickCli -MagickExe $magick -WorkingDirectory $workDir -ArgumentList @(
+        'identify'
+        '-ping'
+        '-format'
+        '%w %h %p\n'
+        $Path
+    )
+
+    if ($result.ExitCode -ne 0) {
+        throw "magick identify failed for ICO '$Path': $($result.StdErr)"
+    }
+
+    $entries = @()
+    foreach ($line in @($result.StdOut -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ })) {
+        $parts = $line -split '\s+'
+        if ($parts.Count -lt 3) { continue }
+        $entries += [PSCustomObject]@{
+            Index  = [int]$parts[2]
+            Width  = [int]$parts[0]
+            Height = [int]$parts[1]
+            Area   = [int]$parts[0] * [int]$parts[1]
+        }
+    }
+
+    if ($entries.Count -eq 0) {
+        throw "No embedded images found in ICO '$Path'."
+    }
+
+    return $entries
+}
+
+function Get-FoIcoLargestIndex {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+        [string]$PluginPath
+    )
+
+    $entries = Get-FoIcoEmbeddedEntries -Path $Path -PluginPath $PluginPath
+    return ($entries | Sort-Object -Property Area, Index -Descending | Select-Object -First 1).Index
+}
+
+function Compare-FoIcoLargest {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Before,
+        [Parameter(Mandatory)]
+        [string]$After,
+        [string]$PluginPath,
+        [string]$WorkDirectory
+    )
+
+    $beforeIndex = Get-FoIcoLargestIndex -Path $Before -PluginPath $PluginPath
+    $afterIndex = Get-FoIcoLargestIndex -Path $After -PluginPath $PluginPath
+
+    if ($beforeIndex -ne $afterIndex) {
+        return [PSCustomObject]@{
+            Pass        = $false
+            BeforeIndex = $beforeIndex
+            AfterIndex  = $afterIndex
+            Compare     = $null
+            Reason      = "Largest icon index mismatch: before=$beforeIndex after=$afterIndex"
+        }
+    }
+
+    $workRoot = if ($WorkDirectory) {
+        [System.IO.Path]::GetFullPath($WorkDirectory)
+    }
+    else {
+        Join-Path $env:TEMP ("FoIcoCompare_{0}" -f (Get-Random))
+    }
+    if (-not (Test-Path -LiteralPath $workRoot)) {
+        New-Item -ItemType Directory -Path $workRoot -Force | Out-Null
+    }
+
+    $magick = Get-FoCompareMagickPath -PluginPath $PluginPath
+    $workDir = Split-Path -Parent $magick
+    $beforePng = Join-Path $workRoot 'before-largest.png'
+    $afterPng = Join-Path $workRoot 'after-largest.png'
+
+    foreach ($pair in @(
+            @{ Source = $Before; Index = $beforeIndex; Dest = $beforePng }
+            @{ Source = $After; Index = $afterIndex; Dest = $afterPng }
+        )) {
+        $extract = Invoke-FoMagickCli -MagickExe $magick -WorkingDirectory $workDir -ArgumentList @(
+            ('{0}[{1}]' -f $pair.Source, $pair.Index)
+            '-alpha'
+            'on'
+            ('PNG32:{0}' -f $pair.Dest)
+        )
+        if ($extract.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $pair.Dest)) {
+            throw "Failed to extract ICO index $($pair.Index): $($extract.StdErr)"
+        }
+    }
+
+    $compare = Compare-FoImage -Before $beforePng -After $afterPng -Mode Pixel -PluginPath $PluginPath
+    return [PSCustomObject]@{
+        Pass        = $compare.Pass
+        BeforeIndex = $beforeIndex
+        AfterIndex  = $afterIndex
+        Compare     = $compare
+        Reason      = if ($compare.Pass) { $null } else { 'Largest embedded icon differs' }
+    }
+}

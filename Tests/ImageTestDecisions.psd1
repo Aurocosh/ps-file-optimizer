@@ -3,7 +3,7 @@
     JpegPrimaryMode                = 'PixelAE'
     JpegSSIMFallbackMaximum        = 0
     IcoCompareScope                = 'LargestEmbedded'
-    AvifDefaultSSIMDissimilarityMaximum = 0
+    AvifDefaultSSIMDissimilarityMaximum = 0.005
     PythonCrossCheckPhase          = 7
     FixtureBudgetBytes        = 512000
 

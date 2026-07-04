@@ -1,6 +1,6 @@
 # Image test fixtures — FO-ImageTest-v1 Tier A
 
-31 files (~44 KB) vendored from [imazen/codec-corpus](https://github.com/imazen/codec-corpus) @ `bb1da434fd3ab9ef58577f505d2f9194123e5d6e`.
+34 files (~46 KB) vendored from [imazen/codec-corpus](https://github.com/imazen/codec-corpus) @ `bb1da434fd3ab9ef58577f505d2f9194123e5d6e`.
 
 Directory layout matches upstream paths (e.g. `pngsuite/basn0g01.png`).
 
