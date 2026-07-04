@@ -2,11 +2,21 @@
 <#
 .SYNOPSIS
     Builds ExtensionMap.psd1 from FileOptimizer extension-pipeline index markdown.
+
+.PARAMETER InputPath
+    Path to markdown containing the "Complete extension index" table (e.g. 11-extension-pipeline-index.md).
+
+.PARAMETER OutputPath
+    Destination ExtensionMap.psd1. Default: Data/ExtensionMap.psd1 under the module root.
+
+.EXAMPLE
+    .\Scripts\Build-ExtensionMap.ps1 -InputPath .\docs\11-extension-pipeline-index.md
 #>
 [CmdletBinding()]
 param(
-    [string]$InputPath = 'D:\Projects\FileOptimizerAnalisys\Docs\KnowlegeBase\11-extension-pipeline-index.md',
-    [string]$OutputPath = 'D:\Projects\PS-FileOptimizer\Data\ExtensionMap.psd1'
+    [Parameter(Mandatory)]
+    [string]$InputPath,
+    [string]$OutputPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'Data\ExtensionMap.psd1')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -73,6 +83,9 @@ function ConvertTo-PipelineIds {
 
     return @($ids)
 }
+
+$InputPath = [System.IO.Path]::GetFullPath($InputPath)
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
 
 if (-not (Test-Path -LiteralPath $InputPath)) {
     throw "Input file not found: $InputPath"

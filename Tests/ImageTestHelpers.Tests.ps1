@@ -35,7 +35,7 @@ Describe 'Image test manifest and fixtures' -Tag Unit {
 
 Describe 'Image test profiles' -Tag Unit {
     It 'Builds LosslessDefault settings from profile' {
-        $settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath 'C:\fake\plugins'
+        $settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath (Join-Path $TestDrive 'fake-plugins')
         $settings.Level | Should -Be 5
         $settings.OutputMode | Should -Be 'Replace'
         $settings.PNGAllowLossy | Should -Be $false
@@ -49,6 +49,17 @@ Describe 'Image test profiles' -Tag Unit {
         $settings.Level | Should -Be 9
         $settings.PNGAllowLossy | Should -Be $true
         $settings.JPEGAllowLossy | Should -Be $true
+    }
+}
+
+Describe 'Image test failure artifacts' -Tag Unit {
+    It 'Builds default artifact paths under the work directory' {
+        $workRoot = Join-Path $TestDrive 'run1'
+        $paths = Get-FoImageTestArtifactPaths -WorkRoot $workRoot -FileName 'sample.png'
+        $paths.Root | Should -Be (Join-Path $workRoot 'artifacts')
+        $paths.DiffPath | Should -Be (Join-Path $workRoot 'artifacts\diffs\sample_diff.png')
+        $paths.IdentifyDir | Should -Be (Join-Path $workRoot 'artifacts\identify')
+        $paths.LogPath | Should -Be (Join-Path $workRoot 'artifacts\optimization.txt')
     }
 }
 

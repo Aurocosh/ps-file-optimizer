@@ -18,6 +18,7 @@ if (-not (Test-Path -LiteralPath $supportModule)) {
 }
 
 Import-Module $supportModule -Force
+Write-FoTestPluginVersions -PluginPath (Get-FoTestPluginPath) -Verbose:$VerbosePreference
 
 $config = New-PesterConfiguration
 $config.Run.Path = $testsRoot

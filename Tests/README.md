@@ -31,7 +31,7 @@ Each `*.Tests.ps1` imports the **FoTestSupport** module in a `BeforeDiscovery` b
 Example with plugins:
 
 ```powershell
-$env:FO_TEST_PLUGIN_PATH = 'D:\Tools\FileOptimizerFull\Plugins64'
+$env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'plugins'
 ./Scripts/Invoke-FoTests.ps1 -Tag ImageIntegration
 ```
 
@@ -78,6 +78,7 @@ Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the leg
 |------|------|
 | `FoTestSupport/` | Test support module (helpers, fixture paths, image orchestration) |
 | `Scripts/Invoke-FoTests.ps1` | Single entry point for local runs and CI |
+| `Scripts/Invoke-FoImageCorpusSweep.ps1` | L3 batch optimize + CSV metrics (Slow; needs plugins) |
 | `*.Tests.ps1` | Pester test files |
 | `ImageTestManifest.psd1` | **FO-ImageTest-v1** corpus (Tier A + aux release metadata) |
 | `ImageTestDecisions.psd1` | SSIM compare thresholds (JPEG fallback, AVIF default) |
@@ -94,3 +95,28 @@ Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the leg
 | `AvifDefaultSSIMDissimilarityMaximum` | AVIF integration tests (`LosslessDefault` profile) |
 
 Lossy format ceilings live in `ImageTestProfiles.psd1` (`LossyHighQuality.SSIMDissimilarityMaximum`). ICO tests compare the largest embedded icon via `Compare-FoIcoLargest` (see `ImageOptimization.Ico.Tests.ps1`).
+
+## Failure artifacts
+
+`Invoke-FoImageOptimizationTest` always sets a default compare diff path under `{WorkDirectory}/artifacts/diffs/`. When a test fails (compare, decode, or optimization status), it writes:
+
+| Artifact | Path |
+|----------|------|
+| Compare diff PNG | `artifacts/diffs/{name}_diff.png` (when compare fails) |
+| `magick identify -verbose` | `artifacts/identify/{name}_before.txt`, `{name}_after.txt` |
+| Optimization log | `artifacts/optimization.txt` (status, sizes, step log, metric) |
+
+The result object includes `FailureArtifacts` with paths. Pester leaves artifacts under `$TestDrive` for failed integration tests.
+
+## Corpus sweep (L3 regression)
+
+Batch-optimize many fixtures and export CSV metrics (tagged **Slow** — not part of PR CI):
+
+```powershell
+$env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'plugins'
+./Scripts/Invoke-FoImageCorpusSweep.ps1 -Tier A -ProfileName LosslessDefault
+./Scripts/Get-ImageTestCorpus.ps1 -Tier B
+./Scripts/Invoke-FoImageCorpusSweep.ps1 -Tier B -MaxFiles 50 -OutputCsv .\tier-b.csv
+```
+
+Use `-SkipCompare` for size-only regression runs. Plugin versions are logged to verbose output at the start of `Invoke-FoTests.ps1` and corpus sweeps.

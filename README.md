@@ -76,7 +76,7 @@ See [`Tests/README.md`](Tests/README.md) for tags, environment variables, and im
 Require plugin binaries (`magick.exe` and format-specific tools). Point tests at your plugin folder:
 
 ```powershell
-$env:FO_TEST_PLUGIN_PATH = 'D:\Tools\FileOptimizerFull\Plugins64'
+$env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'plugins'
 ./Scripts/Invoke-FoTests.ps1 -Tag ImageIntegration
 ```
 
@@ -127,4 +127,11 @@ Corpus integration test (network):
 ```powershell
 $env:FO_RUN_CORPUS_INTEGRATION = '1'
 ./Scripts/Invoke-FoTests.ps1 -Tag Integration
+```
+
+Corpus sweep (batch optimize + CSV metrics; requires plugins):
+
+```powershell
+$env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'plugins'
+./Scripts/Invoke-FoImageCorpusSweep.ps1 -Tier A
 ```

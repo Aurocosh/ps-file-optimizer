@@ -205,6 +205,7 @@ $script:FoTestSupportFunctions = @(
     'Get-FoImageTestFixtureEntry'
     'Get-FoImageTestFixturePath'
     'Test-FoImageTestFixturesPresent'
+    'Get-FoImageTestArtifactPaths'
     'Get-FoImageTestProfile'
     'Copy-FoImageFixture'
     'Invoke-FoImageOptimizationTest'
@@ -224,6 +225,7 @@ $script:FoTestSupportFunctions = @(
     'Get-FoPluginBundleSettings'
     'Test-FoDownloadedFileSha256'
     'Invoke-FoPluginBundleDownload'
+    'Write-FoTestPluginVersions'
 )
 
 $fileOptimizerFunctions = @(

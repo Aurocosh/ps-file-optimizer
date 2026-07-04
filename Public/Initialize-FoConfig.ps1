@@ -35,8 +35,13 @@ function Initialize-FoConfig {
 
     if ($PSCmdlet.ShouldProcess($target, 'Write config template')) {
         $content = Get-Content -LiteralPath $template -Raw -Encoding UTF8
-        $content = $content -replace 'C:\\Users\\YOU', $env:USERPROFILE
-        $content = $content -replace 'D:\\Tools\\FileOptimizerFull\\Plugins64', (Get-FoDefaultPluginPath)
+        $tempBackup = Join-Path $env:TEMP 'FileOptimizer\backups'
+        $pluginPath = Get-FoDefaultPluginPath
+        if (-not $pluginPath) {
+            $pluginPath = Join-Path $script:FoModuleRoot 'plugins'
+        }
+        $content = $content.Replace('__FO_TEMP_BACKUP__', $tempBackup)
+        $content = $content.Replace('__FO_PLUGIN_PATH__', $pluginPath)
         Set-Content -LiteralPath $target -Value $content -Encoding UTF8
         Write-Host "Config written to: $target"
     }

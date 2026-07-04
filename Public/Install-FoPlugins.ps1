@@ -44,7 +44,7 @@ function Install-FoPlugins {
     Install-FoPlugins -Mode FullPortable
 
     .EXAMPLE
-    Install-FoPlugins -Mode Missing -DestinationPath D:\Tools\FoPlugins
+    Install-FoPlugins -Mode Missing -DestinationPath (Join-Path $HOME 'FoPlugins')
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param(

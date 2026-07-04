@@ -58,10 +58,9 @@ function Get-FoDefaultPluginPath {
     if (-not $script:FoModuleRoot) { return $null }
     $arch = if ([Environment]::Is64BitProcess) { 'Plugins64' } else { 'Plugins32' }
     $candidates = @(
-        (Join-Path $script:FoModuleRoot "plugins")
+        (Join-Path $script:FoModuleRoot 'plugins')
         (Join-Path $script:FoModuleRoot "..\FileOptimizerFull\$arch")
         (Join-Path $script:FoModuleRoot "..\file-optimizer-full\$arch")
-        (Join-Path $script:FoModuleRoot "..\..\FileOptimizerAnalisys\FileOptimizerFull\$arch")
     )
     foreach ($c in $candidates) {
         $resolved = [System.IO.Path]::GetFullPath($c)

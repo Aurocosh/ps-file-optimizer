@@ -1,9 +1,9 @@
 @{
     Level             = 5
     OutputMode        = 'TempMove'
-    TempBackupPath    = 'C:\Users\YOU\AppData\Local\Temp\FileOptimizer\backups'
+    TempBackupPath    = '__FO_TEMP_BACKUP__'
     PluginSearchMode  = 'PortableFirst'
-    PluginPath        = 'D:\Tools\FileOptimizerFull\Plugins64'
+    PluginPath        = '__FO_PLUGIN_PATH__'
     LogLevel          = 1
     SkipMissingTools  = $false
     BackupSuffix      = '.bak'

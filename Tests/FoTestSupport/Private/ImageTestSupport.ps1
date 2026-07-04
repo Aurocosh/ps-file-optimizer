@@ -200,6 +200,141 @@ function Copy-FoImageFixture {
     return ([System.IO.Path]::GetFullPath($Destination))
 }
 
+function Get-FoImageTestArtifactPaths {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$WorkRoot,
+        [Parameter(Mandatory)]
+        [string]$FileName
+    )
+
+    $artifactRoot = Join-Path $WorkRoot 'artifacts'
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
+
+    return [PSCustomObject]@{
+        Root        = $artifactRoot
+        DiffPath    = Join-Path (Join-Path $artifactRoot 'diffs') "${baseName}_diff.png"
+        IdentifyDir = Join-Path $artifactRoot 'identify'
+        LogPath     = Join-Path $artifactRoot 'optimization.txt'
+    }
+}
+
+function Save-FoImageTestFailureArtifacts {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$WorkRoot,
+        [Parameter(Mandatory)]
+        [string]$FileName,
+        [Parameter(Mandatory)]
+        [string]$BeforePath,
+        [Parameter(Mandatory)]
+        [string]$AfterPath,
+        [string]$PluginPath,
+        $Optimization,
+        $Compare,
+        [string]$DiffOutputPath
+    )
+
+    $paths = Get-FoImageTestArtifactPaths -WorkRoot $WorkRoot -FileName $FileName
+    New-Item -ItemType Directory -Path $paths.IdentifyDir -Force | Out-Null
+
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
+    $magick = Get-FoCompareMagickPath -PluginPath $PluginPath
+    $workDir = Split-Path -Parent $magick
+
+    foreach ($pair in @(
+            @{ Label = 'before'; Path = $BeforePath }
+            @{ Label = 'after'; Path = $AfterPath }
+        )) {
+        $outFile = Join-Path $paths.IdentifyDir "${baseName}_$($pair.Label).txt"
+        $identify = Invoke-FoMagickCli -MagickExe $magick -WorkingDirectory $workDir -ArgumentList @(
+            'identify'
+            '-verbose'
+            $pair.Path
+        )
+        @(
+            "Path: $($pair.Path)"
+            "ExitCode: $($identify.ExitCode)"
+            $identify.StdOut
+            $identify.StdErr
+        ) | Set-Content -LiteralPath $outFile -Encoding UTF8
+    }
+
+    $lines = @(
+        "Fixture: $FileName"
+        "Status: $($Optimization.Status)"
+        "OriginalSize: $($Optimization.OriginalSize)"
+        "FinalSize: $($Optimization.FinalSize)"
+        "DurationMs: $($Optimization.DurationMs)"
+    )
+    if ($Compare) {
+        $lines += "CompareMode: $($Compare.Mode)"
+        $lines += "ComparePass: $($Compare.Pass)"
+        $lines += "Metric: $($Compare.Metric)"
+        $lines += "MetricValue: $($Compare.MetricValue)"
+        if ($Compare.DiffPath) {
+            $lines += "DiffPath: $($Compare.DiffPath)"
+        }
+    }
+    if ($Optimization.Steps) {
+        $lines += ''
+        $lines += 'Steps:'
+        foreach ($step in @($Optimization.Steps)) {
+            $lines += ('  {0} [{1}]: {2} -> {3} accepted={4}' -f `
+                    $step.Step, $step.Group, $step.SizeBefore, $step.SizeAfter, $step.Accepted)
+        }
+    }
+    $lines | Set-Content -LiteralPath $paths.LogPath -Encoding UTF8
+
+    $diffPath = $null
+    if ($Compare -and $Compare.DiffPath) {
+        $diffPath = $Compare.DiffPath
+    }
+    elseif ($DiffOutputPath -and (Test-Path -LiteralPath $DiffOutputPath)) {
+        $diffPath = $DiffOutputPath
+    }
+
+    return [PSCustomObject]@{
+        Root        = $paths.Root
+        DiffPath    = $diffPath
+        IdentifyDir = $paths.IdentifyDir
+        LogPath     = $paths.LogPath
+    }
+}
+
+function Write-FoTestPluginVersions {
+    [CmdletBinding()]
+    param(
+        [string]$PluginPath
+    )
+
+    $searchPath = if ($PluginPath) { $PluginPath } else { Get-FoTestPluginPath }
+    if (-not $searchPath) {
+        Write-Verbose 'Plugin path not set; skipping plugin version logging.'
+        return
+    }
+
+    foreach ($tool in @(
+            @{ Name = 'magick.exe'; Args = @('-version') }
+            @{ Name = 'oxipng.exe'; Args = @('--version') }
+            @{ Name = 'cwebp.exe'; Args = @('-version') }
+        )) {
+        $resolved = Resolve-FoPluginExecutable -Name $tool.Name -SearchMode PortableOnly -PluginPath $searchPath
+        if (-not $resolved.Found) {
+            Write-Verbose "$($tool.Name): not found under $searchPath"
+            continue
+        }
+
+        $exeDir = Split-Path -Parent $resolved.Path
+        $result = Invoke-FoMagickCli -MagickExe $resolved.Path -WorkingDirectory $exeDir -ArgumentList $tool.Args
+        $line = ($result.StdOut -split "`n" | Select-Object -First 1).Trim()
+        if (-not $line) { $line = ($result.StdErr -split "`n" | Select-Object -First 1).Trim() }
+        Write-Verbose "$($tool.Name): $line"
+    }
+}
+
 function Invoke-FoImageOptimizationTest {
     [CmdletBinding()]
     param(
@@ -265,19 +400,26 @@ function Invoke-FoImageOptimizationTest {
         $inputPath
     }
 
+    $artifactPaths = Get-FoImageTestArtifactPaths -WorkRoot $workRoot -FileName $fileName
+    if (-not $PSBoundParameters.ContainsKey('DiffOutputPath')) {
+        $DiffOutputPath = $artifactPaths.DiffPath
+    }
+    $diffDir = Split-Path -Parent $DiffOutputPath
+    if ($diffDir -and -not (Test-Path -LiteralPath $diffDir)) {
+        New-Item -ItemType Directory -Path $diffDir -Force | Out-Null
+    }
+
     $compare = $null
     $pass = $optimization.Status -in @('Optimized', 'Unchanged')
 
     if (-not $SkipCompare -and $pass) {
         $compareModeEffective = if ($CompareMode -eq 'SSIMOnly') { 'SSIM' } else { $CompareMode }
         $compareParams = @{
-            Before     = $beforePath
-            After      = $afterPath
-            Mode       = $compareModeEffective
-            PluginPath = $Settings.PluginPath
-        }
-        if ($PSBoundParameters.ContainsKey('DiffOutputPath') -and $DiffOutputPath) {
-            $compareParams['DiffOutputPath'] = $DiffOutputPath
+            Before           = $beforePath
+            After            = $afterPath
+            Mode             = $compareModeEffective
+            PluginPath       = $Settings.PluginPath
+            DiffOutputPath   = $DiffOutputPath
         }
         if ($compareModeEffective -eq 'SSIM' -and $SSIMDissimilarityMaximum -ge 0) {
             $compareParams['SSIMDissimilarityMaximum'] = $SSIMDissimilarityMaximum
@@ -289,7 +431,8 @@ function Invoke-FoImageOptimizationTest {
             $ext = [System.IO.Path]::GetExtension($afterPath)
             if ($ext -match '(?i)^\.jpe?g$') {
                 $jpegCompare = Test-FoJpegImageCompare -Before $beforePath -After $afterPath `
-                    -PluginPath $Settings.PluginPath -SSIMDissimilarityMaximum $SSIMDissimilarityMaximum
+                    -PluginPath $Settings.PluginPath -SSIMDissimilarityMaximum $SSIMDissimilarityMaximum `
+                    -DiffOutputPath $DiffOutputPath
                 $compare = $jpegCompare.Compare
                 $CompareMode = $jpegCompare.CompareMode
             }
@@ -308,16 +451,26 @@ function Invoke-FoImageOptimizationTest {
         }
     }
 
+    $failureArtifacts = $null
+    if (-not $pass) {
+        $failureArtifacts = Save-FoImageTestFailureArtifacts -WorkRoot $workRoot -FileName $fileName `
+            -BeforePath $beforePath -AfterPath $afterPath -PluginPath $Settings.PluginPath `
+            -Optimization $optimization -Compare $compare -DiffOutputPath $DiffOutputPath
+        Write-Warning "Image test failed for '$fileName'. Artifacts: $($failureArtifacts.Root)"
+    }
+
     return [PSCustomObject]@{
-        FixtureId    = if ($entry) { $entry.Id } else { $null }
-        FixturePath  = $FixturePath
-        BeforePath   = $beforePath
-        AfterPath    = $afterPath
-        Optimization = $optimization
-        Compare      = $compare
-        CompareMode  = if ($CompareMode -eq 'SSIMOnly') { 'SSIMOnly' } else { $CompareMode }
-        Decode       = $decode
-        Pass         = $pass
+        FixtureId        = if ($entry) { $entry.Id } else { $null }
+        FixturePath      = $FixturePath
+        BeforePath       = $beforePath
+        AfterPath        = $afterPath
+        WorkDirectory    = $workRoot
+        Optimization     = $optimization
+        Compare          = $compare
+        CompareMode      = if ($CompareMode -eq 'SSIMOnly') { 'SSIMOnly' } else { $CompareMode }
+        Decode           = $decode
+        Pass             = $pass
+        FailureArtifacts = $failureArtifacts
     }
 }
 
@@ -494,10 +647,12 @@ function Test-FoJpegImageCompare {
         [Parameter(Mandatory)]
         [string]$After,
         [string]$PluginPath,
-        [double]$SSIMDissimilarityMaximum = -1
+        [double]$SSIMDissimilarityMaximum = -1,
+        [string]$DiffOutputPath
     )
 
-    $compare = Compare-FoImage -Before $Before -After $After -Mode Pixel -PluginPath $PluginPath
+    $compare = Compare-FoImage -Before $Before -After $After -Mode Pixel -PluginPath $PluginPath `
+        -DiffOutputPath $DiffOutputPath
     $mode = 'Pixel'
 
     if (-not $compare.Pass) {
@@ -508,7 +663,7 @@ function Test-FoJpegImageCompare {
             (Get-FoImageTestDecisions).JpegSSIMFallbackMaximum
         }
         $compare = Compare-FoImage -Before $Before -After $After -Mode SSIM `
-            -PluginPath $PluginPath -SSIMDissimilarityMaximum $max
+            -PluginPath $PluginPath -SSIMDissimilarityMaximum $max -DiffOutputPath $DiffOutputPath
         $mode = 'SSIM'
     }
 
