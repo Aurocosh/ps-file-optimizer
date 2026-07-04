@@ -56,8 +56,32 @@ See `Templates\Config.defaults.psd1` for available keys.
 ## Tests
 
 ```powershell
-Invoke-Pester .\Tests\FileOptimizer.Tests.ps1
+Invoke-Pester .\Tests\
 ```
+
+See [`Tests/README.md`](Tests/README.md) for tags, environment variables, and image verification conventions.
+
+### Unit tests (no plugins)
+
+```powershell
+Invoke-Pester .\Tests\ -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
+```
+
+### Image integration tests
+
+Require plugin binaries (`magick.exe` and format-specific tools). Point tests at your plugin folder:
+
+```powershell
+$env:FO_TEST_PLUGIN_PATH = 'D:\Tools\FileOptimizerFull\Plugins64'
+Invoke-Pester .\Tests\ -Tag ImageIntegration
+```
+
+If plugins are missing, integration tests are marked **Inconclusive** rather than failed.
+
+| Variable | Purpose |
+|----------|---------|
+| `FO_TEST_PLUGIN_PATH` | Plugin directory for integration tests (falls back to module `plugins\` or sibling `file-optimizer-full\Plugins64`) |
+| `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to run install download integration tests |
 
 ### Plugin install integration (network, ~110 MB download)
 
