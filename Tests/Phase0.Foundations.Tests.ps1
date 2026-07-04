@@ -3,14 +3,10 @@
 }
 
 Describe 'Image test decisions manifest' -Tag Unit {
-    It 'Loads ImageTestDecisions.psd1 with expected keys' {
+    It 'Loads ImageTestDecisions.psd1 with compare thresholds' {
         $d = Get-FoImageTestDecisions
-        $d.JpegPrimaryMode | Should -Be 'PixelAE'
         $d.JpegSSIMFallbackMaximum | Should -Be 0
-        $d.IcoCompareScope | Should -Be 'LargestEmbedded'
         $d.AvifDefaultSSIMDissimilarityMaximum | Should -Be 0.005
-        $d.FixtureBudgetBytes | Should -Be 512000
-        $d.Tags.ImageIntegration | Should -Not -BeNullOrEmpty
     }
 }
 

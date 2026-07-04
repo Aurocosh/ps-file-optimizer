@@ -80,17 +80,17 @@ Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the leg
 | `Scripts/Invoke-FoTests.ps1` | Single entry point for local runs and CI |
 | `*.Tests.ps1` | Pester test files |
 | `ImageTestManifest.psd1` | **FO-ImageTest-v1** corpus (Tier A + aux release metadata) |
-| `ImageTestDecisions.psd1` | Thresholds and scope rules |
+| `ImageTestDecisions.psd1` | SSIM compare thresholds (JPEG fallback, AVIF default) |
 | `ImageTestProfiles.psd1` | Settings profiles (`LosslessDefault`, `LossyHighQuality`) |
 | `Fixtures/Images/` | Tier A committed fixtures |
 
-## Image verification decisions
+## Image compare thresholds
 
-Machine-readable thresholds live in `ImageTestDecisions.psd1` (loaded by FoTestSupport). Summary:
+`ImageTestDecisions.psd1` holds SSIM thresholds consumed by FoTestSupport:
 
-| Topic | Decision |
-|-------|----------|
-| JPEG (default profile) | Pixel compare via `magick compare -metric AE`; SSIM dissimilarity ≤ 0 fallback if AE > 0 |
-| ICO | Compare **largest embedded icon** only |
-| AVIF (default profile) | SSIM dissimilarity threshold (Tier C); calibrate in Phase 5 |
-| Committed fixtures | Tier A: 34 files (~46 KB) under `Fixtures/Images/` |
+| Key | Used by |
+|-----|---------|
+| `JpegSSIMFallbackMaximum` | `Test-FoJpegImageCompare` when pixel (AE) compare fails |
+| `AvifDefaultSSIMDissimilarityMaximum` | AVIF integration tests (`LosslessDefault` profile) |
+
+Lossy format ceilings live in `ImageTestProfiles.psd1` (`LossyHighQuality.SSIMDissimilarityMaximum`). ICO tests compare the largest embedded icon via `Compare-FoIcoLargest` (see `ImageOptimization.Ico.Tests.ps1`).

@@ -13,13 +13,14 @@ cd ps-file-optimizer
 
 ## Regenerate (maintainers)
 
-Copy paths listed under `Tiers.A.Files` in `Tests/ImageTestManifest.psd1` from a local codec-corpus clone, then refresh `MANIFEST.sha256`. Tier B–D release zips: `file-optimizer-dev/ps-optimizer/scripts/Build-ImageTestRelease.ps1`.
+Copy paths listed under `Tiers.A.Files` in `Tests/ImageTestManifest.psd1` from a local [codec-corpus](https://github.com/imazen/codec-corpus) clone, then refresh `MANIFEST.sha256`.
+
+Tier B–D zips are published on the [ps-file-optimizer-aux](https://github.com/Aurocosh/ps-file-optimizer-aux) `image-test-v1` release; see `Tests/ImageTestManifest.psd1` for asset names and checksums.
 
 ## Manifest
 
 - Machine-readable list: `Tests/ImageTestManifest.psd1`
 - SHA256 checksums: `MANIFEST.sha256`
-- Full specification: `file-optimizer-dev/ps-optimizer/docs/04-test-image-dataset.md`
 
 ## Licenses (summary)
 
