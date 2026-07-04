@@ -58,3 +58,18 @@ See `Templates\Config.defaults.psd1` for available keys.
 ```powershell
 Invoke-Pester .\Tests\FileOptimizer.Tests.ps1
 ```
+
+### Plugin install integration (network, ~110 MB download)
+
+Validates `Install-FoPlugins` end-to-end: downloads the FileOptimizer bundle, extracts it without running the SFX, copies plugins, and cleans up temp files. Skipped unless enabled:
+
+```powershell
+$env:FO_RUN_INSTALL_INTEGRATION = '1'
+Invoke-Pester .\Tests\Install-FoPlugins.Integration.Tests.ps1
+```
+
+Or run the manual smoke script:
+
+```powershell
+.\Tests\Smoke-Install-Plugins.ps1
+```

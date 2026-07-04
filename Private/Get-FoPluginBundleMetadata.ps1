@@ -3,10 +3,10 @@ $script:FoPluginBundleUrl = 'https://sourceforge.net/projects/nikkhokkho/files/F
 $script:FoPluginBundleFileName = 'FileOptimizerFull.7z.exe'
 
 # Ghostscript is chosen at runtime in PDF.ps1 via -Executable $gs (not a string literal).
-$script:FoPluginExecutableSupplements = @(
-    'gswin64c.exe'
-    'gswin32c.exe'
-)
+function Get-FoGhostscriptExecutableName {
+    if ([Environment]::Is64BitProcess) { return 'gswin64c.exe' }
+    return 'gswin32c.exe'
+}
 
 function Get-FoRequiredPluginExecutables {
     [CmdletBinding()]
@@ -20,9 +20,7 @@ function Get-FoRequiredPluginExecutables {
         }
     }
 
-    foreach ($e in $script:FoPluginExecutableSupplements) {
-        [void]$exes.Add($e)
-    }
+    [void]$exes.Add((Get-FoGhostscriptExecutableName))
 
     $pipelineDir = Join-Path $script:FoModuleRoot 'Pipelines'
     Get-ChildItem -LiteralPath $pipelineDir -Filter '*.ps1' -File -ErrorAction Stop |
