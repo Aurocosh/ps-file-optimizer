@@ -67,10 +67,10 @@ Recommended invocations:
 
 | Job | Runner | Command |
 |-----|--------|---------|
-| `unit` | `ubuntu-latest` | `Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow` |
+| `unit` | `windows-latest` | `Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow` |
 | `integration-downloads` | `windows-latest` (push to `master` only) | `Invoke-FoTests.ps1 -Tag Integration` with `FO_RUN_*=1` |
 
-No Pester version hacks — Ubuntu pwsh has Pester 5 only; Windows integration uses the runner’s bundled Pester 5.
+Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the legacy Windows PowerShell 5.1 Pester 3 conflict.
 
 ## Layout
 
