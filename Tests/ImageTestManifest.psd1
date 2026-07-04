@@ -104,4 +104,25 @@
         'image-rs/**/Bad_*'
         'image-rs/**/*.bad_*'
     )
+
+    AuxBaseUrl = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download'
+    AuxReleaseTag = 'image-test-v1'
+
+    AuxReleases = @{
+        B = @{
+            Asset     = 'fo-image-test-v1-tier-b.zip'
+            Sha256    = '6834ad257490ff308ff67d8ee2c455d57160d10bb28355a4e44319293b0abd5e'
+            FileCount = 318
+        }
+        C = @{
+            Asset     = 'fo-image-test-v1-tier-c.zip'
+            Sha256    = 'cbf148ee322fb64e7b6e3473e57fb0c5c503c6c7dc78053f12b4965b681cadaf'
+            FileCount = 25
+        }
+        D = @{
+            Asset     = 'fo-image-test-v1-tier-d.zip'
+            Sha256    = 'e7cf758f742296db93ab61d0c1a4fc8807b9dd194cc7603419de53b4a746358e'
+            FileCount = 15
+        }
+    }
 }

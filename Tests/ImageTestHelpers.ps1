@@ -1,5 +1,20 @@
 $script:FoImageTestFixtureRoot = Join-Path $PSScriptRoot 'Fixtures\Images'
 
+function Get-FoImageTestCorpusRoot {
+    [CmdletBinding()]
+    param(
+        [string]$Override
+    )
+
+    if ($Override) {
+        return [System.IO.Path]::GetFullPath($Override)
+    }
+    if ($env:FO_TEST_CORPUS_PATH) {
+        return [System.IO.Path]::GetFullPath($env:FO_TEST_CORPUS_PATH)
+    }
+    return Join-Path $PSScriptRoot 'Fixtures\Corpus'
+}
+
 function Get-FoImageTestManifest {
     [CmdletBinding()]
     param()
@@ -75,28 +90,54 @@ function Get-FoImageTestFixturePath {
 function Test-FoImageTestFixturesPresent {
     [CmdletBinding()]
     param(
-        [ValidateSet('A')]
-        [string]$Tier = 'A'
+        [ValidateSet('A', 'B', 'C', 'D')]
+        [string]$Tier = 'A',
+        [string]$CorpusRoot
     )
 
-    if ($Tier -ne 'A') {
-        throw "Only Tier A fixture presence checks are implemented."
-    }
+    if ($Tier -eq 'A') {
+        $manifest = Get-FoImageTestManifest
+        $missing = @()
+        foreach ($entry in @($manifest.Tiers.A.Files)) {
+            $path = Join-Path $script:FoImageTestFixtureRoot ($entry.Source -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+            if (-not (Test-Path -LiteralPath $path)) {
+                $missing += $entry.Source
+            }
+        }
 
-    $manifest = Get-FoImageTestManifest
-    $missing = @()
-    foreach ($entry in @($manifest.Tiers.A.Files)) {
-        $path = Join-Path $script:FoImageTestFixtureRoot ($entry.Source -replace '/', [System.IO.Path]::DirectorySeparatorChar)
-        if (-not (Test-Path -LiteralPath $path)) {
-            $missing += $entry.Source
+        return @{
+            Tier    = $Tier
+            Present = ($missing.Count -eq 0)
+            Missing = $missing
+            Count   = @($manifest.Tiers.A.Files).Count
         }
     }
 
+    $manifest = Get-FoImageTestManifest
+    if (-not $manifest.AuxReleases -or -not $manifest.AuxReleases[$Tier]) {
+        throw "No AuxReleases metadata for Tier $Tier."
+    }
+
+    $root = Get-FoImageTestCorpusRoot -Override $CorpusRoot
+    $tierDir = Join-Path $root ("tier-$($Tier.ToLower())")
+    $fileCount = 0
+    if (Test-Path -LiteralPath $tierDir) {
+        $fileCount = @(Get-ChildItem -LiteralPath $tierDir -Recurse -File -ErrorAction SilentlyContinue).Count
+    }
+
+    $expected = $manifest.AuxReleases[$Tier].FileCount
+    $present = $fileCount -gt 0
+    if ($expected -and $fileCount -ne $expected) {
+        $present = $false
+    }
+
     return @{
-        Tier    = $Tier
-        Present = ($missing.Count -eq 0)
-        Missing = $missing
-        Count   = @($manifest.Tiers.A.Files).Count
+        Tier     = $Tier
+        Present  = $present
+        Missing  = if ($present) { @() } else { @("tier-$($Tier.ToLower()) under $root") }
+        Count    = $fileCount
+        Expected = $expected
+        Root     = $tierDir
     }
 }
 

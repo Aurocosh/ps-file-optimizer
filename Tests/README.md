@@ -75,6 +75,8 @@ Invoke-Pester .\Tests\
 | `ImageOptimization.Png.Tests.ps1` (level 9) | `ImageIntegration`, `Slow` | Phase 4 — optional deep PNG pass |
 | `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 |
 | `Install-FoPlugins.Integration.Tests.ps1` | — | Requires `FO_RUN_INSTALL_INTEGRATION=1` |
+| `Get-ImageTestCorpus.Tests.ps1` | `Unit` | Tier A verify; tier file selection (codec-corpus optional) |
+| `Install-FoPluginBundle.Tests.ps1` | `Unit` | Aux plugin bundle metadata and SHA256 |
 | `Phase0.Foundations.Tests.ps1` | `Unit` | Plugin path discovery, decisions manifest |
 | `Compare-FoImage.Tests.ps1` | `Unit` | Image compare helper (Pixel / SSIM) |
 
@@ -97,6 +99,7 @@ Implementation plan: `file-optimizer-dev/ps-optimizer/plans/01-image-testing-sui
 ## Helpers
 
 - `TestHelpers.ps1` — shared setup, `New-FoTestPng`, plugin discovery
-- `ImageTestManifest.psd1` — **FO-ImageTest-v1** corpus (Tier A file list, upstream commit pin)
+- `ImageTestManifest.psd1` — **FO-ImageTest-v1** corpus (Tier A file list, `AuxReleases` for tiers B–D)
+- `Scripts/Get-ImageTestCorpus.ps1` — verify Tier A or download tiers B–D from aux releases
 - `ImageTestHelpers.ps1` — Phase 2+ optimize/compare orchestration
 - `ImageTestProfiles.psd1` — Phase 2+ settings profiles (`LosslessDefault`, `LossyHighQuality`)
