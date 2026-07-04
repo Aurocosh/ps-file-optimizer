@@ -410,6 +410,7 @@ function Invoke-FoImageOptimizationTest {
     }
 
     $compare = $null
+    $compareError = $null
     $pass = $optimization.Status -in @('Optimized', 'Unchanged')
 
     if (-not $SkipCompare -and $pass) {
@@ -425,20 +426,26 @@ function Invoke-FoImageOptimizationTest {
             $compareParams['SSIMDissimilarityMaximum'] = $SSIMDissimilarityMaximum
         }
 
-        $compare = Compare-FoImage @compareParams
+        try {
+            $compare = Compare-FoImage @compareParams
 
-        if ($CompareMode -eq 'Pixel' -and -not $compare.Pass) {
-            $ext = [System.IO.Path]::GetExtension($afterPath)
-            if ($ext -match '(?i)^\.jpe?g$') {
-                $jpegCompare = Test-FoJpegImageCompare -Before $beforePath -After $afterPath `
-                    -PluginPath $Settings.PluginPath -SSIMDissimilarityMaximum $SSIMDissimilarityMaximum `
-                    -DiffOutputPath $DiffOutputPath
-                $compare = $jpegCompare.Compare
-                $CompareMode = $jpegCompare.CompareMode
+            if ($CompareMode -eq 'Pixel' -and -not $compare.Pass) {
+                $ext = [System.IO.Path]::GetExtension($afterPath)
+                if ($ext -match '(?i)^\.jpe?g$') {
+                    $jpegCompare = Test-FoJpegImageCompare -Before $beforePath -After $afterPath `
+                        -PluginPath $Settings.PluginPath -SSIMDissimilarityMaximum $SSIMDissimilarityMaximum `
+                        -DiffOutputPath $DiffOutputPath
+                    $compare = $jpegCompare.Compare
+                    $CompareMode = $jpegCompare.CompareMode
+                }
             }
-        }
 
-        $pass = $compare.Pass
+            $pass = $compare.Pass
+        }
+        catch {
+            $compareError = $_.Exception.Message
+            $pass = $false
+        }
     }
 
     $decode = $null
@@ -467,6 +474,7 @@ function Invoke-FoImageOptimizationTest {
         WorkDirectory    = $workRoot
         Optimization     = $optimization
         Compare          = $compare
+        CompareError     = $compareError
         CompareMode      = if ($CompareMode -eq 'SSIMOnly') { 'SSIMOnly' } else { $CompareMode }
         Decode           = $decode
         Pass             = $pass

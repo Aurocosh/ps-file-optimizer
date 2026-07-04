@@ -108,6 +108,65 @@ function Get-FoCorpusSweepTargets {
     return $targets
 }
 
+function Get-FoCorpusSweepWorkDirectoryName {
+    param(
+        [string]$RelativePath,
+        [string]$FullPath
+    )
+
+    $label = if ($RelativePath) { $RelativePath } else { [System.IO.Path]::GetFileName($FullPath) }
+    ($label -replace '[\\/:*?"<>|]', '_')
+}
+
+function New-FoCorpusSweepResultRow {
+    param(
+        [string]$Tier,
+        $Target,
+        $Result,
+        [string]$ErrorMessage
+    )
+
+    if ($Result) {
+        return [PSCustomObject]@{
+            Tier             = $Tier
+            FixtureId        = $Target.Id
+            RelativePath     = $Target.RelativePath
+            Format           = $Target.Format
+            Status           = $Result.Optimization.Status
+            OriginalSize     = $Result.Optimization.OriginalSize
+            FinalSize        = $Result.Optimization.FinalSize
+            BytesSaved       = $Result.Optimization.BytesSaved
+            DurationMs       = $Result.Optimization.DurationMs
+            CompareMode      = $Result.CompareMode
+            ComparePass      = if ($Result.Compare) { $Result.Compare.Pass } else { $null }
+            MetricValue      = if ($Result.Compare) { $Result.Compare.MetricValue } else { $null }
+            Pass             = $Result.Pass
+            Error            = if ($Result.CompareError) { $Result.CompareError } else { $null }
+            FailureArtifacts = if ($Result.FailureArtifacts) { $Result.FailureArtifacts.Root } else { $null }
+            WorkDirectory    = $Result.WorkDirectory
+        }
+    }
+
+    return [PSCustomObject]@{
+        Tier             = $Tier
+        FixtureId        = $Target.Id
+        RelativePath     = $Target.RelativePath
+        Format           = $Target.Format
+        Status           = 'Error'
+        OriginalSize     = $null
+        FinalSize        = $null
+        BytesSaved       = $null
+        DurationMs       = $null
+        CompareMode      = $null
+        ComparePass      = $null
+        MetricValue      = $null
+        Pass             = $false
+        Error            = $ErrorMessage
+        FailureArtifacts = $null
+        WorkDirectory    = $null
+    }
+}
+
 $targets = @(Get-FoCorpusSweepTargets -TierName $Tier -RootOverride $CorpusRoot)
 if ($MaxFiles -gt 0) {
     $targets = @($targets | Select-Object -First $MaxFiles)
@@ -136,7 +195,7 @@ foreach ($target in $targets) {
     $label = if ($target.Id) { $target.Id } else { $target.RelativePath }
     Write-Progress -Activity 'Corpus sweep' -Status $label -PercentComplete (($index / $targets.Count) * 100)
 
-    $itemWorkDir = Join-Path $sweepRoot ([System.IO.Path]::GetFileNameWithoutExtension($target.Path))
+    $itemWorkDir = Join-Path $sweepRoot (Get-FoCorpusSweepWorkDirectoryName -RelativePath $target.RelativePath -FullPath $target.Path)
     New-Item -ItemType Directory -Path $itemWorkDir -Force | Out-Null
 
     $params = @{
@@ -161,24 +220,16 @@ foreach ($target in $targets) {
         $params['SSIMDissimilarityMaximum'] = (Get-FoImageTestDecisions).AvifDefaultSSIMDissimilarityMaximum
     }
 
-    $result = Invoke-FoImageOptimizationTest @params
-
-    $rows += [PSCustomObject]@{
-        Tier              = $Tier
-        FixtureId         = $target.Id
-        RelativePath      = $target.RelativePath
-        Format            = $target.Format
-        Status            = $result.Optimization.Status
-        OriginalSize      = $result.Optimization.OriginalSize
-        FinalSize         = $result.Optimization.FinalSize
-        BytesSaved        = $result.Optimization.BytesSaved
-        DurationMs        = $result.Optimization.DurationMs
-        CompareMode       = $result.CompareMode
-        ComparePass       = if ($result.Compare) { $result.Compare.Pass } else { $null }
-        MetricValue       = if ($result.Compare) { $result.Compare.MetricValue } else { $null }
-        Pass              = $result.Pass
-        FailureArtifacts  = if ($result.FailureArtifacts) { $result.FailureArtifacts.Root } else { $null }
-        WorkDirectory     = $result.WorkDirectory
+    try {
+        $result = Invoke-FoImageOptimizationTest @params
+        if ($result.CompareError) {
+            Write-Warning "Compare failed for '$label': $($result.CompareError)"
+        }
+        $rows += New-FoCorpusSweepResultRow -Tier $Tier -Target $target -Result $result
+    }
+    catch {
+        Write-Warning "Sweep error on '$label': $($_.Exception.Message)"
+        $rows += New-FoCorpusSweepResultRow -Tier $Tier -Target $target -ErrorMessage $_.Exception.Message
     }
 }
 Write-Progress -Activity 'Corpus sweep' -Completed
@@ -196,7 +247,8 @@ $rows | Export-Csv -LiteralPath $OutputCsv -NoTypeInformation -Encoding UTF8
 
 $passed = @($rows | Where-Object { $_.Pass }).Count
 $failed = $rows.Count - $passed
-Write-Host ("Done: {0} passed, {1} failed. CSV: {2}" -f $passed, $failed, $OutputCsv)
+$errors = @($rows | Where-Object { $_.Error }).Count
+Write-Host ("Done: {0} passed, {1} failed ({2} with errors). CSV: {3}" -f $passed, $failed, $errors, $OutputCsv)
 Write-Host "Failure artifact roots under: $sweepRoot"
 
 if ($failed -gt 0) {
