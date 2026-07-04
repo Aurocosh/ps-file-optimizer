@@ -1,5 +1,4 @@
-# Plugin bundle metadata — default: ps-file-optimizer-aux GitHub Release (plain .7z).
-# Legacy SourceForge SFX available via -UseLegacySourceForge on Install-FoPlugins.
+# Plugin bundle metadata — ps-file-optimizer-aux GitHub Release (plain .7z).
 
 $script:FoPluginBundleVersion = '1.0.0'
 $script:FoPluginBundleUrl = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.7z'
@@ -7,16 +6,11 @@ $script:FoPluginBundleFileName = 'fo-plugins-win-x64-1.0.0.7z'
 $script:FoPluginBundleSha256 = 'e314ad6ca1a435528fcc1a8c4737728c1d33bd8dd2197db7d36048ed65a1a5b8'
 $script:FoPluginBundleFormat = '7z'
 
-$script:FoPluginBundleLegacyUrl = 'https://sourceforge.net/projects/nikkhokkho/files/FileOptimizer/17.10.2857/FileOptimizerFull.7z.exe/download'
-$script:FoPluginBundleLegacyFileName = 'FileOptimizerFull.7z.exe'
-$script:FoPluginBundleLegacyFormat = 'sfx'
-
 function Get-FoPluginBundleSettings {
     [CmdletBinding()]
     param(
         [string]$ArchiveUrl,
-        [string]$ArchiveSha256,
-        [switch]$UseLegacySourceForge
+        [string]$ArchiveSha256
     )
 
     if ($env:FO_PLUGIN_BUNDLE_URL) {
@@ -41,15 +35,6 @@ function Get-FoPluginBundleSettings {
             FileName = [System.IO.Path]::GetFileName(($ArchiveUrl -split '\?')[0])
             Sha256   = $ArchiveSha256
             Format   = '7z'
-        }
-    }
-
-    if ($UseLegacySourceForge) {
-        return [PSCustomObject]@{
-            Url      = $script:FoPluginBundleLegacyUrl
-            FileName = $script:FoPluginBundleLegacyFileName
-            Sha256   = $null
-            Format   = $script:FoPluginBundleLegacyFormat
         }
     }
 
@@ -256,11 +241,19 @@ function Resolve-FoBundledPluginDirectory {
         [string]$ExtractRoot
     )
 
-    $arch = if ([Environment]::Is64BitProcess) { 'Plugins64' } else { 'Plugins32' }
-    $hit = Get-ChildItem -LiteralPath $ExtractRoot -Recurse -Directory -Filter $arch -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-    if (-not $hit) {
-        throw "Could not find '$arch' directory inside extracted FileOptimizer archive."
+    $candidates = @(
+        $ExtractRoot
+        (Join-Path $ExtractRoot 'plugins')
+    )
+
+    foreach ($dir in $candidates) {
+        if (-not (Test-Path -LiteralPath $dir)) {
+            continue
+        }
+        if (Test-FoPluginFilePresent -PluginPath $dir -FileName 'magick.exe') {
+            return ([System.IO.Path]::GetFullPath($dir))
+        }
     }
-    return $hit.FullName
+
+    throw "Could not find plugin executables in extracted bundle at '$ExtractRoot'."
 }

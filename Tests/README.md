@@ -21,7 +21,7 @@ Each `*.Tests.ps1` imports the **FoTestSupport** module in a `BeforeDiscovery` b
 
 | Variable | Purpose |
 |----------|---------|
-| `FO_TEST_PLUGIN_PATH` | Directory containing plugin executables (`magick.exe`, `oxipng.exe`, …). Used by image integration tests. When unset, tests fall back to `Get-FoDefaultPluginPath` (module `plugins\`, sibling `file-optimizer-full\Plugins64`, etc.). |
+| `FO_TEST_PLUGIN_PATH` | Directory containing plugin executables (`magick.exe`, `oxipng.exe`, …). Used by image integration tests. When unset, tests fall back to `Get-FoDefaultPluginPath` (module `plugins\` or `FO_PLUGIN_PATH`). |
 | `FO_TEST_CORPUS_PATH` | Root for downloaded image test tiers B–D (default: `Tests/Fixtures/Corpus/`). |
 | `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to enable network install integration tests (~76 MB aux release download). |
 | `FO_RUN_CORPUS_INTEGRATION` | Set to `1` to enable Tier B corpus download integration test (~1 MB). |

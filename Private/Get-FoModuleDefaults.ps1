@@ -56,15 +56,18 @@ function Get-FoDefaultHistoryPath {
 
 function Get-FoDefaultPluginPath {
     if (-not $script:FoModuleRoot) { return $null }
-    $arch = if ([Environment]::Is64BitProcess) { 'Plugins64' } else { 'Plugins32' }
-    $candidates = @(
-        (Join-Path $script:FoModuleRoot 'plugins')
-        (Join-Path $script:FoModuleRoot "..\FileOptimizerFull\$arch")
-        (Join-Path $script:FoModuleRoot "..\file-optimizer-full\$arch")
-    )
-    foreach ($c in $candidates) {
-        $resolved = [System.IO.Path]::GetFullPath($c)
-        if (Test-Path -LiteralPath $resolved) { return $resolved }
+
+    if ($env:FO_PLUGIN_PATH) {
+        $candidate = $env:FO_PLUGIN_PATH.Trim()
+        if ($candidate -and (Test-Path -LiteralPath $candidate)) {
+            return ([System.IO.Path]::GetFullPath($candidate))
+        }
     }
+
+    $candidate = Join-Path $script:FoModuleRoot 'plugins'
+    if (Test-Path -LiteralPath $candidate) {
+        return ([System.IO.Path]::GetFullPath($candidate))
+    }
+
     return $null
 }

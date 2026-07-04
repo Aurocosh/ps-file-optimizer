@@ -11,14 +11,6 @@ Describe 'Get-FoPluginBundleSettings' -Tag Unit {
         $settings.Sha256 | Should -Match '^[a-f0-9]{64}$'
     }
 
-    It 'UseLegacySourceForge returns SFX metadata without SHA256' {
-        $settings = Get-FoPluginBundleSettings -UseLegacySourceForge
-        $settings.Url | Should -Match 'sourceforge.net'
-        $settings.FileName | Should -Be 'FileOptimizerFull.7z.exe'
-        $settings.Format | Should -Be 'sfx'
-        $settings.Sha256 | Should -BeNullOrEmpty
-    }
-
     It 'ArchiveUrl override uses supplied SHA256' {
         $settings = Get-FoPluginBundleSettings -ArchiveUrl 'https://example.test/bundle.7z' -ArchiveSha256 'abc'
         $settings.Url | Should -Be 'https://example.test/bundle.7z'

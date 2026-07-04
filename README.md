@@ -84,7 +84,8 @@ If plugins are missing, integration describes are **Skipped** rather than failed
 
 | Variable | Purpose |
 |----------|---------|
-| `FO_TEST_PLUGIN_PATH` | Plugin directory for integration tests (falls back to module `plugins\` or sibling `file-optimizer-full\Plugins64`) |
+| `FO_PLUGIN_PATH` | Default plugin directory when set (overrides module `plugins\` for normal runs) |
+| `FO_TEST_PLUGIN_PATH` | Plugin directory for integration tests (falls back to `FO_PLUGIN_PATH` or module `plugins\`) |
 | `FO_TEST_CORPUS_PATH` | Root for downloaded image test tiers B–D (default: `Tests/Fixtures/Corpus/`) |
 | `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to run install download integration tests |
 | `FO_RUN_CORPUS_INTEGRATION` | Set to `1` to run Tier B corpus download integration test |

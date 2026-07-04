@@ -127,7 +127,7 @@ function Copy-FoPluginFilesFromBundle {
         }
 
         $target = $destPath
-        if ($PSCmdlet.ShouldProcess($target, 'Copy plugin file from FileOptimizer bundle')) {
+        if ($PSCmdlet.ShouldProcess($target, 'Copy plugin file from bundle')) {
             Copy-Item -LiteralPath $src.FullName -Destination $target -Force
             $copied.Add($src.Name)
         }
@@ -148,7 +148,6 @@ function Install-FoPluginBundleCore {
         [string]$DestinationPath,
         [string]$ArchiveUrl,
         [string]$ArchiveSha256,
-        [switch]$UseLegacySourceForge,
         [string]$TempDirectory,
         [switch]$Force,
         [bool]$ShowProgress = $true
@@ -161,7 +160,7 @@ function Install-FoPluginBundleCore {
         Join-Path $script:FoModuleRoot 'plugins'
     }
 
-    $bundle = Get-FoPluginBundleSettings -ArchiveUrl $ArchiveUrl -ArchiveSha256 $ArchiveSha256 -UseLegacySourceForge:$UseLegacySourceForge
+    $bundle = Get-FoPluginBundleSettings -ArchiveUrl $ArchiveUrl -ArchiveSha256 $ArchiveSha256
     $url = $bundle.Url
     $requiredExes = Get-FoRequiredPluginExecutables
 

@@ -8,8 +8,6 @@ function Install-FoPlugins {
     verifies SHA256, extracts with 7-Zip, copies required plugin files into a portable plugin
     directory, then deletes temporary download and extracted files.
 
-    Use -UseLegacySourceForge to download the FileOptimizer SFX from SourceForge instead.
-
     .PARAMETER Mode
     FullPortable — copy all executables and support files required by ps-file-optimizer pipelines.
     Missing — copy only executables not already present in DestinationPath (plus their support files).
@@ -23,9 +21,6 @@ function Install-FoPlugins {
 
     .PARAMETER ArchiveSha256
     Expected SHA256 of the bundle at -ArchiveUrl.
-
-    .PARAMETER UseLegacySourceForge
-    Download FileOptimizerFull.7z.exe from SourceForge instead of the aux release .7z.
 
     .PARAMETER TempDirectory
     Optional parent for temporary download/extract folders. A unique subfolder is always removed afterward.
@@ -54,7 +49,6 @@ function Install-FoPlugins {
         [string]$DestinationPath,
         [string]$ArchiveUrl,
         [string]$ArchiveSha256,
-        [switch]$UseLegacySourceForge,
         [string]$TempDirectory,
         [switch]$Force,
         [bool]$ShowProgress = $true

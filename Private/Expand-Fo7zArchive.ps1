@@ -1,4 +1,4 @@
-# Bootstrap 7-Zip command-line tool used only to open the FO SFX as an archive (never executed).
+# Bootstrap 7-Zip command-line tool used to extract plugin bundle .7z archives.
 $script:Fo7zrBootstrapUrl = 'https://www.7-zip.org/a/7zr.exe'
 
 function Resolve-Fo7ZipExecutable {
