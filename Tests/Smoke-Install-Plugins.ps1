@@ -1,4 +1,4 @@
-# Manual smoke test for Install-FoPlugins (downloads ~110 MB from SourceForge).
+# Manual smoke test for Install-FoPlugins (downloads ~76 MB aux release .7z).
 # Exit code 0 on success, 1 on failure.
 
 param(

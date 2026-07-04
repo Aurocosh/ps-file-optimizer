@@ -3,6 +3,8 @@ param(
     [string]$Mode = 'FullPortable',
     [string]$PluginPath,
     [string]$ArchiveUrl,
+    [string]$ArchiveSha256,
+    [switch]$UseLegacySourceForge,
     [string]$TempDirectory,
     [switch]$Force,
     [switch]$WhatIf,
@@ -13,12 +15,14 @@ $moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 $params = @{
-    Mode            = $Mode
-    DestinationPath = $PluginPath
-    ArchiveUrl      = $ArchiveUrl
-    TempDirectory   = $TempDirectory
-    Force           = $Force
-    ShowProgress    = $ShowProgress
+    Mode                  = $Mode
+    DestinationPath       = $PluginPath
+    ArchiveUrl            = $ArchiveUrl
+    ArchiveSha256         = $ArchiveSha256
+    UseLegacySourceForge  = $UseLegacySourceForge
+    TempDirectory         = $TempDirectory
+    Force                 = $Force
+    ShowProgress          = $ShowProgress
 }
 if ($WhatIf) {
     $params['WhatIf'] = $true

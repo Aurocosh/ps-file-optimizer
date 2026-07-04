@@ -21,7 +21,9 @@ Invoke-Pester .\Tests\ -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
 |----------|---------|
 | `FO_TEST_PLUGIN_PATH` | Directory containing plugin executables (`magick.exe`, `oxipng.exe`, …). Used by image integration tests. When unset, tests fall back to `Get-FoDefaultPluginPath` (module `plugins\`, sibling `file-optimizer-full\Plugins64`, etc.). |
 | `FO_TEST_CORPUS_PATH` | Root directory for Tier B+ codec-corpus files (nightly). Tier A fixtures are committed under `Tests/Fixtures/Images/`. |
-| `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to enable network install integration tests (~110 MB download). |
+| `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to enable network install integration tests (~76 MB aux release download). |
+| `FO_PLUGIN_BUNDLE_URL` | Override default plugin bundle download URL. |
+| `FO_PLUGIN_BUNDLE_SHA256` | Expected SHA256 when using `FO_PLUGIN_BUNDLE_URL`. |
 
 Example:
 

@@ -1,6 +1,84 @@
-# FileOptimizer 17.10.2857 portable bundle (see file-optimizer-dev docs/ps-optimizer/02-external-tools.md)
-$script:FoPluginBundleUrl = 'https://sourceforge.net/projects/nikkhokkho/files/FileOptimizer/17.10.2857/FileOptimizerFull.7z.exe/download'
-$script:FoPluginBundleFileName = 'FileOptimizerFull.7z.exe'
+# Plugin bundle metadata — default: ps-file-optimizer-aux GitHub Release (plain .7z).
+# Legacy SourceForge SFX available via -UseLegacySourceForge on Install-FoPlugins.
+
+$script:FoPluginBundleVersion = '1.0.0'
+$script:FoPluginBundleUrl = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.7z'
+$script:FoPluginBundleFileName = 'fo-plugins-win-x64-1.0.0.7z'
+$script:FoPluginBundleSha256 = 'e314ad6ca1a435528fcc1a8c4737728c1d33bd8dd2197db7d36048ed65a1a5b8'
+$script:FoPluginBundleFormat = '7z'
+
+$script:FoPluginBundleLegacyUrl = 'https://sourceforge.net/projects/nikkhokkho/files/FileOptimizer/17.10.2857/FileOptimizerFull.7z.exe/download'
+$script:FoPluginBundleLegacyFileName = 'FileOptimizerFull.7z.exe'
+$script:FoPluginBundleLegacyFormat = 'sfx'
+
+function Get-FoPluginBundleSettings {
+    [CmdletBinding()]
+    param(
+        [string]$ArchiveUrl,
+        [string]$ArchiveSha256,
+        [switch]$UseLegacySourceForge
+    )
+
+    if ($env:FO_PLUGIN_BUNDLE_URL) {
+        $fileName = if ($env:FO_PLUGIN_BUNDLE_FILENAME) {
+            $env:FO_PLUGIN_BUNDLE_FILENAME
+        }
+        else {
+            [System.IO.Path]::GetFileName(($env:FO_PLUGIN_BUNDLE_URL -split '\?')[0])
+        }
+
+        return [PSCustomObject]@{
+            Url      = $env:FO_PLUGIN_BUNDLE_URL
+            FileName = $fileName
+            Sha256   = if ($env:FO_PLUGIN_BUNDLE_SHA256) { $env:FO_PLUGIN_BUNDLE_SHA256 } else { $ArchiveSha256 }
+            Format   = if ($env:FO_PLUGIN_BUNDLE_FORMAT) { $env:FO_PLUGIN_BUNDLE_FORMAT } else { '7z' }
+        }
+    }
+
+    if ($ArchiveUrl) {
+        return [PSCustomObject]@{
+            Url      = $ArchiveUrl
+            FileName = [System.IO.Path]::GetFileName(($ArchiveUrl -split '\?')[0])
+            Sha256   = $ArchiveSha256
+            Format   = '7z'
+        }
+    }
+
+    if ($UseLegacySourceForge) {
+        return [PSCustomObject]@{
+            Url      = $script:FoPluginBundleLegacyUrl
+            FileName = $script:FoPluginBundleLegacyFileName
+            Sha256   = $null
+            Format   = $script:FoPluginBundleLegacyFormat
+        }
+    }
+
+    return [PSCustomObject]@{
+        Url      = $script:FoPluginBundleUrl
+        FileName = $script:FoPluginBundleFileName
+        Sha256   = $script:FoPluginBundleSha256
+        Format   = $script:FoPluginBundleFormat
+    }
+}
+
+function Test-FoDownloadedFileSha256 {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+        [string]$ExpectedSha256
+    )
+
+    if (-not $ExpectedSha256) {
+        return
+    }
+
+    $actual = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
+    $expected = $ExpectedSha256.ToLowerInvariant()
+    if ($actual -ne $expected) {
+        throw "Downloaded bundle SHA256 mismatch. Expected $expected, got $actual."
+    }
+}
 
 # Ghostscript is chosen at runtime in PDF.ps1 via -Executable $gs (not a string literal).
 function Get-FoGhostscriptExecutableName {

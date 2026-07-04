@@ -18,10 +18,10 @@ function Invoke-FoPluginBundleDownload {
         Remove-Item -LiteralPath $partFile -Force -ErrorAction SilentlyContinue
     }
 
-    $activity = 'Downloading FileOptimizer bundle'
+    $activity = 'Downloading plugin bundle'
     $fileName = Split-Path -Leaf $DestinationFile
 
-    Write-Verbose "Downloading FileOptimizer bundle from $Url"
+    Write-Verbose "Downloading plugin bundle from $Url"
     if ($ShowProgress) {
         Write-Host "Downloading $fileName ..."
     }
@@ -74,7 +74,7 @@ function Invoke-FoPluginBundleDownload {
         if (Test-Path -LiteralPath $partFile) {
             Remove-Item -LiteralPath $partFile -Force -ErrorAction SilentlyContinue
         }
-        throw "Failed to download FileOptimizer bundle from '$Url'. $($_.Exception.Message)"
+        throw "Failed to download plugin bundle from '$Url'. $($_.Exception.Message)"
     }
     finally {
         if ($ShowProgress) {
@@ -147,6 +147,8 @@ function Install-FoPluginBundleCore {
         [string]$Mode = 'FullPortable',
         [string]$DestinationPath,
         [string]$ArchiveUrl,
+        [string]$ArchiveSha256,
+        [switch]$UseLegacySourceForge,
         [string]$TempDirectory,
         [switch]$Force,
         [bool]$ShowProgress = $true
@@ -159,7 +161,8 @@ function Install-FoPluginBundleCore {
         Join-Path $script:FoModuleRoot 'plugins'
     }
 
-    $url = if ($ArchiveUrl) { $ArchiveUrl } else { $script:FoPluginBundleUrl }
+    $bundle = Get-FoPluginBundleSettings -ArchiveUrl $ArchiveUrl -ArchiveSha256 $ArchiveSha256 -UseLegacySourceForge:$UseLegacySourceForge
+    $url = $bundle.Url
     $requiredExes = Get-FoRequiredPluginExecutables
 
     $exesToInstall = switch ($Mode) {
@@ -190,7 +193,7 @@ function Install-FoPluginBundleCore {
         Join-Path ([System.IO.Path]::GetTempPath()) "FoPluginInstall_$(Get-Random)"
     }
 
-    $archivePath = Join-Path $tempRoot $script:FoPluginBundleFileName
+    $archivePath = Join-Path $tempRoot $bundle.FileName
     $extractRoot = Join-Path $tempRoot 'extract'
     $bootstrapDir = Join-Path $tempRoot '7z-bootstrap'
 
@@ -204,8 +207,9 @@ function Install-FoPluginBundleCore {
             New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
         }
 
-        if ($PSCmdlet.ShouldProcess($url, 'Download FileOptimizer plugin bundle')) {
+        if ($PSCmdlet.ShouldProcess($url, 'Download plugin bundle')) {
             Invoke-FoPluginBundleDownload -DestinationFile $archivePath -Url $url -ShowProgress:$ShowProgress
+            Test-FoDownloadedFileSha256 -Path $archivePath -ExpectedSha256 $bundle.Sha256
             $downloaded = $true
         }
         else {
@@ -222,7 +226,7 @@ function Install-FoPluginBundleCore {
             }
         }
 
-        if ($PSCmdlet.ShouldProcess($archivePath, 'Extract FileOptimizer bundle with 7-Zip (without running SFX)')) {
+        if ($PSCmdlet.ShouldProcess($archivePath, 'Extract plugin bundle with 7-Zip')) {
             $expand = Expand-Fo7zArchive -ArchivePath $archivePath -DestinationPath $extractRoot -PassThru
             $sevenZipBootstrap = $expand.BootstrapDir
             $extracted = $true
@@ -241,6 +245,7 @@ function Install-FoPluginBundleCore {
             Mode              = $Mode
             DestinationPath   = $dest
             ArchiveUrl        = $url
+            ArchiveFormat     = $bundle.Format
             Downloaded        = $downloaded
             Extracted         = $extracted
             ExecutablesNeeded = $exesToInstall

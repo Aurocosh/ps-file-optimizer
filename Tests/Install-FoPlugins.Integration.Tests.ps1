@@ -6,7 +6,7 @@ Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 $script:FoInstallIntegrationEnabled = [bool]$env:FO_RUN_INSTALL_INTEGRATION
 
 Describe 'Install-FoPlugins integration' {
-    It 'Downloads FileOptimizer bundle, installs plugins, and cleans temporary files' -Skip:(-not $script:FoInstallIntegrationEnabled) {
+    It 'Downloads plugin bundle, installs plugins, and cleans temporary files' -Skip:(-not $script:FoInstallIntegrationEnabled) {
         $dest = Join-Path $env:TEMP "FoInstallIntegration_dest_$(Get-Random)"
         $tempRoot = Join-Path $env:TEMP "FoInstallIntegration_temp_$(Get-Random)"
         New-Item -ItemType Directory -Path $dest -Force | Out-Null

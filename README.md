@@ -32,8 +32,8 @@ Initialize-FoConfig -Scope Global
 ## Requirements
 
 - Windows PowerShell 5.1+ or PowerShell 7+
-- Plugin binaries from FileOptimizer portable (`FileOptimizerFull\Plugins64`), module `plugins\`, or tools on PATH
-- `Install-FoPlugins` uses 7-Zip (`7z.exe`) or downloads `7zr.exe` temporarily to extract the bundle **without running** the FileOptimizer self-extractor
+- Plugin binaries from the [ps-file-optimizer-aux](https://github.com/Aurocosh/ps-file-optimizer-aux) release bundle (default), module `plugins\`, or tools on PATH
+- `Install-FoPlugins` downloads a plain `.7z` archive (~76 MB), verifies SHA256, and extracts with 7-Zip (`7z.exe`) or a temporary `7zr.exe` bootstrap
 
 ## Layout
 
@@ -44,7 +44,7 @@ Initialize-FoConfig -Scope Global
 | `Private/` | Engine, handlers, history |
 | `Pipelines/` | Per-format plugin chains (39 groups) |
 | `Data/ExtensionMap.psd1` | Extension → pipeline mapping |
-| `Scripts/` | CLI entry points (`Install-Plugins.ps1` downloads FO bundle for portable plugins) |
+| `Scripts/` | CLI entry points (`Install-Plugins.ps1` downloads plugin bundle from aux release) |
 | `plugins/` | Default target for `Install-FoPlugins` (gitignored if present) |
 
 ## Configuration
@@ -83,13 +83,20 @@ If plugins are missing, integration tests are marked **Inconclusive** rather tha
 | `FO_TEST_PLUGIN_PATH` | Plugin directory for integration tests (falls back to module `plugins\` or sibling `file-optimizer-full\Plugins64`) |
 | `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to run install download integration tests |
 
-### Plugin install integration (network, ~110 MB download)
+### Plugin install integration (network, ~76 MB download)
 
-Validates `Install-FoPlugins` end-to-end: downloads the FileOptimizer bundle, extracts it without running the SFX, copies plugins, and cleans up temp files. Skipped unless enabled:
+Validates `Install-FoPlugins` end-to-end: downloads the aux release `.7z`, verifies SHA256, extracts, copies plugins, and cleans up temp files. Skipped unless enabled:
 
 ```powershell
 $env:FO_RUN_INSTALL_INTEGRATION = '1'
 Invoke-Pester .\Tests\Install-FoPlugins.Integration.Tests.ps1
+```
+
+Override bundle URL for mirrors or pre-release testing:
+
+```powershell
+$env:FO_PLUGIN_BUNDLE_URL = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.7z'
+$env:FO_PLUGIN_BUNDLE_SHA256 = 'e314ad6ca1a435528fcc1a8c4737728c1d33bd8dd2197db7d36048ed65a1a5b8'
 ```
 
 Or run the manual smoke script:
