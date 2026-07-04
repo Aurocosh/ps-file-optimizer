@@ -76,7 +76,7 @@ Invoke-Pester .\Tests\
 | `ImageOptimization.Png.Tests.ps1` (level 9) | `ImageIntegration`, `Slow` | Phase 4 — optional deep PNG pass |
 | `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 |
 | `Install-FoPlugins.Integration.Tests.ps1` | — | Requires `FO_RUN_INSTALL_INTEGRATION=1` |
-| `Get-ImageTestCorpus.Tests.ps1` | `Unit` | Tier A verify; tier file selection (codec-corpus optional) |
+| `Get-ImageTestCorpus.Tests.ps1` | `Unit` | Tier A fixture verify |
 | `Get-ImageTestCorpus.Integration.Tests.ps1` | — | Requires `FO_RUN_CORPUS_INTEGRATION=1` |
 | `Install-FoPluginBundle.Tests.ps1` | `Unit` | Aux plugin bundle metadata and SHA256 |
 | `Phase0.Foundations.Tests.ps1` | `Unit` | Plugin path discovery, decisions manifest |

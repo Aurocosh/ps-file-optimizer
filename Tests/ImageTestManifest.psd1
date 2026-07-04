@@ -2,19 +2,6 @@
     Version         = 'FO-ImageTest-v1'
     UpstreamRepo    = 'https://github.com/imazen/codec-corpus'
     UpstreamCommit  = 'bb1da434fd3ab9ef58577f505d2f9194123e5d6e'
-    SparsePaths     = @(
-        'pngsuite'
-        'gif-conformance'
-        'apng-conformance'
-        'jpeg-conformance'
-        'mozjpeg'
-        'webp-conformance'
-        'bmp-conformance'
-        'image-rs'
-        'gb82'
-        'gb82-sc'
-        'avif-conformance'
-    )
 
     Tiers = @{
         A = @{

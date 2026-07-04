@@ -3,7 +3,7 @@ Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
 
-Describe 'PNG lossless optimization (codec-corpus)' -Tag ImageIntegration {
+Describe 'PNG lossless optimization (Tier A fixtures)' -Tag ImageIntegration {
     BeforeAll {
         if (-not (Test-FoPluginsAvailable)) {
             Set-TestInconclusive 'Plugin binaries not found. Set FO_TEST_PLUGIN_PATH.'
