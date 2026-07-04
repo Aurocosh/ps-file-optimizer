@@ -20,6 +20,7 @@ Invoke-Pester .\Tests\ -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
 | Variable | Purpose |
 |----------|---------|
 | `FO_TEST_PLUGIN_PATH` | Directory containing plugin executables (`magick.exe`, `oxipng.exe`, …). Used by image integration tests. When unset, tests fall back to `Get-FoDefaultPluginPath` (module `plugins\`, sibling `file-optimizer-full\Plugins64`, etc.). |
+| `FO_TEST_CORPUS_PATH` | Root directory for Tier B+ codec-corpus files (nightly). Tier A fixtures are committed under `Tests/Fixtures/Images/`. |
 | `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to enable network install integration tests (~110 MB download). |
 
 Example:
@@ -75,13 +76,15 @@ Machine-readable thresholds and scope rules live in `ImageTestDecisions.psd1` (l
 | ICO | Compare **largest embedded icon** only |
 | AVIF (default profile) | SSIM dissimilarity threshold (Tier C); calibrate in Phase 5 |
 | Python cross-check | Optional dev harness in Phase 7 only |
-| Committed fixtures | Budget &lt; 500 KB total under `Fixtures/Images/` |
+| Committed fixtures | Tier A: 31 files (~44 KB) from [codec-corpus](https://github.com/imazen/codec-corpus) under `Fixtures/Images/` — see `ImageTestManifest.psd1` |
 
 Full research: `file-optimizer-dev/ps-optimizer/docs/03-image-verification-testing.md`  
+Test dataset spec: `file-optimizer-dev/ps-optimizer/docs/04-test-image-dataset.md`  
 Implementation plan: `file-optimizer-dev/ps-optimizer/plans/01-image-testing-suite.md`
 
 ## Helpers
 
 - `TestHelpers.ps1` — shared setup, `New-FoTestPng`, plugin discovery
+- `ImageTestManifest.psd1` — **FO-ImageTest-v1** corpus (Tier A file list, upstream commit pin)
 - `ImageTestHelpers.ps1` — Phase 2+ optimize/compare orchestration
 - `ImageTestProfiles.psd1` — Phase 2+ settings profiles (`LosslessDefault`, `LossyHighQuality`)
