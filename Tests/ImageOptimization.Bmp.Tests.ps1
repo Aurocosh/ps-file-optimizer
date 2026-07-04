@@ -10,12 +10,10 @@ Describe 'BMP lossless optimization' -Tag ImageIntegration -Skip:(-not (Test-FoP
         New-Item -ItemType Directory -Path $script:WorkDir -Force | Out-Null
     }
 
-    foreach ($fixtureId in @('bmp-rle', 'bmp-1bit')) {
-        It "Optimizes $fixtureId with pixel compare" {
-            $result = Invoke-FoImageOptimizationTest -FixtureId $fixtureId -Settings $script:Settings `
-                -CompareMode Pixel -WorkDirectory $script:WorkDir
+    It 'Optimizes <_> with pixel compare' -ForEach @('bmp-rle', 'bmp-1bit') {
+        $result = Invoke-FoImageOptimizationTest -FixtureId $_ -Settings $script:Settings `
+            -CompareMode Pixel -WorkDirectory $script:WorkDir
 
-            (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
-        }
+        (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
     }
 }

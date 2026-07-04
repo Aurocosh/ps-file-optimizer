@@ -10,14 +10,12 @@ Describe 'JPEG lossless optimization' -Tag ImageIntegration -Skip:(-not (Test-Fo
         New-Item -ItemType Directory -Path $script:WorkDir -Force | Out-Null
     }
 
-    foreach ($fixtureId in @('jpg-testorig', 'jpg-prog-rst', 'jpg-exif-xmp')) {
-        It "Optimizes $fixtureId with pixel or SSIM compare" {
-            $result = Invoke-FoImageOptimizationTest -FixtureId $fixtureId -Settings $script:Settings `
-                -CompareMode Pixel -WorkDirectory $script:WorkDir
+    It 'Optimizes <_> with pixel or SSIM compare' -ForEach @('jpg-testorig', 'jpg-prog-rst', 'jpg-exif-xmp') {
+        $result = Invoke-FoImageOptimizationTest -FixtureId $_ -Settings $script:Settings `
+            -CompareMode Pixel -WorkDirectory $script:WorkDir
 
-            (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
-            @('Pixel', 'SSIM') -contains $result.CompareMode | Should -Be $true
-        }
+        (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
+        @('Pixel', 'SSIM') -contains $result.CompareMode | Should -Be $true
     }
 
     It 'Uses pixel compare when lossless JPEG is visually identical' {

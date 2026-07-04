@@ -18,17 +18,15 @@ Describe 'LossyHighQuality profile' -Tag ImageIntegration, Lossy -Skip:(-not (Te
         $script:Settings.WEBPAllowLossy | Should -Be $true
     }
 
-    foreach ($case in @(
+    It 'Optimizes <FixtureId> within <Format> SSIM threshold' -ForEach @(
             @{ FixtureId = 'jpg-testorig'; Format = 'JPEG' }
             @{ FixtureId = 'jpg-prog-rst'; Format = 'JPEG' }
-        )) {
-        It "Optimizes $($case.FixtureId) within JPEG SSIM threshold" {
-            $threshold = Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format $case.Format
-            $result = Invoke-FoLossyImageOptimizationTest -FixtureId $case.FixtureId -Format $case.Format `
-                -Settings $script:Settings -WorkDirectory (Join-Path $script:WorkDir $case.FixtureId)
+        ) {
+        $threshold = Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format $_.Format
+        $result = Invoke-FoLossyImageOptimizationTest -FixtureId $_.FixtureId -Format $_.Format `
+            -Settings $script:Settings -WorkDirectory (Join-Path $script:WorkDir $_.FixtureId)
 
-            (Test-FoLossyOptimizationResult -Result $result -SSIMDissimilarityMaximum $threshold) | Should -Be $true
-        }
+        (Test-FoLossyOptimizationResult -Result $result -SSIMDissimilarityMaximum $threshold) | Should -Be $true
     }
 
     It 'Optimizes a generated PNG within PNG SSIM threshold' {
