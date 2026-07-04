@@ -1,0 +1,44 @@
+name: Pester
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  unit:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
+
+      - name: Unit tests
+        shell: pwsh
+        run: |
+          Invoke-Pester ./Tests/ -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow -PassThru -Output Detailed
+
+  integration-downloads:
+    runs-on: windows-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
+
+      - name: Plugin install integration
+        shell: pwsh
+        env:
+          FO_RUN_INSTALL_INTEGRATION: '1'
+        run: Invoke-Pester ./Tests/Install-FoPlugins.Integration.Tests.ps1 -PassThru -Output Detailed
+
+      - name: Image corpus integration
+        shell: pwsh
+        env:
+          FO_RUN_CORPUS_INTEGRATION: '1'
+        run: Invoke-Pester ./Tests/Get-ImageTestCorpus.Integration.Tests.ps1 -PassThru -Output Detailed

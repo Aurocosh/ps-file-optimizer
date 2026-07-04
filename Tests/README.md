@@ -20,8 +20,9 @@ Invoke-Pester .\Tests\ -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
 | Variable | Purpose |
 |----------|---------|
 | `FO_TEST_PLUGIN_PATH` | Directory containing plugin executables (`magick.exe`, `oxipng.exe`, …). Used by image integration tests. When unset, tests fall back to `Get-FoDefaultPluginPath` (module `plugins\`, sibling `file-optimizer-full\Plugins64`, etc.). |
-| `FO_TEST_CORPUS_PATH` | Root directory for Tier B+ codec-corpus files (nightly). Tier A fixtures are committed under `Tests/Fixtures/Images/`. |
+| `FO_TEST_CORPUS_PATH` | Root for downloaded image test tiers B–D (default: `Tests/Fixtures/Corpus/`). |
 | `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to enable network install integration tests (~76 MB aux release download). |
+| `FO_RUN_CORPUS_INTEGRATION` | Set to `1` to enable Tier B corpus download integration test (~1 MB). |
 | `FO_PLUGIN_BUNDLE_URL` | Override default plugin bundle download URL. |
 | `FO_PLUGIN_BUNDLE_SHA256` | Expected SHA256 when using `FO_PLUGIN_BUNDLE_URL`. |
 
@@ -76,6 +77,7 @@ Invoke-Pester .\Tests\
 | `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 |
 | `Install-FoPlugins.Integration.Tests.ps1` | — | Requires `FO_RUN_INSTALL_INTEGRATION=1` |
 | `Get-ImageTestCorpus.Tests.ps1` | `Unit` | Tier A verify; tier file selection (codec-corpus optional) |
+| `Get-ImageTestCorpus.Integration.Tests.ps1` | — | Requires `FO_RUN_CORPUS_INTEGRATION=1` |
 | `Install-FoPluginBundle.Tests.ps1` | `Unit` | Aux plugin bundle metadata and SHA256 |
 | `Phase0.Foundations.Tests.ps1` | `Unit` | Plugin path discovery, decisions manifest |
 | `Compare-FoImage.Tests.ps1` | `Unit` | Image compare helper (Pixel / SSIM) |

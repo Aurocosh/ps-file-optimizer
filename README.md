@@ -22,8 +22,11 @@ Initialize-FoConfig -Scope Global
 # Rollback last 3 optimizations
 .\Scripts\Undo-Optimization.ps1 -Last 3
 
-# Install all plugin binaries into .\plugins (downloads FileOptimizer bundle once)
+# Install all plugin binaries into .\plugins (downloads aux release bundle once)
 .\Scripts\Install-Plugins.ps1 -Mode FullPortable
+
+# Download Tier B image test corpus for nightly integration (optional)
+.\Scripts\Get-ImageTestCorpus.ps1 -Tier B
 
 # Fill in only missing tools in an existing plugin folder
 .\Scripts\Install-Plugins.ps1 -Mode Missing -PluginPath .\plugins
@@ -46,6 +49,7 @@ Initialize-FoConfig -Scope Global
 | `Data/ExtensionMap.psd1` | Extension → pipeline mapping |
 | `Scripts/` | CLI entry points (`Install-Plugins.ps1` downloads plugin bundle from aux release) |
 | `plugins/` | Default target for `Install-FoPlugins` (gitignored if present) |
+| `Tests/Fixtures/Corpus/` | Downloaded image test tiers B–D (gitignored); Tier A under `Fixtures/Images/` |
 
 ## Configuration
 
@@ -81,7 +85,9 @@ If plugins are missing, integration tests are marked **Inconclusive** rather tha
 | Variable | Purpose |
 |----------|---------|
 | `FO_TEST_PLUGIN_PATH` | Plugin directory for integration tests (falls back to module `plugins\` or sibling `file-optimizer-full\Plugins64`) |
+| `FO_TEST_CORPUS_PATH` | Root for downloaded image test tiers B–D (default: `Tests/Fixtures/Corpus/`) |
 | `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to run install download integration tests |
+| `FO_RUN_CORPUS_INTEGRATION` | Set to `1` to run Tier B corpus download integration test |
 
 ### Plugin install integration (network, ~76 MB download)
 
@@ -103,4 +109,22 @@ Or run the manual smoke script:
 
 ```powershell
 .\Tests\Smoke-Install-Plugins.ps1
+```
+
+### Image test corpus (optional download)
+
+Tier **A** fixtures are committed under `Tests/Fixtures/Images/`. Tiers **B–D** download from the [ps-file-optimizer-aux](https://github.com/Aurocosh/ps-file-optimizer-aux) `image-test-v1` release:
+
+```powershell
+.\Scripts\Get-ImageTestCorpus.ps1 -Tier A   # verify committed fixtures
+.\Scripts\Get-ImageTestCorpus.ps1 -Tier B   # standard integration set (~1 MB)
+.\Scripts\Get-ImageTestCorpus.ps1 -Tier C   # GB82 photographic (~9.5 MB)
+.\Scripts\Get-ImageTestCorpus.ps1 -Tier D   # calibration subset (~4 MB)
+```
+
+Corpus integration test (network):
+
+```powershell
+$env:FO_RUN_CORPUS_INTEGRATION = '1'
+Invoke-Pester .\Tests\Get-ImageTestCorpus.Integration.Tests.ps1
 ```

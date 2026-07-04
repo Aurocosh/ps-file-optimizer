@@ -32,6 +32,7 @@ $moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . (Join-Path $moduleRoot 'Private\Import-FoDataFile.ps1')
+. (Join-Path $moduleRoot 'Private\Format-FoFileSize.ps1')
 . (Join-Path $moduleRoot 'Private\Get-FoPluginBundleMetadata.ps1')
 . (Join-Path $moduleRoot 'Private\Install-FoPluginBundle.ps1')
 . (Join-Path $moduleRoot 'Tests\ImageTestHelpers.ps1')

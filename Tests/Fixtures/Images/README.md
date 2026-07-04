@@ -30,4 +30,4 @@ Requires a local sparse clone of codec-corpus with Tier A source folders.
 | `bmp-conformance/` | Various |
 | `image-rs/` | MIT |
 
-Tier B+ corpora download to `Tests/Fixtures/Corpus/` (gitignored) via `Get-ImageTestCorpus.ps1` (Phase 7).
+Tier B+ corpora download to `Tests/Fixtures/Corpus/tier-{b,c,d}/` (gitignored) via `Scripts/Get-ImageTestCorpus.ps1` from the ps-file-optimizer-aux `image-test-v1` release.
