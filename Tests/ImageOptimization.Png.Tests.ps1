@@ -68,3 +68,27 @@ Describe 'PNG lossless optimization (pixel identity)' -Tag ImageIntegration {
         }
     }
 }
+
+Describe 'PNG lossless optimization (level 9)' -Tag ImageIntegration, Slow {
+    BeforeAll {
+        if (-not (Test-FoPluginsAvailable)) {
+            Set-TestInconclusive 'Plugin binaries not found. Set FO_TEST_PLUGIN_PATH.'
+            return
+        }
+        $script:PluginPath = Get-FoTestPluginPath
+        $script:Settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath $script:PluginPath
+        $script:Settings['Level'] = 9
+        $script:WorkDir = Join-Path $TestDrive 'png-level9'
+        New-Item -ItemType Directory -Path $script:WorkDir -Force | Out-Null
+    }
+
+    It 'Optimizes png-basn2c08 at level 9 with valid output' {
+        if (-not $script:Settings) { return }
+
+        $result = Invoke-FoImageOptimizationTest -FixtureId 'png-basn2c08' -Settings $script:Settings `
+            -CompareMode Pixel -WorkDirectory $script:WorkDir -SkipCompare
+
+        Assert-FoImageOptimizationResult -Result $result -RequireSizeReduction
+        $script:Settings.Level | Should Be 9
+    }
+}

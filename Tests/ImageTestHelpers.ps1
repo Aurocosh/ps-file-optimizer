@@ -251,13 +251,10 @@ function Invoke-FoImageOptimizationTest {
         if ($CompareMode -eq 'Pixel' -and -not $compare.Pass) {
             $ext = [System.IO.Path]::GetExtension($afterPath)
             if ($ext -match '(?i)^\.jpe?g$') {
-                $decisions = Get-FoImageTestDecisions
-                $fallbackMax = $decisions.JpegSSIMFallbackMaximum
-                if ($null -ne $fallbackMax) {
-                    $compare = Compare-FoImage -Before $beforePath -After $afterPath -Mode SSIM `
-                        -PluginPath $Settings.PluginPath -SSIMDissimilarityMaximum $fallbackMax
-                    $CompareMode = 'SSIM'
-                }
+                $jpegCompare = Test-FoJpegImageCompare -Before $beforePath -After $afterPath `
+                    -PluginPath $Settings.PluginPath -SSIMDissimilarityMaximum $SSIMDissimilarityMaximum
+                $compare = $jpegCompare.Compare
+                $CompareMode = $jpegCompare.CompareMode
             }
         }
 
@@ -310,5 +307,145 @@ function Assert-FoImageOptimizationResult {
     if ($RequireCompare) {
         $Result.Compare.Pass | Should Be $true
         $Result.Pass | Should Be $true
+    }
+}
+
+function Get-FoGifFrameCount {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path,
+        [string]$PluginPath
+    )
+
+    $magick = Get-FoCompareMagickPath -PluginPath $PluginPath
+    $workDir = Split-Path -Parent $magick
+    $result = Invoke-FoMagickCli -MagickExe $magick -WorkingDirectory $workDir -ArgumentList @(
+        'identify'
+        '-ping'
+        '-format'
+        '%p\n'
+        $Path
+    )
+
+    if ($result.ExitCode -ne 0) {
+        throw "magick identify failed for GIF '$Path': $($result.StdErr)"
+    }
+
+    $frames = @($result.StdOut -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+    $count = $frames.Count
+    if ($count -lt 1) {
+        throw "Could not determine GIF frame count for '$Path'."
+    }
+
+    return $count
+}
+
+function Compare-FoGifFrames {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Before,
+        [Parameter(Mandatory)]
+        [string]$After,
+        [string]$PluginPath,
+        [string]$WorkDirectory
+    )
+
+    $beforeCount = Get-FoGifFrameCount -Path $Before -PluginPath $PluginPath
+    $afterCount = Get-FoGifFrameCount -Path $After -PluginPath $PluginPath
+
+    if ($beforeCount -ne $afterCount) {
+        return [PSCustomObject]@{
+            Pass        = $false
+            BeforeCount = $beforeCount
+            AfterCount  = $afterCount
+            FrameResults = @()
+            Reason      = "Frame count mismatch: before=$beforeCount after=$afterCount"
+        }
+    }
+
+    $workRoot = if ($WorkDirectory) {
+        [System.IO.Path]::GetFullPath($WorkDirectory)
+    }
+    else {
+        Join-Path $env:TEMP ("FoGifCompare_{0}" -f (Get-Random))
+    }
+    if (-not (Test-Path -LiteralPath $workRoot)) {
+        New-Item -ItemType Directory -Path $workRoot -Force | Out-Null
+    }
+
+    $magick = Get-FoCompareMagickPath -PluginPath $PluginPath
+    $workDir = Split-Path -Parent $magick
+    $frameResults = @()
+    $pass = $true
+
+    for ($i = 0; $i -lt $beforeCount; $i++) {
+        $beforeFrame = Join-Path $workRoot ("before-frame-{0}.png" -f $i)
+        $afterFrame = Join-Path $workRoot ("after-frame-{0}.png" -f $i)
+
+        foreach ($pair in @(
+                @{ Source = $Before; Dest = $beforeFrame; Label = 'before' }
+                @{ Source = $After; Dest = $afterFrame; Label = 'after' }
+            )) {
+            $extract = Invoke-FoMagickCli -MagickExe $magick -WorkingDirectory $workDir -ArgumentList @(
+                ('{0}[{1}]' -f $pair.Source, $i)
+                '-alpha'
+                'on'
+                ('PNG32:{0}' -f $pair.Dest)
+            )
+            if ($extract.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $pair.Dest)) {
+                throw "Failed to extract GIF frame $i ($($pair.Label)): $($extract.StdErr)"
+            }
+        }
+
+        $compare = Compare-FoImage -Before $beforeFrame -After $afterFrame -Mode Pixel -PluginPath $PluginPath
+        $frameResults += [PSCustomObject]@{
+            FrameIndex  = $i
+            Pass        = $compare.Pass
+            MetricValue = $compare.MetricValue
+        }
+        if (-not $compare.Pass) { $pass = $false }
+    }
+
+    return [PSCustomObject]@{
+        Pass         = $pass
+        BeforeCount  = $beforeCount
+        AfterCount   = $afterCount
+        FrameResults = $frameResults
+        Reason       = if ($pass) { $null } else { 'One or more frames differ' }
+    }
+}
+
+function Test-FoJpegImageCompare {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Before,
+        [Parameter(Mandatory)]
+        [string]$After,
+        [string]$PluginPath,
+        [double]$SSIMDissimilarityMaximum = -1
+    )
+
+    $compare = Compare-FoImage -Before $Before -After $After -Mode Pixel -PluginPath $PluginPath
+    $mode = 'Pixel'
+
+    if (-not $compare.Pass) {
+        $max = if ($SSIMDissimilarityMaximum -ge 0) {
+            $SSIMDissimilarityMaximum
+        }
+        else {
+            (Get-FoImageTestDecisions).JpegSSIMFallbackMaximum
+        }
+        $compare = Compare-FoImage -Before $Before -After $After -Mode SSIM `
+            -PluginPath $PluginPath -SSIMDissimilarityMaximum $max
+        $mode = 'SSIM'
+    }
+
+    return [PSCustomObject]@{
+        Pass        = $compare.Pass
+        Compare     = $compare
+        CompareMode = $mode
     }
 }
