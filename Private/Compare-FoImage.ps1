@@ -92,15 +92,26 @@ function ConvertTo-FoCompareNormalizedImage {
 }
 
 function Get-FoCompareMetricValue {
-    param([string]$MetricOutput)
+    param(
+        [string]$MetricOutput,
+        [ValidateSet('AE', 'SSIM')]
+        [string]$Metric = 'AE'
+    )
 
     if ([string]::IsNullOrWhiteSpace($MetricOutput)) {
         return $null
     }
 
-    $token = ($MetricOutput -split '\s+')[0]
+    $culture = [Globalization.CultureInfo]::InvariantCulture
+
+    if ($Metric -eq 'SSIM' -and $MetricOutput -match '\(([0-9]+(?:[.,][0-9]+)?)\)\s*$') {
+        $token = $Matches[1] -replace ',', '.'
+        return [double]::Parse($token, $culture)
+    }
+
+    $token = ($MetricOutput -split '\s+')[0] -replace ',', '.'
     if ($token -match '^[\d.]+$') {
-        return [double]$token
+        return [double]::Parse($token, $culture)
     }
 
     return $null
@@ -154,7 +165,7 @@ function Compare-FoImage {
         $metricRaw = $compareResult.StdErr
         if (-not $metricRaw) { $metricRaw = $compareResult.StdOut }
 
-        $metricValue = Get-FoCompareMetricValue -MetricOutput $metricRaw
+        $metricValue = Get-FoCompareMetricValue -MetricOutput $metricRaw -Metric $metricName
         $pass = $false
         $metricDisplay = $metricRaw
 

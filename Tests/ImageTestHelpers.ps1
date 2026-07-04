@@ -233,16 +233,17 @@ function Invoke-FoImageOptimizationTest {
     $pass = $optimization.Status -in @('Optimized', 'Unchanged')
 
     if (-not $SkipCompare -and $pass) {
+        $compareModeEffective = if ($CompareMode -eq 'SSIMOnly') { 'SSIM' } else { $CompareMode }
         $compareParams = @{
             Before     = $beforePath
             After      = $afterPath
-            Mode       = $CompareMode
+            Mode       = $compareModeEffective
             PluginPath = $Settings.PluginPath
         }
         if ($PSBoundParameters.ContainsKey('DiffOutputPath') -and $DiffOutputPath) {
             $compareParams['DiffOutputPath'] = $DiffOutputPath
         }
-        if ($CompareMode -match 'SSIM' -and $SSIMDissimilarityMaximum -ge 0) {
+        if ($compareModeEffective -eq 'SSIM' -and $SSIMDissimilarityMaximum -ge 0) {
             $compareParams['SSIMDissimilarityMaximum'] = $SSIMDissimilarityMaximum
         }
 
@@ -278,10 +279,91 @@ function Invoke-FoImageOptimizationTest {
         AfterPath    = $afterPath
         Optimization = $optimization
         Compare      = $compare
-        CompareMode  = $CompareMode
+        CompareMode  = if ($CompareMode -eq 'SSIMOnly') { 'SSIMOnly' } else { $CompareMode }
         Decode       = $decode
         Pass         = $pass
     }
+}
+
+function Get-FoImageTestLossyThreshold {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ProfileName,
+        [ValidateSet('Default', 'JPEG', 'PNG', 'GIF', 'WebP', 'APNG', 'AVIF', 'BMP', 'ICO', 'TIFF')]
+        [string]$Format = 'Default'
+    )
+
+    $profiles = Import-FoDataFile -Path (Join-Path $PSScriptRoot 'ImageTestProfiles.psd1')
+    if (-not $profiles.ContainsKey($ProfileName)) {
+        throw "Unknown image test profile '$ProfileName'."
+    }
+
+    $profile = $profiles[$ProfileName]
+    if (-not $profile.SSIMDissimilarityMaximum) {
+        throw "Profile '$ProfileName' has no SSIMDissimilarityMaximum thresholds."
+    }
+
+    $thresholds = $profile.SSIMDissimilarityMaximum
+    if ($thresholds.ContainsKey($Format)) {
+        return [double]$thresholds[$Format]
+    }
+
+    return [double]$thresholds.Default
+}
+
+function Invoke-FoLossyImageOptimizationTest {
+    [CmdletBinding()]
+    param(
+        [string]$FixtureId,
+        [string]$FixturePath,
+        [string]$ProfileName = 'LossyHighQuality',
+        [ValidateSet('Default', 'JPEG', 'PNG', 'GIF', 'WebP', 'APNG', 'AVIF', 'BMP', 'ICO', 'TIFF')]
+        [string]$Format = 'Default',
+        [string]$WorkDirectory,
+        [string]$DiffOutputPath,
+        [hashtable]$Settings
+    )
+
+    if (-not $Settings) {
+        $pluginPath = if (Get-Command Get-FoTestPluginPath -ErrorAction SilentlyContinue) {
+            Get-FoTestPluginPath
+        }
+        $Settings = Get-FoImageTestProfile -Name $ProfileName -PluginPath $pluginPath
+    }
+
+    $threshold = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format $Format
+    $params = @{
+        Settings                   = $Settings
+        CompareMode                = 'SSIMOnly'
+        SSIMDissimilarityMaximum   = $threshold
+        WorkDirectory              = $WorkDirectory
+    }
+    if ($FixtureId) { $params['FixtureId'] = $FixtureId }
+    if ($FixturePath) { $params['FixturePath'] = $FixturePath }
+    if ($DiffOutputPath) { $params['DiffOutputPath'] = $DiffOutputPath }
+
+    return Invoke-FoImageOptimizationTest @params
+}
+
+function Assert-FoLossyOptimizationResult {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $Result,
+        [double]$SSIMDissimilarityMaximum
+    )
+
+    @('Optimized', 'Unchanged') -contains $Result.Optimization.Status | Should Be $true
+
+    if ($Result.Optimization.Status -eq 'Optimized') {
+        ($Result.Optimization.FinalSize -le $Result.Optimization.OriginalSize) | Should Be $true
+    }
+
+    $Result.CompareMode | Should Be 'SSIMOnly'
+    $Result.Compare.Pass | Should Be $true
+    ($Result.Compare.MetricValue -le $SSIMDissimilarityMaximum) | Should Be $true
+    $Result.Pass | Should Be $true
 }
 
 function Assert-FoImageOptimizationResult {

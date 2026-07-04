@@ -65,6 +65,7 @@ Invoke-Pester .\Tests\
 | `ImageOptimization.Gif.Tests.ps1` | `ImageIntegration` | Phase 4 — GIF + per-frame compare |
 | `ImageOptimization.WebP.Tests.ps1` | `ImageIntegration` | Phase 4 — WebP lossless |
 | `ImageOptimization.Bmp.Tests.ps1` | `ImageIntegration` | Phase 4 — BMP lossless |
+| `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 — lossy SSIM gates |
 | `ImageOptimization.Png.Tests.ps1` (level 9) | `ImageIntegration`, `Slow` | Phase 4 — optional deep PNG pass |
 | `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 |
 | `Install-FoPlugins.Integration.Tests.ps1` | — | Requires `FO_RUN_INSTALL_INTEGRATION=1` |
