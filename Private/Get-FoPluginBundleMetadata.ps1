@@ -244,6 +244,7 @@ function Resolve-FoBundledPluginDirectory {
     $candidates = @(
         $ExtractRoot
         (Join-Path $ExtractRoot 'plugins')
+        (Join-Path $ExtractRoot 'Plugins64')
     )
 
     foreach ($dir in $candidates) {
