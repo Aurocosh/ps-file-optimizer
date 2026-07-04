@@ -21,12 +21,19 @@ Initialize-FoConfig -Scope Global
 
 # Rollback last 3 optimizations
 .\Scripts\Undo-Optimization.ps1 -Last 3
+
+# Install all plugin binaries into .\plugins (downloads FileOptimizer bundle once)
+.\Scripts\Install-Plugins.ps1 -Mode FullPortable
+
+# Fill in only missing tools in an existing plugin folder
+.\Scripts\Install-Plugins.ps1 -Mode Missing -PluginPath .\plugins
 ```
 
 ## Requirements
 
 - Windows PowerShell 5.1+ or PowerShell 7+
-- Plugin binaries from FileOptimizer portable (`FileOptimizerFull\Plugins64`) or tools on PATH
+- Plugin binaries from FileOptimizer portable (`FileOptimizerFull\Plugins64`), module `plugins\`, or tools on PATH
+- `Install-FoPlugins` uses 7-Zip (`7z.exe`) or downloads `7zr.exe` temporarily to extract the bundle **without running** the FileOptimizer self-extractor
 
 ## Layout
 
@@ -37,7 +44,8 @@ Initialize-FoConfig -Scope Global
 | `Private/` | Engine, handlers, history |
 | `Pipelines/` | Per-format plugin chains (39 groups) |
 | `Data/ExtensionMap.psd1` | Extension → pipeline mapping |
-| `Scripts/` | CLI entry points |
+| `Scripts/` | CLI entry points (`Install-Plugins.ps1` downloads FO bundle for portable plugins) |
+| `plugins/` | Default target for `Install-FoPlugins` (gitignored if present) |
 
 ## Configuration
 

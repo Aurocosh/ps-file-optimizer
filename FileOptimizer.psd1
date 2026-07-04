@@ -14,6 +14,7 @@
         'Initialize-FoConfig'
         'Undo-FoOptimization'
         'Get-FoHistory'
+        'Install-FoPlugins'
     )
     PrivateData       = @{
         PSData = @{

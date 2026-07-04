@@ -181,3 +181,40 @@ Describe 'Extension map' {
         ($map.Keys.Count -ge 370) | Should Be $true
     }
 }
+
+Describe 'Get-FoRequiredPluginExecutables' {
+    It 'Install plan lists all pipeline executables' {
+        $dir = Join-Path $env:TEMP "FoInstallPlan_$(Get-Random)"
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        try {
+            $result = Install-FoPlugins -Mode FullPortable -DestinationPath $dir -WhatIf
+            $result.ExecutablesNeeded.Count | Should BeGreaterThan 50
+            ($result.ExecutablesNeeded -contains 'oxipng.exe') | Should Be $true
+            ($result.ExecutablesNeeded -contains 'defluff.exe') | Should Be $true
+            ($result.ExecutablesNeeded -contains 'gswin64c.exe') | Should Be $true
+        }
+        finally {
+            Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+Describe 'Install-FoPlugins planning' {
+    It 'Missing mode skips download when all executables are present' {
+        $dir = Join-Path $env:TEMP "FoInstallTest_$(Get-Random)"
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        try {
+            $plan = Install-FoPlugins -Mode FullPortable -DestinationPath $dir -WhatIf
+            foreach ($exe in $plan.ExecutablesNeeded) {
+                New-Item -ItemType File -Path (Join-Path $dir $exe) -Force | Out-Null
+            }
+            $result = Install-FoPlugins -Mode Missing -DestinationPath $dir
+            $result.Downloaded | Should Be $false
+            $result.Extracted | Should Be $false
+            ($result.ExecutablesNeeded.Count) | Should Be 0
+        }
+        finally {
+            Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
