@@ -1,11 +1,9 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
-. "$PSScriptRoot\TestHelpers.ps1"
-
-Describe 'Compare-FoImage' -Tag Unit {
+Describe 'Compare-FoImage' -Tag Unit -Skip:(-not (Test-FoPluginsAvailable)) {
     BeforeAll {
-        Assert-FoPluginsAvailable
         $script:PluginPath = Get-FoTestPluginPath
         $script:WorkDir = Join-Path $env:TEMP "FoCompareTests_$(Get-Random)"
         New-Item -ItemType Directory -Path $script:WorkDir -Force | Out-Null

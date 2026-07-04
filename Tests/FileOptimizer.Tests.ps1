@@ -1,15 +1,14 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
-. "$PSScriptRoot\TestHelpers.ps1"
-
-Describe 'Format-FoFileSize' {
+Describe 'Format-FoFileSize' -Tag Unit {
     It 'Formats bytes' {
         Format-FoFileSize -Bytes 1024 | Should -Be '1.0 KB'
     }
 }
 
-Describe 'Merge-FoSettings' {
+Describe 'Merge-FoSettings' -Tag Unit {
     It 'Explicit parameter overrides defaults' {
         $s = Merge-FoSettings -BoundParameters @{ Level = 9 }
         $s.Level | Should -Be 9
@@ -17,20 +16,16 @@ Describe 'Merge-FoSettings' {
     }
 }
 
-Describe 'Config merge' {
+Describe 'Config merge' -Tag Unit {
     It 'Bound Level overrides defaults via Merge-FoSettings' {
         $s = Merge-FoSettings -BoundParameters @{ Level = 7 }
         $s.Level | Should -Be 7
     }
 }
 
-Describe 'Resolve-FoPluginExecutable' {
-    It 'Finds portable plugin when present' {
-        $pluginPath = 'D:\Projects\FileOptimizerAnalisys\FileOptimizerFull\Plugins64'
-        if (-not (Test-Path $pluginPath)) {
-            Set-TestInconclusive 'Plugins64 not present'
-            return
-        }
+Describe 'Resolve-FoPluginExecutable' -Tag Unit {
+    It 'Finds portable plugin when present' -Skip:(-not (Test-FoPluginsAvailable -RequiredExecutables @('oxipng.exe'))) {
+        $pluginPath = Get-FoTestPluginPath
         $r = Resolve-FoPluginExecutable -Name 'oxipng.exe' -SearchMode PortableOnly -PluginPath $pluginPath
         $r.Found | Should -Be $true
     }
@@ -41,7 +36,7 @@ Describe 'Resolve-FoPluginExecutable' {
     }
 }
 
-Describe 'Get-FoPipeline PNG' {
+Describe 'Get-FoPipeline PNG' -Tag Unit {
     It 'Returns multiple steps' {
         $png = Join-Path $env:TEMP "fo_pipe_$(Get-Random).png"
         New-FoTestPng -Path $png
@@ -56,7 +51,7 @@ Describe 'Get-FoPipeline PNG' {
     }
 }
 
-Describe 'Pipeline WhatIf snapshot' {
+Describe 'Pipeline WhatIf snapshot' -Tag Unit {
     It 'PNG pipeline reports many steps' {
         $png = Join-Path $env:TEMP "fo_whatif_$(Get-Random).png"
         New-FoTestPng -Path $png
@@ -71,7 +66,7 @@ Describe 'Pipeline WhatIf snapshot' {
     }
 }
 
-Describe 'Invoke-FoOutputMode TempMove' {
+Describe 'Invoke-FoOutputMode TempMove' -Tag Unit {
     It 'Moves original to backup' {
         $dir = Join-Path $env:TEMP "FoTest_$(Get-Random)"
         $srcDir = Join-Path $dir 'src'
@@ -99,7 +94,7 @@ Describe 'Invoke-FoOutputMode TempMove' {
     }
 }
 
-Describe 'History and rollback' {
+Describe 'History and rollback' -Tag Unit {
     It 'Records entry and rolls back TempMove' {
         $histDir = Join-Path $env:TEMP "FoHist_$(Get-Random)"
         $histFile = Join-Path $histDir 'history.psd1'
@@ -149,7 +144,7 @@ Describe 'History and rollback' {
     }
 }
 
-Describe 'Missing tools policy' {
+Describe 'Missing tools policy' -Tag Unit {
     It 'Throws when tools missing' {
         $png = Join-Path $env:TEMP "fo_miss_$(Get-Random).png"
         New-FoTestPng -Path $png
@@ -174,15 +169,15 @@ Describe 'Missing tools policy' {
     }
 }
 
-Describe 'Extension map' {
+Describe 'Extension map' -Tag Unit {
     It 'Loads extension map with many entries' {
-        $mapPath = Join-Path $moduleRoot 'Data\ExtensionMap.psd1'
+        $mapPath = Join-Path (Get-FoTestModuleRoot) 'Data\ExtensionMap.psd1'
         $map = Import-FoDataFile -Path $mapPath
         ($map.Keys.Count -ge 370) | Should -Be $true
     }
 }
 
-Describe 'Get-FoRequiredPluginExecutables' {
+Describe 'Get-FoRequiredPluginExecutables' -Tag Unit {
     It 'Install plan lists all pipeline executables' {
         $dir = Join-Path $env:TEMP "FoInstallPlan_$(Get-Random)"
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
@@ -199,7 +194,7 @@ Describe 'Get-FoRequiredPluginExecutables' {
     }
 }
 
-Describe 'Install-FoPlugins planning' {
+Describe 'Install-FoPlugins planning' -Tag Unit {
     It 'Missing mode skips download when all executables are present' {
         $dir = Join-Path $env:TEMP "FoInstallTest_$(Get-Random)"
         New-Item -ItemType Directory -Path $dir -Force | Out-Null

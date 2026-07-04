@@ -1,14 +1,9 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
-. "$PSScriptRoot\TestHelpers.ps1"
-
-Describe 'AVIF optimization' -Tag ImageIntegration {
+Describe 'AVIF optimization' -Tag ImageIntegration -Skip:(-not (Test-FoPluginsAvailable)) {
     BeforeAll {
-        if (-not (Test-FoPluginsAvailable)) {
-            Set-TestInconclusive 'Plugin binaries not found. Set FO_TEST_PLUGIN_PATH.'
-            return
-        }
         $script:PluginPath = Get-FoTestPluginPath
         $script:Settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath $script:PluginPath
         $script:Threshold = (Get-FoImageTestDecisions).AvifDefaultSSIMDissimilarityMaximum
@@ -17,8 +12,6 @@ Describe 'AVIF optimization' -Tag ImageIntegration {
     }
 
     It 'Optimizes avif-white-1x1 within default SSIM threshold' {
-        if (-not $script:Settings) { return }
-
         $result = Invoke-FoImageOptimizationTest -FixtureId 'avif-white-1x1' -Settings $script:Settings `
             -CompareMode SSIMOnly -SSIMDissimilarityMaximum $script:Threshold -WorkDirectory $script:WorkDir
 

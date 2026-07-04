@@ -60,7 +60,7 @@ See `Templates\Config.defaults.psd1` for available keys.
 ## Tests
 
 ```powershell
-Invoke-Pester .\Tests\
+./Scripts/Invoke-FoTests.ps1
 ```
 
 See [`Tests/README.md`](Tests/README.md) for tags, environment variables, and image verification conventions.
@@ -68,7 +68,7 @@ See [`Tests/README.md`](Tests/README.md) for tags, environment variables, and im
 ### Unit tests (no plugins)
 
 ```powershell
-Invoke-Pester .\Tests\ -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
+./Scripts/Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
 ```
 
 ### Image integration tests
@@ -77,10 +77,10 @@ Require plugin binaries (`magick.exe` and format-specific tools). Point tests at
 
 ```powershell
 $env:FO_TEST_PLUGIN_PATH = 'D:\Tools\FileOptimizerFull\Plugins64'
-Invoke-Pester .\Tests\ -Tag ImageIntegration
+./Scripts/Invoke-FoTests.ps1 -Tag ImageIntegration
 ```
 
-If plugins are missing, integration tests are marked **Inconclusive** rather than failed.
+If plugins are missing, integration describes are **Skipped** rather than failed.
 
 | Variable | Purpose |
 |----------|---------|
@@ -95,7 +95,7 @@ Validates `Install-FoPlugins` end-to-end: downloads the aux release `.7z`, verif
 
 ```powershell
 $env:FO_RUN_INSTALL_INTEGRATION = '1'
-Invoke-Pester .\Tests\Install-FoPlugins.Integration.Tests.ps1
+./Scripts/Invoke-FoTests.ps1 -Tag Integration
 ```
 
 Override bundle URL for mirrors or pre-release testing:
@@ -126,5 +126,5 @@ Corpus integration test (network):
 
 ```powershell
 $env:FO_RUN_CORPUS_INTEGRATION = '1'
-Invoke-Pester .\Tests\Get-ImageTestCorpus.Integration.Tests.ps1
+./Scripts/Invoke-FoTests.ps1 -Tag Integration
 ```

@@ -30,12 +30,7 @@ $ErrorActionPreference = 'Stop'
 
 $moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
-
-. (Join-Path $moduleRoot 'Private\Import-FoDataFile.ps1')
-. (Join-Path $moduleRoot 'Private\Format-FoFileSize.ps1')
-. (Join-Path $moduleRoot 'Private\Get-FoPluginBundleMetadata.ps1')
-. (Join-Path $moduleRoot 'Private\Install-FoPluginBundle.ps1')
-. (Join-Path $moduleRoot 'Tests\ImageTestHelpers.ps1')
+Import-Module (Join-Path $moduleRoot 'Tests\FoTestSupport\FoTestSupport.psd1') -Force
 
 $manifest = Import-FoDataFile -Path (Join-Path $moduleRoot 'Tests\ImageTestManifest.psd1')
 

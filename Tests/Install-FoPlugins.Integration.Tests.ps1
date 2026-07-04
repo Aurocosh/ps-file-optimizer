@@ -1,12 +1,9 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
-. "$PSScriptRoot\TestHelpers.ps1"
-
-$script:FoInstallIntegrationEnabled = [bool]$env:FO_RUN_INSTALL_INTEGRATION
-
-Describe 'Install-FoPlugins integration' {
-    It 'Downloads plugin bundle, installs plugins, and cleans temporary files' -Skip:(-not $script:FoInstallIntegrationEnabled) {
+Describe 'Install-FoPlugins integration' -Tag Integration -Skip:(-not $env:FO_RUN_INSTALL_INTEGRATION) {
+    It 'Downloads plugin bundle, installs plugins, and cleans temporary files' {
         $dest = Join-Path $env:TEMP "FoInstallIntegration_dest_$(Get-Random)"
         $tempRoot = Join-Path $env:TEMP "FoInstallIntegration_temp_$(Get-Random)"
         New-Item -ItemType Directory -Path $dest -Force | Out-Null

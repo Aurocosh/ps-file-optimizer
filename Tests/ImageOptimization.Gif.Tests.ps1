@@ -1,14 +1,9 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
-. "$PSScriptRoot\TestHelpers.ps1"
-
-Describe 'GIF lossless optimization' -Tag ImageIntegration {
+Describe 'GIF lossless optimization' -Tag ImageIntegration -Skip:(-not (Test-FoPluginsAvailable)) {
     BeforeAll {
-        if (-not (Test-FoPluginsAvailable)) {
-            Set-TestInconclusive 'Plugin binaries not found. Set FO_TEST_PLUGIN_PATH.'
-            return
-        }
         $script:PluginPath = Get-FoTestPluginPath
         $script:Settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath $script:PluginPath
         $script:WorkDir = Join-Path $TestDrive 'gif'
@@ -16,21 +11,17 @@ Describe 'GIF lossless optimization' -Tag ImageIntegration {
     }
 
     It 'Optimizes gif-palette256 with pixel compare' {
-        if (-not $script:Settings) { return }
-
         $result = Invoke-FoImageOptimizationTest -FixtureId 'gif-palette256' -Settings $script:Settings `
             -CompareMode Pixel -WorkDirectory $script:WorkDir
 
-        Assert-FoImageOptimizationResult -Result $result -RequireCompare
+        (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
     }
 
     It 'Optimizes gif-anim3 and preserves all frames' {
-        if (-not $script:Settings) { return }
-
         $result = Invoke-FoImageOptimizationTest -FixtureId 'gif-anim3' -Settings $script:Settings `
             -CompareMode Pixel -WorkDirectory (Join-Path $script:WorkDir 'anim3')
 
-        Assert-FoImageOptimizationResult -Result $result
+        (Test-FoImageOptimizationResult -Result $result) | Should -Be $true
 
         $frameCompare = Compare-FoGifFrames -Before $result.BeforePath -After $result.AfterPath `
             -PluginPath $script:PluginPath -WorkDirectory (Join-Path $script:WorkDir 'anim3-frames')

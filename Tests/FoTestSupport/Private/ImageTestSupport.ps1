@@ -1,5 +1,3 @@
-﻿$global:FoImageTestFixtureRoot = Join-Path $global:FoTestSupportRoot 'Fixtures\Images'
-
 function Get-FoImageTestCorpusRoot {
     [CmdletBinding()]
     param(
@@ -12,14 +10,14 @@ function Get-FoImageTestCorpusRoot {
     if ($env:FO_TEST_CORPUS_PATH) {
         return [System.IO.Path]::GetFullPath($env:FO_TEST_CORPUS_PATH)
     }
-    return Join-Path $global:FoTestSupportRoot 'Fixtures\Corpus'
+    return Join-Path (Get-FoTestSupportRoot) 'Fixtures\Corpus'
 }
 
 function Get-FoImageTestManifest {
     [CmdletBinding()]
     param()
 
-    Import-FoDataFile -Path (Join-Path $global:FoTestSupportRoot 'ImageTestManifest.psd1')
+    Import-FoDataFile -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestManifest.psd1')
 }
 
 function Get-FoImageTestFixtureEntry {
@@ -65,11 +63,12 @@ function Get-FoImageTestFixturePath {
     )
 
     if ($PSCmdlet.ParameterSetName -eq 'ByPath') {
+        $fixtureRoot = Get-FoImageTestFixtureRoot
         $full = if ([System.IO.Path]::IsPathRooted($Path)) {
             [System.IO.Path]::GetFullPath($Path)
         }
         else {
-            [System.IO.Path]::GetFullPath((Join-Path $global:FoImageTestFixtureRoot $Path))
+            [System.IO.Path]::GetFullPath((Join-Path $fixtureRoot $Path))
         }
         if (-not (Test-Path -LiteralPath $full)) {
             throw "Image test fixture not found: $full"
@@ -97,9 +96,10 @@ function Test-FoImageTestFixturesPresent {
 
     if ($Tier -eq 'A') {
         $manifest = Get-FoImageTestManifest
+        $fixtureRoot = Get-FoImageTestFixtureRoot
         $missing = @()
         foreach ($entry in @($manifest.Tiers.A.Files)) {
-            $path = Join-Path $global:FoImageTestFixtureRoot ($entry.Source -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+            $path = Join-Path $fixtureRoot ($entry.Source -replace '/', [System.IO.Path]::DirectorySeparatorChar)
             if (-not (Test-Path -LiteralPath $path)) {
                 $missing += $entry.Source
             }
@@ -149,7 +149,7 @@ function Get-FoImageTestProfile {
         [string]$PluginPath
     )
 
-    $profiles = Import-FoDataFile -Path (Join-Path $global:FoTestSupportRoot 'ImageTestProfiles.psd1')
+    $profiles = Import-FoDataFile -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestProfiles.psd1')
     if (-not $profiles.ContainsKey($Name)) {
         throw "Unknown image test profile '$Name'."
     }
@@ -162,16 +162,11 @@ function Get-FoImageTestProfile {
     if ($PluginPath) {
         $bound['PluginPath'] = $PluginPath
     }
-    elseif (Get-Command Get-FoTestPluginPath -ErrorAction SilentlyContinue) {
+    else {
         $bound['PluginPath'] = Get-FoTestPluginPath
     }
 
-    if (-not $bound['PluginPath']) {
-        $bound['PluginSearchMode'] = 'PortableOnly'
-    }
-    else {
-        $bound['PluginSearchMode'] = 'PortableOnly'
-    }
+    $bound['PluginSearchMode'] = 'PortableOnly'
 
     Merge-FoSettings -BoundParameters $bound
 }
@@ -335,7 +330,7 @@ function Get-FoImageTestLossyThreshold {
         [string]$Format = 'Default'
     )
 
-    $profiles = Import-FoDataFile -Path (Join-Path $global:FoTestSupportRoot 'ImageTestProfiles.psd1')
+    $profiles = Import-FoDataFile -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestProfiles.psd1')
     if (-not $profiles.ContainsKey($ProfileName)) {
         throw "Unknown image test profile '$ProfileName'."
     }
@@ -367,70 +362,21 @@ function Invoke-FoLossyImageOptimizationTest {
     )
 
     if (-not $Settings) {
-        $pluginPath = if (Get-Command Get-FoTestPluginPath -ErrorAction SilentlyContinue) {
-            Get-FoTestPluginPath
-        }
-        $Settings = Get-FoImageTestProfile -Name $ProfileName -PluginPath $pluginPath
+        $Settings = Get-FoImageTestProfile -Name $ProfileName -PluginPath (Get-FoTestPluginPath)
     }
 
     $threshold = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format $Format
     $params = @{
-        Settings                   = $Settings
-        CompareMode                = 'SSIMOnly'
-        SSIMDissimilarityMaximum   = $threshold
-        WorkDirectory              = $WorkDirectory
+        Settings                 = $Settings
+        CompareMode              = 'SSIMOnly'
+        SSIMDissimilarityMaximum = $threshold
+        WorkDirectory            = $WorkDirectory
     }
     if ($FixtureId) { $params['FixtureId'] = $FixtureId }
     if ($FixturePath) { $params['FixturePath'] = $FixturePath }
     if ($DiffOutputPath) { $params['DiffOutputPath'] = $DiffOutputPath }
 
     return Invoke-FoImageOptimizationTest @params
-}
-
-function Assert-FoLossyOptimizationResult {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        $Result,
-        [double]$SSIMDissimilarityMaximum
-    )
-
-    @('Optimized', 'Unchanged') -contains $Result.Optimization.Status | Should -Be $true
-
-    if ($Result.Optimization.Status -eq 'Optimized') {
-        ($Result.Optimization.FinalSize -le $Result.Optimization.OriginalSize) | Should -Be $true
-    }
-
-    $Result.CompareMode | Should -Be 'SSIMOnly'
-    $Result.Compare.Pass | Should -Be $true
-    ($Result.Compare.MetricValue -le $SSIMDissimilarityMaximum) | Should -Be $true
-    $Result.Pass | Should -Be $true
-}
-
-function Assert-FoImageOptimizationResult {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)]
-        $Result,
-        [switch]$RequireCompare,
-        [switch]$RequireSizeReduction
-    )
-
-    @('Optimized', 'Unchanged') -contains $Result.Optimization.Status | Should -Be $true
-
-    if ($RequireSizeReduction -and $Result.Optimization.Status -eq 'Optimized') {
-        ($Result.Optimization.FinalSize -lt $Result.Optimization.OriginalSize) | Should -Be $true
-    }
-
-    if ($Result.Decode) {
-        ($Result.Decode.Width -gt 0) | Should -Be $true
-        ($Result.Decode.Height -gt 0) | Should -Be $true
-    }
-
-    if ($RequireCompare) {
-        $Result.Compare.Pass | Should -Be $true
-        $Result.Pass | Should -Be $true
-    }
 }
 
 function Get-FoGifFrameCount {
@@ -480,11 +426,11 @@ function Compare-FoGifFrames {
 
     if ($beforeCount -ne $afterCount) {
         return [PSCustomObject]@{
-            Pass        = $false
-            BeforeCount = $beforeCount
-            AfterCount  = $afterCount
+            Pass         = $false
+            BeforeCount  = $beforeCount
+            AfterCount   = $afterCount
             FrameResults = @()
-            Reason      = "Frame count mismatch: before=$beforeCount after=$afterCount"
+            Reason       = "Frame count mismatch: before=$beforeCount after=$afterCount"
         }
     }
 

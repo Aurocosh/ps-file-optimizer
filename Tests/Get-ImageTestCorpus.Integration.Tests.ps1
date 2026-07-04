@@ -1,13 +1,11 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
-. (Join-Path $PSScriptRoot 'TestHelpers.ps1')
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
-$script:FoCorpusIntegrationEnabled = [bool]$env:FO_RUN_CORPUS_INTEGRATION
-
-Describe 'Get-ImageTestCorpus integration' {
-    It 'Downloads Tier B from aux release and extracts expected file count' -Skip:(-not $script:FoCorpusIntegrationEnabled) {
+Describe 'Get-ImageTestCorpus integration' -Tag Integration -Skip:(-not $env:FO_RUN_CORPUS_INTEGRATION) {
+    It 'Downloads Tier B from aux release and extracts expected file count' {
         $corpusRoot = Join-Path $env:TEMP "FoCorpusIntegration_$(Get-Random)"
-        $scriptPath = Join-Path $moduleRoot 'Scripts\Get-ImageTestCorpus.ps1'
+        $scriptPath = Join-Path (Get-FoTestModuleRoot) 'Scripts\Get-ImageTestCorpus.ps1'
 
         try {
             $result = & $scriptPath -Tier B -Destination $corpusRoot -Force

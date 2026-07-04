@@ -8,20 +8,14 @@ on:
 
 jobs:
   unit:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Pester
-        shell: pwsh
-        run: Install-Module Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
 
       - name: Unit tests
         shell: pwsh
         run: |
-          . ./Tests/TestBootstrap.ps1
-          $result = Invoke-Pester ./Tests/ -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow -PassThru -Output Detailed
-          if ($result.FailedCount -gt 0 -or $result.FailedBlocksCount -gt 0) { exit 1 }
+          ./Scripts/Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
 
   integration-downloads:
     runs-on: windows-latest
@@ -29,24 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Pester
-        shell: pwsh
-        run: Install-Module Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
-
-      - name: Plugin install integration
+      - name: Integration tests
         shell: pwsh
         env:
           FO_RUN_INSTALL_INTEGRATION: '1'
-        run: |
-          . ./Tests/TestBootstrap.ps1
-          $result = Invoke-Pester ./Tests/Install-FoPlugins.Integration.Tests.ps1 -PassThru -Output Detailed
-          if ($result.FailedCount -gt 0) { exit 1 }
-
-      - name: Image corpus integration
-        shell: pwsh
-        env:
           FO_RUN_CORPUS_INTEGRATION: '1'
         run: |
-          . ./Tests/TestBootstrap.ps1
-          $result = Invoke-Pester ./Tests/Get-ImageTestCorpus.Integration.Tests.ps1 -PassThru -Output Detailed
-          if ($result.FailedCount -gt 0) { exit 1 }
+          ./Scripts/Invoke-FoTests.ps1 -Tag Integration

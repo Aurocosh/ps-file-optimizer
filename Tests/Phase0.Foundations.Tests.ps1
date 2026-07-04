@@ -1,7 +1,6 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
-
-. "$PSScriptRoot\TestHelpers.ps1"
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
 Describe 'Image test decisions manifest' -Tag Unit {
     It 'Loads ImageTestDecisions.psd1 with expected keys' {
@@ -69,16 +68,7 @@ Describe 'Test-FoPluginsAvailable' -Tag Unit {
         }
     }
 
-    It 'Finds magick.exe when plugins are present' {
-        $pluginPath = Get-FoTestPluginPath
-        if (-not $pluginPath) {
-            Set-TestInconclusive 'No plugin directory discovered'
-            return
-        }
-        if (-not (Test-FoPluginsAvailable)) {
-            Set-TestInconclusive "magick.exe not found under $pluginPath"
-            return
-        }
+    It 'Finds magick.exe when plugins are present' -Skip:(-not (Test-FoPluginsAvailable)) {
         Test-FoPluginsAvailable | Should -Be $true
     }
 }

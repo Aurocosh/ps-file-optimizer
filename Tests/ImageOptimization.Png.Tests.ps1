@@ -1,47 +1,32 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
-. "$PSScriptRoot\TestHelpers.ps1"
-
-Describe 'PNG lossless optimization (Tier A fixtures)' -Tag ImageIntegration {
+Describe 'PNG lossless optimization (Tier A fixtures)' -Tag ImageIntegration -Skip:(-not (Test-FoPluginsAvailable)) {
     BeforeAll {
-        if (-not (Test-FoPluginsAvailable)) {
-            Set-TestInconclusive 'Plugin binaries not found. Set FO_TEST_PLUGIN_PATH.'
-            return
-        }
         $script:PluginPath = Get-FoTestPluginPath
         $script:Settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath $script:PluginPath
         $script:WorkDir = Join-Path $TestDrive 'png-corpus'
         New-Item -ItemType Directory -Path $script:WorkDir -Force | Out-Null
     }
 
-    # PNGsuite micro-images (32x32) often fail pixel AE after the full FO chain
-    # because plugins re-encode colorspace (rgb -> srgb). Decode + size checks still apply.
     It 'Optimizes png-basn2c08 (RGB) with valid output' {
-        if (-not $script:Settings) { return }
-
         $result = Invoke-FoImageOptimizationTest -FixtureId 'png-basn2c08' -Settings $script:Settings `
             -CompareMode Pixel -WorkDirectory $script:WorkDir -SkipCompare
 
-        Assert-FoImageOptimizationResult -Result $result -RequireSizeReduction
+        (Test-FoImageOptimizationResult -Result $result -RequireSizeReduction) | Should -Be $true
     }
 
     It 'Optimizes png-basn6a08 (RGBA) with valid output' {
-        if (-not $script:Settings) { return }
-
         $result = Invoke-FoImageOptimizationTest -FixtureId 'png-basn6a08' -Settings $script:Settings `
             -CompareMode Pixel -WorkDirectory $script:WorkDir -SkipCompare
 
-        Assert-FoImageOptimizationResult -Result $result -RequireSizeReduction
+        (Test-FoImageOptimizationResult -Result $result -RequireSizeReduction) | Should -Be $true
     }
 }
 
-Describe 'PNG lossless optimization (pixel identity)' -Tag ImageIntegration {
+Describe 'PNG lossless optimization (pixel identity)' -Tag ImageIntegration -Skip:(-not (Test-FoPluginsAvailable)) {
     BeforeAll {
-        if (-not (Test-FoPluginsAvailable)) {
-            Set-TestInconclusive 'Plugin binaries not found. Set FO_TEST_PLUGIN_PATH.'
-            return
-        }
         $script:PluginPath = Get-FoTestPluginPath
         $script:Settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath $script:PluginPath
         $script:WorkDir = Join-Path $TestDrive 'png-generated'
@@ -49,8 +34,6 @@ Describe 'PNG lossless optimization (pixel identity)' -Tag ImageIntegration {
     }
 
     It 'Preserves pixels on a magick-generated PNG after optimization' {
-        if (-not $script:Settings) { return }
-
         $fixture = Join-Path $script:WorkDir 'generated-64x64.png'
         New-FoTestPng -Path $fixture -Width 64 -Height 64
 
@@ -61,7 +44,7 @@ Describe 'PNG lossless optimization (pixel identity)' -Tag ImageIntegration {
         $result = Invoke-FoImageOptimizationTest -FixturePath $fixture -Settings $script:Settings `
             -CompareMode Pixel -WorkDirectory $script:WorkDir -DiffOutputPath $diffPath
 
-        Assert-FoImageOptimizationResult -Result $result -RequireCompare
+        (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
 
         if (-not $result.Compare.Pass -and (Test-Path -LiteralPath $diffPath)) {
             Write-Warning "Compare diff written to $diffPath"
@@ -69,12 +52,8 @@ Describe 'PNG lossless optimization (pixel identity)' -Tag ImageIntegration {
     }
 }
 
-Describe 'PNG lossless optimization (level 9)' -Tag ImageIntegration, Slow {
+Describe 'PNG lossless optimization (level 9)' -Tag ImageIntegration, Slow -Skip:(-not (Test-FoPluginsAvailable)) {
     BeforeAll {
-        if (-not (Test-FoPluginsAvailable)) {
-            Set-TestInconclusive 'Plugin binaries not found. Set FO_TEST_PLUGIN_PATH.'
-            return
-        }
         $script:PluginPath = Get-FoTestPluginPath
         $script:Settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath $script:PluginPath
         $script:Settings['Level'] = 9
@@ -83,12 +62,10 @@ Describe 'PNG lossless optimization (level 9)' -Tag ImageIntegration, Slow {
     }
 
     It 'Optimizes png-basn2c08 at level 9 with valid output' {
-        if (-not $script:Settings) { return }
-
         $result = Invoke-FoImageOptimizationTest -FixtureId 'png-basn2c08' -Settings $script:Settings `
             -CompareMode Pixel -WorkDirectory $script:WorkDir -SkipCompare
 
-        Assert-FoImageOptimizationResult -Result $result -RequireSizeReduction
+        (Test-FoImageOptimizationResult -Result $result -RequireSizeReduction) | Should -Be $true
         $script:Settings.Level | Should -Be 9
     }
 }

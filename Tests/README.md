@@ -1,24 +1,21 @@
 # PS-FileOptimizer — Tests
 
-Pester test suite for the module. Requires [Pester](https://pester.dev/) **5.x** (CI uses 5.8 on PowerShell 7).
+Pester 5 test suite for the module. Requires [Pester](https://pester.dev/) 5.x (preinstalled on GitHub `ubuntu-latest` / `windows-latest` runners under pwsh).
 
 ## Quick start
 
 ```powershell
 cd ps-file-optimizer
-Install-Module Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
-. .\Tests\TestBootstrap.ps1
-Invoke-Pester .\Tests\
+./Scripts/Invoke-FoTests.ps1
 ```
 
-Run only tests that do not need plugin binaries:
+Run only fast unit tests (no plugin binaries, no network):
 
 ```powershell
-. .\Tests\TestBootstrap.ps1
-Invoke-Pester .\Tests\ -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
+./Scripts/Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
 ```
 
-`TestBootstrap.ps1` loads the module and test helpers into session scope once (required for Pester 5). GitHub Actions dot-sources it before each `Invoke-Pester` step.
+Each `*.Tests.ps1` imports the **FoTestSupport** module in a `BeforeDiscovery` block. `Invoke-FoTests.ps1` preloads FoTestSupport so `-Skip:(-not (Test-FoPluginsAvailable))` on `Describe` blocks resolves correctly during discovery.
 
 ## Environment variables
 
@@ -31,84 +28,69 @@ Invoke-Pester .\Tests\ -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
 | `FO_PLUGIN_BUNDLE_URL` | Override default plugin bundle download URL. |
 | `FO_PLUGIN_BUNDLE_SHA256` | Expected SHA256 when using `FO_PLUGIN_BUNDLE_URL`. |
 
-Example:
+Example with plugins:
 
 ```powershell
 $env:FO_TEST_PLUGIN_PATH = 'D:\Tools\FileOptimizerFull\Plugins64'
-Invoke-Pester .\Tests\ -Tag ImageIntegration
+./Scripts/Invoke-FoTests.ps1 -Tag ImageIntegration
 ```
 
-When plugins are not available, integration tests call `Set-TestInconclusive` — they do **not** fail the run.
+Plugin-dependent describes use `-Skip:(-not (Test-FoPluginsAvailable))` instead of failing the run.
 
 ## Pester tags
 
-| Tag | When to use | CI (fast PR) |
-|-----|-------------|--------------|
-| `Unit` | Config merge, helpers, compare logic with mocked or generated files | Include |
-| `ImageIntegration` | Real optimize → compare loops; needs `FO_TEST_PLUGIN_PATH` or auto-discovered plugins | Include if plugins present; inconclusive otherwise |
-| `Lossy` | `*AllowLossy` settings profiles; SSIM thresholds | Exclude (run nightly or `-Tag Lossy`) |
-| `Slow` | Level 9, corpus sweeps, large fixtures | Exclude |
+| Tag | When to use | CI unit job |
+|-----|-------------|-------------|
+| `Unit` | Config merge, helpers, corpus verify, bundle metadata | Included |
+| `ImageIntegration` | Real optimize → compare loops; needs plugins | Excluded from PR unit job |
+| `Integration` | Network download tests (plugins, corpus tiers B+) | Separate Windows job on push to `master` |
+| `Lossy` | `*AllowLossy` settings profiles; SSIM thresholds | Excluded |
+| `Slow` | Level 9, corpus sweeps, large fixtures | Excluded |
 
-Recommended local / CI invocations:
+Recommended invocations:
 
 ```powershell
-. .\Tests\TestBootstrap.ps1
+# Pull request — fast (matches CI unit job)
+./Scripts/Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
 
-# Pull request — fast
-Invoke-Pester .\Tests\ -ExcludeTag Slow,Lossy
+# With plugins — image integration
+./Scripts/Invoke-FoTests.ps1 -Tag ImageIntegration
 
 # Nightly — include lossy when plugins available
-Invoke-Pester .\Tests\ -ExcludeTag Slow
+./Scripts/Invoke-FoTests.ps1 -ExcludeTag Slow
 
-# Weekly / release — full
-Invoke-Pester .\Tests\
+# Full suite
+./Scripts/Invoke-FoTests.ps1
 ```
 
-## Test files
+## CI
 
-| File | Tags | Notes |
-|------|------|-------|
-| `FileOptimizer.Tests.ps1` | (untagged / mixed) | Config, pipelines, history, install planning |
-| `Compare-FoImage.Tests.ps1` | `Unit` | Phase 1 — image compare helper |
-| `ImageOptimization.Png.Tests.ps1` | `ImageIntegration` | Phase 3 — PNG optimize + verify |
-| `ImageOptimization.Jpeg.Tests.ps1` | `ImageIntegration` | Phase 4 — JPEG optimize + SSIM fallback |
-| `ImageOptimization.Gif.Tests.ps1` | `ImageIntegration` | Phase 4 — GIF + per-frame compare |
-| `ImageOptimization.WebP.Tests.ps1` | `ImageIntegration` | Phase 4 — WebP lossless |
-| `ImageOptimization.Bmp.Tests.ps1` | `ImageIntegration` | Phase 4 — BMP lossless |
-| `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 — lossy SSIM gates |
-| `ImageOptimization.Tiff.Tests.ps1` | `ImageIntegration` | Phase 6 — TIFF |
-| `ImageOptimization.Avif.Tests.ps1` | `ImageIntegration` | Phase 6 — AVIF (SSIM) |
-| `ImageOptimization.Apng.Tests.ps1` | `ImageIntegration` | Phase 6 — APNG frames |
-| `ImageOptimization.Ico.Tests.ps1` | `ImageIntegration` | Phase 6 — ICO largest icon |
-| `ImageOptimization.Png.Tests.ps1` (level 9) | `ImageIntegration`, `Slow` | Phase 4 — optional deep PNG pass |
-| `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 |
-| `Install-FoPlugins.Integration.Tests.ps1` | — | Requires `FO_RUN_INSTALL_INTEGRATION=1` |
-| `Get-ImageTestCorpus.Tests.ps1` | `Unit` | Tier A fixture verify |
-| `Get-ImageTestCorpus.Integration.Tests.ps1` | — | Requires `FO_RUN_CORPUS_INTEGRATION=1` |
-| `Install-FoPluginBundle.Tests.ps1` | `Unit` | Aux plugin bundle metadata and SHA256 |
-| `Phase0.Foundations.Tests.ps1` | `Unit` | Plugin path discovery, decisions manifest |
-| `Compare-FoImage.Tests.ps1` | `Unit` | Image compare helper (Pixel / SSIM) |
+| Job | Runner | Command |
+|-----|--------|---------|
+| `unit` | `ubuntu-latest` | `Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow` |
+| `integration-downloads` | `windows-latest` (push to `master` only) | `Invoke-FoTests.ps1 -Tag Integration` with `FO_RUN_*=1` |
+
+No Pester version hacks — Ubuntu pwsh has Pester 5 only; Windows integration uses the runner’s bundled Pester 5.
+
+## Layout
+
+| Path | Role |
+|------|------|
+| `FoTestSupport/` | Test support module (helpers, fixture paths, image orchestration) |
+| `Scripts/Invoke-FoTests.ps1` | Single entry point for local runs and CI |
+| `*.Tests.ps1` | Pester test files |
+| `ImageTestManifest.psd1` | **FO-ImageTest-v1** corpus (Tier A + aux release metadata) |
+| `ImageTestDecisions.psd1` | Thresholds and scope rules |
+| `ImageTestProfiles.psd1` | Settings profiles (`LosslessDefault`, `LossyHighQuality`) |
+| `Fixtures/Images/` | Tier A committed fixtures |
 
 ## Image verification decisions
 
-Machine-readable thresholds and scope rules live in `ImageTestDecisions.psd1` (loaded by `TestHelpers.ps1`). Summary:
+Machine-readable thresholds live in `ImageTestDecisions.psd1` (loaded by FoTestSupport). Summary:
 
 | Topic | Decision |
 |-------|----------|
 | JPEG (default profile) | Pixel compare via `magick compare -metric AE`; SSIM dissimilarity ≤ 0 fallback if AE > 0 |
 | ICO | Compare **largest embedded icon** only |
 | AVIF (default profile) | SSIM dissimilarity threshold (Tier C); calibrate in Phase 5 |
-| Python cross-check | Optional dev harness in Phase 7 only |
-| Committed fixtures | Tier A: 34 files (~46 KB) from [codec-corpus](https://github.com/imazen/codec-corpus) under `Fixtures/Images/` — see `ImageTestManifest.psd1` |
-
-Full research: `file-optimizer-dev/ps-optimizer/docs/03-image-verification-testing.md`  
-Test dataset spec: `file-optimizer-dev/ps-optimizer/docs/04-test-image-dataset.md`  
-Implementation plan: `file-optimizer-dev/ps-optimizer/plans/01-image-testing-suite.md`
-
-## Helpers
-
-- `TestHelpers.ps1` — shared setup, `New-FoTestPng`, plugin discovery
-- `ImageTestManifest.psd1` — **FO-ImageTest-v1** corpus (Tier A file list, `AuxReleases` for tiers B–D)
-- `Scripts/Get-ImageTestCorpus.ps1` — verify Tier A or download tiers B–D from aux releases
-- `ImageTestHelpers.ps1` — Phase 2+ optimize/compare orchestration
-- `ImageTestProfiles.psd1` — Phase 2+ settings profiles (`LosslessDefault`, `LossyHighQuality`)
+| Committed fixtures | Tier A: 34 files (~46 KB) under `Fixtures/Images/` |

@@ -1,14 +1,9 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
-. "$PSScriptRoot\TestHelpers.ps1"
-
-Describe 'JPEG lossless optimization' -Tag ImageIntegration {
+Describe 'JPEG lossless optimization' -Tag ImageIntegration -Skip:(-not (Test-FoPluginsAvailable)) {
     BeforeAll {
-        if (-not (Test-FoPluginsAvailable)) {
-            Set-TestInconclusive 'Plugin binaries not found. Set FO_TEST_PLUGIN_PATH.'
-            return
-        }
         $script:PluginPath = Get-FoTestPluginPath
         $script:Settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath $script:PluginPath
         $script:WorkDir = Join-Path $TestDrive 'jpeg'
@@ -17,19 +12,15 @@ Describe 'JPEG lossless optimization' -Tag ImageIntegration {
 
     foreach ($fixtureId in @('jpg-testorig', 'jpg-prog-rst', 'jpg-exif-xmp')) {
         It "Optimizes $fixtureId with pixel or SSIM compare" {
-            if (-not $script:Settings) { return }
-
             $result = Invoke-FoImageOptimizationTest -FixtureId $fixtureId -Settings $script:Settings `
                 -CompareMode Pixel -WorkDirectory $script:WorkDir
 
-            Assert-FoImageOptimizationResult -Result $result -RequireCompare
+            (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
             @('Pixel', 'SSIM') -contains $result.CompareMode | Should -Be $true
         }
     }
 
     It 'Uses pixel compare when lossless JPEG is visually identical' {
-        if (-not $script:Settings) { return }
-
         $result = Invoke-FoImageOptimizationTest -FixtureId 'jpg-testorig' -Settings $script:Settings `
             -CompareMode Pixel -WorkDirectory $script:WorkDir
 
@@ -38,8 +29,6 @@ Describe 'JPEG lossless optimization' -Tag ImageIntegration {
     }
 
     It 'Falls back to SSIM when pixel AE fails on re-encoded JPEG' {
-        if (-not $script:Settings) { return }
-
         $source = Get-FoImageTestFixturePath -Id 'jpg-testorig'
         $before = Join-Path $script:WorkDir 'fallback-before.jpg'
         $after = Join-Path $script:WorkDir 'fallback-after.jpg'
@@ -54,14 +43,13 @@ Describe 'JPEG lossless optimization' -Tag ImageIntegration {
 
         $pixel = Compare-FoImage -Before $before -After $after -Mode Pixel -PluginPath $script:PluginPath
         if ($pixel.Pass) {
-            Set-TestInconclusive 'Re-encoded JPEG was still pixel-identical; cannot exercise SSIM fallback.'
-            return
+            Set-ItResult -Inconclusive -Because 'Re-encoded JPEG was still pixel-identical; cannot exercise SSIM fallback.'
         }
 
         $fallback = Test-FoJpegImageCompare -Before $before -After $after -PluginPath $script:PluginPath
         $fallback.CompareMode | Should -Be 'SSIM'
         if (-not $fallback.Pass) {
-            Set-TestInconclusive 'Re-encoded JPEG exceeds SSIM threshold 0; pixel fallback path was exercised.'
+            Set-ItResult -Inconclusive -Because 'Re-encoded JPEG exceeds SSIM threshold 0; pixel fallback path was exercised.'
         }
     }
 }

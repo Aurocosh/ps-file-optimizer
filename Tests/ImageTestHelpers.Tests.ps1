@@ -1,7 +1,6 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
-
-. "$PSScriptRoot\TestHelpers.ps1"
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
 Describe 'Image test manifest and fixtures' -Tag Unit {
     It 'Loads FO-ImageTest-v1 manifest' {
@@ -53,27 +52,18 @@ Describe 'Image test profiles' -Tag Unit {
     }
 }
 
-Describe 'Invoke-FoImageOptimizationTest' -Tag ImageIntegration {
+Describe 'Invoke-FoImageOptimizationTest' -Tag ImageIntegration -Skip:(-not (Test-FoPluginsAvailable)) {
     BeforeAll {
-        if (-not (Test-FoPluginsAvailable)) {
-            Set-TestInconclusive 'Plugin binaries not found. Set FO_TEST_PLUGIN_PATH.'
-            return
-        }
         $script:PluginPath = Get-FoTestPluginPath
         $script:Settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath $script:PluginPath
     }
 
     It 'Optimizes jpg-testorig and passes pixel compare' {
-        if (-not $script:Settings) { return }
-
         $result = Invoke-FoImageOptimizationTest -FixtureId 'jpg-testorig' -Settings $script:Settings -CompareMode Pixel
 
-        @('Optimized', 'Unchanged') -contains $result.Optimization.Status | Should -Be $true
+        (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
         if ($result.Optimization.Status -eq 'Optimized') {
             ($result.Optimization.FinalSize -lt $result.Optimization.OriginalSize) | Should -Be $true
         }
-        $result.Compare.Pass | Should -Be $true
-        $result.Pass | Should -Be $true
-        ($result.Decode.Width -gt 0) | Should -Be $true
     }
 }

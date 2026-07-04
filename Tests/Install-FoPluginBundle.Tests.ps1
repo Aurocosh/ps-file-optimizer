@@ -1,9 +1,8 @@
-﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+﻿BeforeDiscovery {
+    Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
+}
 
-. (Join-Path $moduleRoot 'Private\Get-FoPluginBundleMetadata.ps1')
-
-Describe 'Get-FoPluginBundleSettings' {
+Describe 'Get-FoPluginBundleSettings' -Tag Unit {
     It 'Defaults to aux release 7z URL and SHA256' {
         $settings = Get-FoPluginBundleSettings
         $settings.Url | Should -Match 'ps-file-optimizer-aux'
@@ -27,12 +26,12 @@ Describe 'Get-FoPluginBundleSettings' {
     }
 }
 
-Describe 'Test-FoDownloadedFileSha256' {
+Describe 'Test-FoDownloadedFileSha256' -Tag Unit {
     It 'Throws when hash does not match' {
         $file = Join-Path $env:TEMP "FoShaTest_$(Get-Random).bin"
         try {
             Set-Content -LiteralPath $file -Value 'test' -Encoding Ascii
-            { Test-FoDownloadedFileSha256 -Path $file -ExpectedSha256 ('0' * 64) } | Should -Throw 'SHA256 mismatch'
+            { Test-FoDownloadedFileSha256 -Path $file -ExpectedSha256 ('0' * 64) } | Should -Throw '*SHA256 mismatch*'
         }
         finally {
             Remove-Item -LiteralPath $file -Force -ErrorAction SilentlyContinue
