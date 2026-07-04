@@ -1,4 +1,4 @@
-$moduleRoot = Split-Path -Parent $PSScriptRoot
+﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
@@ -22,9 +22,9 @@ Describe 'AVIF optimization' -Tag ImageIntegration {
         $result = Invoke-FoImageOptimizationTest -FixtureId 'avif-white-1x1' -Settings $script:Settings `
             -CompareMode SSIMOnly -SSIMDissimilarityMaximum $script:Threshold -WorkDirectory $script:WorkDir
 
-        @('Optimized', 'Unchanged') -contains $result.Optimization.Status | Should Be $true
-        $result.Compare.Pass | Should Be $true
-        ($result.Compare.MetricValue -le $script:Threshold) | Should Be $true
-        $result.Pass | Should Be $true
+        @('Optimized', 'Unchanged') -contains $result.Optimization.Status | Should -Be $true
+        $result.Compare.Pass | Should -Be $true
+        ($result.Compare.MetricValue -le $script:Threshold) | Should -Be $true
+        $result.Pass | Should -Be $true
     }
 }

@@ -1,4 +1,4 @@
-$moduleRoot = Split-Path -Parent $PSScriptRoot
+﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
@@ -89,6 +89,6 @@ Describe 'PNG lossless optimization (level 9)' -Tag ImageIntegration, Slow {
             -CompareMode Pixel -WorkDirectory $script:WorkDir -SkipCompare
 
         Assert-FoImageOptimizationResult -Result $result -RequireSizeReduction
-        $script:Settings.Level | Should Be 9
+        $script:Settings.Level | Should -Be 9
     }
 }

@@ -1,5 +1,8 @@
-$script:FoTestModuleRoot = Split-Path -Parent $PSScriptRoot
-$script:FoModuleRoot = $script:FoTestModuleRoot
+if ($global:FoTestSupportLoaded) { return }
+
+$global:FoTestSupportRoot = $PSScriptRoot
+$global:FoTestModuleRoot = Split-Path -Parent $PSScriptRoot
+$global:FoModuleRoot = $global:FoTestModuleRoot
 
 foreach ($name in @(
     'Import-FoDataFile'
@@ -12,18 +15,19 @@ foreach ($name in @(
     'Add-FoHistoryEntry'
     'Format-FoHistoryEntry'
 )) {
-    . (Join-Path $script:FoTestModuleRoot "Private\$name.ps1")
+    . (Join-Path $global:FoTestModuleRoot "Private\$name.ps1")
 }
 
-. (Join-Path $script:FoTestModuleRoot 'Public\Resolve-FoPluginExecutable.ps1')
-. (Join-Path $script:FoTestModuleRoot 'Private\Compare-FoImage.ps1')
-. (Join-Path $script:FoTestModuleRoot 'Private\Get-FoImageInfo.ps1')
+. (Join-Path $global:FoTestModuleRoot 'Public\Resolve-FoPluginExecutable.ps1')
+. (Join-Path $global:FoTestModuleRoot 'Private\Compare-FoImage.ps1')
+. (Join-Path $global:FoTestModuleRoot 'Private\Get-FoImageInfo.ps1')
 . (Join-Path $PSScriptRoot 'ImageTestHelpers.ps1')
 
-$script:FoImageTestDecisions = Import-FoDataFile -Path (Join-Path $PSScriptRoot 'ImageTestDecisions.psd1')
+$global:FoImageTestDecisions = Import-FoDataFile -Path (Join-Path $PSScriptRoot 'ImageTestDecisions.psd1')
+$global:FoTestSupportLoaded = $true
 
 function Get-FoImageTestDecisions {
-    return $script:FoImageTestDecisions
+    return $global:FoImageTestDecisions
 }
 
 function Get-FoTestPluginPath {
@@ -38,7 +42,7 @@ function Get-FoTestPluginPath {
     $default = Get-FoDefaultPluginPath
     if ($default) { return $default }
 
-    $modulePlugins = Join-Path $script:FoModuleRoot 'plugins'
+    $modulePlugins = Join-Path $global:FoModuleRoot 'plugins'
     if (Test-Path -LiteralPath $modulePlugins) {
         return ([System.IO.Path]::GetFullPath($modulePlugins))
     }

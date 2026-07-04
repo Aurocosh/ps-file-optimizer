@@ -1,26 +1,26 @@
-$moduleRoot = Split-Path -Parent $PSScriptRoot
+﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
 
 Describe 'Format-FoFileSize' {
     It 'Formats bytes' {
-        Format-FoFileSize -Bytes 1024 | Should Be '1.0 KB'
+        Format-FoFileSize -Bytes 1024 | Should -Be '1.0 KB'
     }
 }
 
 Describe 'Merge-FoSettings' {
     It 'Explicit parameter overrides defaults' {
         $s = Merge-FoSettings -BoundParameters @{ Level = 9 }
-        $s.Level | Should Be 9
-        $s.OutputMode | Should Be 'TempMove'
+        $s.Level | Should -Be 9
+        $s.OutputMode | Should -Be 'TempMove'
     }
 }
 
 Describe 'Config merge' {
     It 'Bound Level overrides defaults via Merge-FoSettings' {
         $s = Merge-FoSettings -BoundParameters @{ Level = 7 }
-        $s.Level | Should Be 7
+        $s.Level | Should -Be 7
     }
 }
 
@@ -32,12 +32,12 @@ Describe 'Resolve-FoPluginExecutable' {
             return
         }
         $r = Resolve-FoPluginExecutable -Name 'oxipng.exe' -SearchMode PortableOnly -PluginPath $pluginPath
-        $r.Found | Should Be $true
+        $r.Found | Should -Be $true
     }
 
     It 'PortableOnly returns not found for bad path' {
         $r = Resolve-FoPluginExecutable -Name 'nonexistent_fo_tool_12345.exe' -SearchMode PortableOnly -PluginPath 'C:\nonexistent'
-        $r.Found | Should Be $false
+        $r.Found | Should -Be $false
     }
 }
 
@@ -48,7 +48,7 @@ Describe 'Get-FoPipeline PNG' {
         try {
             $ctx = New-FoFileContext -InputFile $png -Settings (Get-FoConfig)
             $steps = Get-FoPipeline -GroupName PNG -Context $ctx
-            ($steps.Count -gt 5) | Should Be $true
+            ($steps.Count -gt 5) | Should -Be $true
         }
         finally {
             Remove-Item $png -Force -ErrorAction SilentlyContinue
@@ -62,8 +62,8 @@ Describe 'Pipeline WhatIf snapshot' {
         New-FoTestPng -Path $png
         try {
             $r = Optimize-FoFile -Path $png -PluginPath 'C:\nonexistent' -PluginSearchMode PortableOnly -WhatIf
-            $r[0].Status | Should Be 'WhatIf'
-            ($r[0].Steps.Count -gt 5) | Should Be $true
+            $r[0].Status | Should -Be 'WhatIf'
+            ($r[0].Steps.Count -gt 5) | Should -Be $true
         }
         finally {
             Remove-Item $png -Force -ErrorAction SilentlyContinue
@@ -88,8 +88,8 @@ Describe 'Invoke-FoOutputMode TempMove' {
             $s.OutputMode = 'TempMove'
             $s.TempBackupPath = $bakRoot
             $r = Invoke-FoOutputMode -SourceFile $opt -TargetPath $orig -Settings $s
-            ($null -ne $r.BackupPath) | Should Be $true
-            (Test-Path -LiteralPath $orig) | Should Be $true
+            ($null -ne $r.BackupPath) | Should -Be $true
+            (Test-Path -LiteralPath $orig) | Should -Be $true
         }
         finally {
             Pop-Location
@@ -131,15 +131,15 @@ Describe 'History and rollback' {
             Add-FoHistoryEntry -Result $result -Settings $s
 
             $hist = @(Get-FoHistory -Last 1 -HistoryPath $histFile -Format Object)
-            $hist.Count | Should Be 1
-            $hist[0].ReversalStatus | Should Be 'Pending'
+            $hist.Count | Should -Be 1
+            $hist[0].ReversalStatus | Should -Be 'Pending'
 
             $undo = @(Undo-FoOptimization -Last 1 -HistoryPath $histFile)
-            ($undo.Count -gt 0) | Should Be $true
-            (Get-Content -LiteralPath $orig -Raw) | Should Be 'original-long-content'
+            ($undo.Count -gt 0) | Should -Be $true
+            (Get-Content -LiteralPath $orig -Raw) | Should -Be 'original-long-content'
 
             $hist2 = @(Get-FoHistory -Last 1 -HistoryPath $histFile -Format Object)
-            $hist2[0].ReversalStatus | Should Be 'Reversed'
+            $hist2[0].ReversalStatus | Should -Be 'Reversed'
         }
         finally {
             Pop-Location
@@ -154,7 +154,7 @@ Describe 'Missing tools policy' {
         $png = Join-Path $env:TEMP "fo_miss_$(Get-Random).png"
         New-FoTestPng -Path $png
         try {
-            { Optimize-FoFile -Path $png -PluginPath 'C:\nonexistent_plugins' -PluginSearchMode PortableOnly -ErrorAction Stop } | Should Throw
+            { Optimize-FoFile -Path $png -PluginPath 'C:\nonexistent_plugins' -PluginSearchMode PortableOnly -ErrorAction Stop } | Should -Throw
         }
         finally {
             Remove-Item $png -Force -ErrorAction SilentlyContinue
@@ -166,7 +166,7 @@ Describe 'Missing tools policy' {
         New-FoTestPng -Path $png
         try {
             $r = Optimize-FoFile -Path $png -PluginPath 'C:\nonexistent_plugins' -PluginSearchMode PortableOnly -SkipMissingTools:$true
-            $r[0].Status | Should Be 'Skipped'
+            $r[0].Status | Should -Be 'Skipped'
         }
         finally {
             Remove-Item $png -Force -ErrorAction SilentlyContinue
@@ -178,7 +178,7 @@ Describe 'Extension map' {
     It 'Loads extension map with many entries' {
         $mapPath = Join-Path $moduleRoot 'Data\ExtensionMap.psd1'
         $map = Import-FoDataFile -Path $mapPath
-        ($map.Keys.Count -ge 370) | Should Be $true
+        ($map.Keys.Count -ge 370) | Should -Be $true
     }
 }
 
@@ -188,10 +188,10 @@ Describe 'Get-FoRequiredPluginExecutables' {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
         try {
             $result = Install-FoPlugins -Mode FullPortable -DestinationPath $dir -WhatIf
-            $result.ExecutablesNeeded.Count | Should BeGreaterThan 50
-            ($result.ExecutablesNeeded -contains 'oxipng.exe') | Should Be $true
-            ($result.ExecutablesNeeded -contains 'defluff.exe') | Should Be $true
-            ($result.ExecutablesNeeded -contains 'gswin64c.exe') | Should Be $true
+            $result.ExecutablesNeeded.Count | Should -BeGreaterThan 50
+            ($result.ExecutablesNeeded -contains 'oxipng.exe') | Should -Be $true
+            ($result.ExecutablesNeeded -contains 'defluff.exe') | Should -Be $true
+            ($result.ExecutablesNeeded -contains 'gswin64c.exe') | Should -Be $true
         }
         finally {
             Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
@@ -209,9 +209,9 @@ Describe 'Install-FoPlugins planning' {
                 New-Item -ItemType File -Path (Join-Path $dir $exe) -Force | Out-Null
             }
             $result = Install-FoPlugins -Mode Missing -DestinationPath $dir
-            $result.Downloaded | Should Be $false
-            $result.Extracted | Should Be $false
-            ($result.ExecutablesNeeded.Count) | Should Be 0
+            $result.Downloaded | Should -Be $false
+            $result.Extracted | Should -Be $false
+            ($result.ExecutablesNeeded.Count) | Should -Be 0
         }
         finally {
             Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue

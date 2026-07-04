@@ -1,4 +1,4 @@
-$moduleRoot = Split-Path -Parent $PSScriptRoot
+﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
@@ -38,7 +38,7 @@ Describe 'APNG lossless optimization' -Tag ImageIntegration {
 
         $beforeCount = Get-FoApngFrameCount -Path $result.BeforePath -PluginPath $script:PluginPath `
             -WorkDirectory (Join-Path $script:WorkDir '3frame-before-count')
-        ($beforeCount -gt 1) | Should Be $true
+        ($beforeCount -gt 1) | Should -Be $true
 
         $afterCount = Get-FoApngFrameCount -Path $result.AfterPath -PluginPath $script:PluginPath `
             -WorkDirectory (Join-Path $script:WorkDir '3frame-after-count')
@@ -46,14 +46,14 @@ Describe 'APNG lossless optimization' -Tag ImageIntegration {
         if ($afterCount -eq $beforeCount) {
             $frameCompare = Compare-FoApngFrames -Before $result.BeforePath -After $result.AfterPath `
                 -PluginPath $script:PluginPath -WorkDirectory (Join-Path $script:WorkDir '3frame-frames')
-            $frameCompare.Pass | Should Be $true
+            $frameCompare.Pass | Should -Be $true
         }
         else {
             # Full PNG chain may flatten animated APNG to a static PNG (acTL removed).
-            $afterCount | Should Be 1
+            $afterCount | Should -Be 1
             $staticCompare = Compare-FoImage -Before $result.BeforePath -After $result.AfterPath `
                 -Mode Pixel -PluginPath $script:PluginPath
-            $staticCompare.Pass | Should Be $true
+            $staticCompare.Pass | Should -Be $true
         }
     }
 }

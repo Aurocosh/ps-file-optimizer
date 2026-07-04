@@ -1,4 +1,4 @@
-$moduleRoot = Split-Path -Parent $PSScriptRoot
+﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
@@ -18,11 +18,11 @@ Describe 'LossyHighQuality profile' -Tag ImageIntegration, Lossy {
     It 'Enables lossy flags and level 9' {
         if (-not $script:Settings) { return }
 
-        $script:Settings.Level | Should Be 9
-        $script:Settings.PNGAllowLossy | Should Be $true
-        $script:Settings.JPEGAllowLossy | Should Be $true
-        $script:Settings.GIFAllowLossy | Should Be $true
-        $script:Settings.WEBPAllowLossy | Should Be $true
+        $script:Settings.Level | Should -Be 9
+        $script:Settings.PNGAllowLossy | Should -Be $true
+        $script:Settings.JPEGAllowLossy | Should -Be $true
+        $script:Settings.GIFAllowLossy | Should -Be $true
+        $script:Settings.WEBPAllowLossy | Should -Be $true
     }
 
     foreach ($case in @(

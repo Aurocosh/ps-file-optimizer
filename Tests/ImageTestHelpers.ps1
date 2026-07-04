@@ -1,4 +1,4 @@
-$script:FoImageTestFixtureRoot = Join-Path $PSScriptRoot 'Fixtures\Images'
+﻿$global:FoImageTestFixtureRoot = Join-Path $global:FoTestSupportRoot 'Fixtures\Images'
 
 function Get-FoImageTestCorpusRoot {
     [CmdletBinding()]
@@ -12,14 +12,14 @@ function Get-FoImageTestCorpusRoot {
     if ($env:FO_TEST_CORPUS_PATH) {
         return [System.IO.Path]::GetFullPath($env:FO_TEST_CORPUS_PATH)
     }
-    return Join-Path $PSScriptRoot 'Fixtures\Corpus'
+    return Join-Path $global:FoTestSupportRoot 'Fixtures\Corpus'
 }
 
 function Get-FoImageTestManifest {
     [CmdletBinding()]
     param()
 
-    Import-FoDataFile -Path (Join-Path $PSScriptRoot 'ImageTestManifest.psd1')
+    Import-FoDataFile -Path (Join-Path $global:FoTestSupportRoot 'ImageTestManifest.psd1')
 }
 
 function Get-FoImageTestFixtureEntry {
@@ -69,7 +69,7 @@ function Get-FoImageTestFixturePath {
             [System.IO.Path]::GetFullPath($Path)
         }
         else {
-            [System.IO.Path]::GetFullPath((Join-Path $script:FoImageTestFixtureRoot $Path))
+            [System.IO.Path]::GetFullPath((Join-Path $global:FoImageTestFixtureRoot $Path))
         }
         if (-not (Test-Path -LiteralPath $full)) {
             throw "Image test fixture not found: $full"
@@ -99,7 +99,7 @@ function Test-FoImageTestFixturesPresent {
         $manifest = Get-FoImageTestManifest
         $missing = @()
         foreach ($entry in @($manifest.Tiers.A.Files)) {
-            $path = Join-Path $script:FoImageTestFixtureRoot ($entry.Source -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+            $path = Join-Path $global:FoImageTestFixtureRoot ($entry.Source -replace '/', [System.IO.Path]::DirectorySeparatorChar)
             if (-not (Test-Path -LiteralPath $path)) {
                 $missing += $entry.Source
             }
@@ -149,7 +149,7 @@ function Get-FoImageTestProfile {
         [string]$PluginPath
     )
 
-    $profiles = Import-FoDataFile -Path (Join-Path $PSScriptRoot 'ImageTestProfiles.psd1')
+    $profiles = Import-FoDataFile -Path (Join-Path $global:FoTestSupportRoot 'ImageTestProfiles.psd1')
     if (-not $profiles.ContainsKey($Name)) {
         throw "Unknown image test profile '$Name'."
     }
@@ -335,7 +335,7 @@ function Get-FoImageTestLossyThreshold {
         [string]$Format = 'Default'
     )
 
-    $profiles = Import-FoDataFile -Path (Join-Path $PSScriptRoot 'ImageTestProfiles.psd1')
+    $profiles = Import-FoDataFile -Path (Join-Path $global:FoTestSupportRoot 'ImageTestProfiles.psd1')
     if (-not $profiles.ContainsKey($ProfileName)) {
         throw "Unknown image test profile '$ProfileName'."
     }
@@ -395,16 +395,16 @@ function Assert-FoLossyOptimizationResult {
         [double]$SSIMDissimilarityMaximum
     )
 
-    @('Optimized', 'Unchanged') -contains $Result.Optimization.Status | Should Be $true
+    @('Optimized', 'Unchanged') -contains $Result.Optimization.Status | Should -Be $true
 
     if ($Result.Optimization.Status -eq 'Optimized') {
-        ($Result.Optimization.FinalSize -le $Result.Optimization.OriginalSize) | Should Be $true
+        ($Result.Optimization.FinalSize -le $Result.Optimization.OriginalSize) | Should -Be $true
     }
 
-    $Result.CompareMode | Should Be 'SSIMOnly'
-    $Result.Compare.Pass | Should Be $true
-    ($Result.Compare.MetricValue -le $SSIMDissimilarityMaximum) | Should Be $true
-    $Result.Pass | Should Be $true
+    $Result.CompareMode | Should -Be 'SSIMOnly'
+    $Result.Compare.Pass | Should -Be $true
+    ($Result.Compare.MetricValue -le $SSIMDissimilarityMaximum) | Should -Be $true
+    $Result.Pass | Should -Be $true
 }
 
 function Assert-FoImageOptimizationResult {
@@ -416,20 +416,20 @@ function Assert-FoImageOptimizationResult {
         [switch]$RequireSizeReduction
     )
 
-    @('Optimized', 'Unchanged') -contains $Result.Optimization.Status | Should Be $true
+    @('Optimized', 'Unchanged') -contains $Result.Optimization.Status | Should -Be $true
 
     if ($RequireSizeReduction -and $Result.Optimization.Status -eq 'Optimized') {
-        ($Result.Optimization.FinalSize -lt $Result.Optimization.OriginalSize) | Should Be $true
+        ($Result.Optimization.FinalSize -lt $Result.Optimization.OriginalSize) | Should -Be $true
     }
 
     if ($Result.Decode) {
-        ($Result.Decode.Width -gt 0) | Should Be $true
-        ($Result.Decode.Height -gt 0) | Should Be $true
+        ($Result.Decode.Width -gt 0) | Should -Be $true
+        ($Result.Decode.Height -gt 0) | Should -Be $true
     }
 
     if ($RequireCompare) {
-        $Result.Compare.Pass | Should Be $true
-        $Result.Pass | Should Be $true
+        $Result.Compare.Pass | Should -Be $true
+        $Result.Pass | Should -Be $true
     }
 }
 

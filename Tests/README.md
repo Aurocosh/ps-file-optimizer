@@ -1,19 +1,24 @@
 # PS-FileOptimizer — Tests
 
-Pester test suite for the module. Requires [Pester](https://pester.dev/) 3+ (5.x recommended).
+Pester test suite for the module. Requires [Pester](https://pester.dev/) **5.x** (CI uses 5.8 on PowerShell 7).
 
 ## Quick start
 
 ```powershell
 cd ps-file-optimizer
+Install-Module Pester -MinimumVersion 5.0 -Force -Scope CurrentUser
+. .\Tests\TestBootstrap.ps1
 Invoke-Pester .\Tests\
 ```
 
 Run only tests that do not need plugin binaries:
 
 ```powershell
+. .\Tests\TestBootstrap.ps1
 Invoke-Pester .\Tests\ -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
 ```
+
+`TestBootstrap.ps1` loads the module and test helpers into session scope once (required for Pester 5). GitHub Actions dot-sources it before each `Invoke-Pester` step.
 
 ## Environment variables
 
@@ -44,9 +49,11 @@ When plugins are not available, integration tests call `Set-TestInconclusive` �
 | `Lossy` | `*AllowLossy` settings profiles; SSIM thresholds | Exclude (run nightly or `-Tag Lossy`) |
 | `Slow` | Level 9, corpus sweeps, large fixtures | Exclude |
 
-Recommended CI invocations:
+Recommended local / CI invocations:
 
 ```powershell
+. .\Tests\TestBootstrap.ps1
+
 # Pull request — fast
 Invoke-Pester .\Tests\ -ExcludeTag Slow,Lossy
 

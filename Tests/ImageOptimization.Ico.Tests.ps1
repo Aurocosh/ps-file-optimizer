@@ -1,4 +1,4 @@
-$moduleRoot = Split-Path -Parent $PSScriptRoot
+﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
@@ -26,8 +26,8 @@ Describe 'ICO lossless optimization' -Tag ImageIntegration {
         $icoCompare = Compare-FoIcoLargest -Before $result.BeforePath -After $result.AfterPath `
             -PluginPath $script:PluginPath -WorkDirectory (Join-Path $script:WorkDir 'smile-largest')
 
-        $icoCompare.Pass | Should Be $true
-        $icoCompare.BeforeIndex | Should Be (Get-FoIcoLargestIndex -Path $result.BeforePath -PluginPath $script:PluginPath)
+        $icoCompare.Pass | Should -Be $true
+        $icoCompare.BeforeIndex | Should -Be (Get-FoIcoLargestIndex -Path $result.BeforePath -PluginPath $script:PluginPath)
     }
 
     It 'Optimizes ico-png32 multi-entry icon via largest embedded compare' {
@@ -41,6 +41,6 @@ Describe 'ICO lossless optimization' -Tag ImageIntegration {
         $icoCompare = Compare-FoIcoLargest -Before $result.BeforePath -After $result.AfterPath `
             -PluginPath $script:PluginPath -WorkDirectory (Join-Path $script:WorkDir 'png32-largest')
 
-        $icoCompare.Pass | Should Be $true
+        $icoCompare.Pass | Should -Be $true
     }
 }

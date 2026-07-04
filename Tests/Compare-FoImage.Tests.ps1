@@ -1,4 +1,4 @@
-$moduleRoot = Split-Path -Parent $PSScriptRoot
+﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
@@ -25,10 +25,10 @@ Describe 'Compare-FoImage' -Tag Unit {
 
         $result = Compare-FoImage -Before $original -After $copy -Mode Pixel -PluginPath $script:PluginPath
 
-        $result.Pass | Should Be $true
-        $result.MetricValue | Should Be 0
-        $result.Width | Should Be 32
-        $result.Height | Should Be 32
+        $result.Pass | Should -Be $true
+        $result.MetricValue | Should -Be 0
+        $result.Width | Should -Be 32
+        $result.Height | Should -Be 32
     }
 
     It 'Reports different PNG files as a fail in Pixel mode' {
@@ -45,14 +45,14 @@ Describe 'Compare-FoImage' -Tag Unit {
             '-draw', 'point 5,5'
             $after
         ) -WorkingDirectory (Split-Path -Parent $magick)
-        $draw.ExitCode | Should Be 0
+        $draw.ExitCode | Should -Be 0
 
         $result = Compare-FoImage -Before $before -After $after -Mode Pixel -PluginPath $script:PluginPath -DiffOutputPath $diff
 
-        $result.Pass | Should Be $false
-        ($result.MetricValue -gt 0) | Should Be $true
-        (Test-Path -LiteralPath $diff) | Should Be $true
-        $result.DiffPath | Should Be $diff
+        $result.Pass | Should -Be $false
+        ($result.MetricValue -gt 0) | Should -Be $true
+        (Test-Path -LiteralPath $diff) | Should -Be $true
+        $result.DiffPath | Should -Be $diff
     }
 
     It 'Reports identical PNG files with zero SSIM dissimilarity' {
@@ -63,8 +63,8 @@ Describe 'Compare-FoImage' -Tag Unit {
 
         $result = Compare-FoImage -Before $original -After $copy -Mode SSIM -PluginPath $script:PluginPath
 
-        $result.Pass | Should Be $true
-        $result.MetricValue | Should Be 0
+        $result.Pass | Should -Be $true
+        $result.MetricValue | Should -Be 0
     }
 
     It 'Reports different PNG files as SSIM dissimilarity above zero' {
@@ -80,8 +80,8 @@ Describe 'Compare-FoImage' -Tag Unit {
 
         $result = Compare-FoImage -Before $before -After $after -Mode SSIM -PluginPath $script:PluginPath
 
-        $result.Pass | Should Be $false
-        ($result.MetricValue -gt 0) | Should Be $true
+        $result.Pass | Should -Be $false
+        ($result.MetricValue -gt 0) | Should -Be $true
     }
 
     It 'Get-FoImageInfo returns dimensions and format' {
@@ -90,8 +90,8 @@ Describe 'Compare-FoImage' -Tag Unit {
 
         $info = Get-FoImageInfo -Path $path -PluginPath $script:PluginPath
 
-        $info.Width | Should Be 24
-        $info.Height | Should Be 18
-        $info.Format.ToUpperInvariant() | Should Match 'PNG'
+        $info.Width | Should -Be 24
+        $info.Height | Should -Be 18
+        $info.Format.ToUpperInvariant() | Should -Match 'PNG'
     }
 }

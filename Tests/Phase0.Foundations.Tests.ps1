@@ -1,4 +1,4 @@
-$moduleRoot = Split-Path -Parent $PSScriptRoot
+﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
@@ -6,12 +6,12 @@ Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 Describe 'Image test decisions manifest' -Tag Unit {
     It 'Loads ImageTestDecisions.psd1 with expected keys' {
         $d = Get-FoImageTestDecisions
-        $d.JpegPrimaryMode | Should Be 'PixelAE'
-        $d.JpegSSIMFallbackMaximum | Should Be 0
-        $d.IcoCompareScope | Should Be 'LargestEmbedded'
-        $d.AvifDefaultSSIMDissimilarityMaximum | Should Be 0
-        $d.FixtureBudgetBytes | Should Be 512000
-        $d.Tags.ImageIntegration | Should Not BeNullOrEmpty
+        $d.JpegPrimaryMode | Should -Be 'PixelAE'
+        $d.JpegSSIMFallbackMaximum | Should -Be 0
+        $d.IcoCompareScope | Should -Be 'LargestEmbedded'
+        $d.AvifDefaultSSIMDissimilarityMaximum | Should -Be 0.005
+        $d.FixtureBudgetBytes | Should -Be 512000
+        $d.Tags.ImageIntegration | Should -Not -BeNullOrEmpty
     }
 }
 
@@ -22,7 +22,7 @@ Describe 'Get-FoTestPluginPath' -Tag Unit {
         $previous = $env:FO_TEST_PLUGIN_PATH
         $env:FO_TEST_PLUGIN_PATH = $expected
         try {
-            Get-FoTestPluginPath | Should Be ([System.IO.Path]::GetFullPath($expected))
+            Get-FoTestPluginPath | Should -Be ([System.IO.Path]::GetFullPath($expected))
         }
         finally {
             if ($null -eq $previous) {
@@ -39,7 +39,7 @@ Describe 'Get-FoTestPluginPath' -Tag Unit {
         $previous = $env:FO_TEST_PLUGIN_PATH
         $env:FO_TEST_PLUGIN_PATH = 'C:\nonexistent_fo_plugins_12345'
         try {
-            Get-FoTestPluginPath | Should Be $null
+            Get-FoTestPluginPath | Should -Be $null
         }
         finally {
             if ($null -eq $previous) {
@@ -57,7 +57,7 @@ Describe 'Test-FoPluginsAvailable' -Tag Unit {
         $previous = $env:FO_TEST_PLUGIN_PATH
         $env:FO_TEST_PLUGIN_PATH = 'C:\nonexistent_fo_plugins_12345'
         try {
-            Test-FoPluginsAvailable | Should Be $false
+            Test-FoPluginsAvailable | Should -Be $false
         }
         finally {
             if ($null -eq $previous) {
@@ -79,6 +79,6 @@ Describe 'Test-FoPluginsAvailable' -Tag Unit {
             Set-TestInconclusive "magick.exe not found under $pluginPath"
             return
         }
-        Test-FoPluginsAvailable | Should Be $true
+        Test-FoPluginsAvailable | Should -Be $true
     }
 }

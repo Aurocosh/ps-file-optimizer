@@ -1,4 +1,4 @@
-$moduleRoot = Split-Path -Parent $PSScriptRoot
+﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
@@ -35,9 +35,9 @@ Describe 'GIF lossless optimization' -Tag ImageIntegration {
         $frameCompare = Compare-FoGifFrames -Before $result.BeforePath -After $result.AfterPath `
             -PluginPath $script:PluginPath -WorkDirectory (Join-Path $script:WorkDir 'anim3-frames')
 
-        $frameCompare.Pass | Should Be $true
-        ($frameCompare.BeforeCount -gt 1) | Should Be $true
-        $frameCompare.BeforeCount | Should Be $frameCompare.AfterCount
-        ($frameCompare.FrameResults | Where-Object { -not $_.Pass }).Count | Should Be 0
+        $frameCompare.Pass | Should -Be $true
+        ($frameCompare.BeforeCount -gt 1) | Should -Be $true
+        $frameCompare.BeforeCount | Should -Be $frameCompare.AfterCount
+        ($frameCompare.FrameResults | Where-Object { -not $_.Pass }).Count | Should -Be 0
     }
 }

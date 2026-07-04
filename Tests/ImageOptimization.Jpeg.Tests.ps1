@@ -1,4 +1,4 @@
-$moduleRoot = Split-Path -Parent $PSScriptRoot
+﻿$moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 . "$PSScriptRoot\TestHelpers.ps1"
@@ -23,7 +23,7 @@ Describe 'JPEG lossless optimization' -Tag ImageIntegration {
                 -CompareMode Pixel -WorkDirectory $script:WorkDir
 
             Assert-FoImageOptimizationResult -Result $result -RequireCompare
-            @('Pixel', 'SSIM') -contains $result.CompareMode | Should Be $true
+            @('Pixel', 'SSIM') -contains $result.CompareMode | Should -Be $true
         }
     }
 
@@ -33,8 +33,8 @@ Describe 'JPEG lossless optimization' -Tag ImageIntegration {
         $result = Invoke-FoImageOptimizationTest -FixtureId 'jpg-testorig' -Settings $script:Settings `
             -CompareMode Pixel -WorkDirectory $script:WorkDir
 
-        $result.CompareMode | Should Be 'Pixel'
-        $result.Compare.MetricValue | Should Be 0
+        $result.CompareMode | Should -Be 'Pixel'
+        $result.Compare.MetricValue | Should -Be 0
     }
 
     It 'Falls back to SSIM when pixel AE fails on re-encoded JPEG' {
@@ -50,7 +50,7 @@ Describe 'JPEG lossless optimization' -Tag ImageIntegration {
         $reencode = Invoke-FoMagickCli -MagickExe $magick -WorkingDirectory (Split-Path -Parent $magick) -ArgumentList @(
             $before, '-quality', '95', $after
         )
-        $reencode.ExitCode | Should Be 0
+        $reencode.ExitCode | Should -Be 0
 
         $pixel = Compare-FoImage -Before $before -After $after -Mode Pixel -PluginPath $script:PluginPath
         if ($pixel.Pass) {
@@ -59,7 +59,7 @@ Describe 'JPEG lossless optimization' -Tag ImageIntegration {
         }
 
         $fallback = Test-FoJpegImageCompare -Before $before -After $after -PluginPath $script:PluginPath
-        $fallback.CompareMode | Should Be 'SSIM'
+        $fallback.CompareMode | Should -Be 'SSIM'
         if (-not $fallback.Pass) {
             Set-TestInconclusive 'Re-encoded JPEG exceeds SSIM threshold 0; pixel fallback path was exercised.'
         }
