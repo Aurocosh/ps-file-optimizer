@@ -60,7 +60,8 @@ Invoke-Pester .\Tests\
 |------|------|-------|
 | `FileOptimizer.Tests.ps1` | (untagged / mixed) | Config, pipelines, history, install planning |
 | `Compare-FoImage.Tests.ps1` | `Unit` | Phase 1 — image compare helper |
-| `ImageOptimization.*.Tests.ps1` | `ImageIntegration` | Phase 3+ — per-format optimize + verify |
+| `ImageOptimization.Png.Tests.ps1` | `ImageIntegration` | Phase 3 — PNG optimize + verify |
+| `ImageOptimization.*.Tests.ps1` | `ImageIntegration` | Phase 4+ — per-format optimize + verify |
 | `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 |
 | `Install-FoPlugins.Integration.Tests.ps1` | — | Requires `FO_RUN_INSTALL_INTEGRATION=1` |
 | `Phase0.Foundations.Tests.ps1` | `Unit` | Plugin path discovery, decisions manifest |

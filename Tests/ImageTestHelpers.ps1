@@ -210,7 +210,11 @@ function Invoke-FoImageOptimizationTest {
     }
 
     $fileName = [System.IO.Path]::GetFileName($FixturePath)
-    $inputPath = Join-Path $workRoot $fileName
+    $inputDir = Join-Path $workRoot 'input'
+    if (-not (Test-Path -LiteralPath $inputDir)) {
+        New-Item -ItemType Directory -Path $inputDir -Force | Out-Null
+    }
+    $inputPath = Join-Path $inputDir $fileName
     $beforePath = Join-Path $workRoot ("before_{0}" -f $fileName)
 
     Copy-Item -LiteralPath $FixturePath -Destination $inputPath -Force
@@ -280,5 +284,31 @@ function Invoke-FoImageOptimizationTest {
         CompareMode  = $CompareMode
         Decode       = $decode
         Pass         = $pass
+    }
+}
+
+function Assert-FoImageOptimizationResult {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $Result,
+        [switch]$RequireCompare,
+        [switch]$RequireSizeReduction
+    )
+
+    @('Optimized', 'Unchanged') -contains $Result.Optimization.Status | Should Be $true
+
+    if ($RequireSizeReduction -and $Result.Optimization.Status -eq 'Optimized') {
+        ($Result.Optimization.FinalSize -lt $Result.Optimization.OriginalSize) | Should Be $true
+    }
+
+    if ($Result.Decode) {
+        ($Result.Decode.Width -gt 0) | Should Be $true
+        ($Result.Decode.Height -gt 0) | Should Be $true
+    }
+
+    if ($RequireCompare) {
+        $Result.Compare.Pass | Should Be $true
+        $Result.Pass | Should Be $true
     }
 }
