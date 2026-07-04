@@ -63,6 +63,7 @@ Invoke-Pester .\Tests\
 | `ImageOptimization.Lossy.Tests.ps1` | `ImageIntegration`, `Lossy` | Phase 5 |
 | `Install-FoPlugins.Integration.Tests.ps1` | — | Requires `FO_RUN_INSTALL_INTEGRATION=1` |
 | `Phase0.Foundations.Tests.ps1` | `Unit` | Plugin path discovery, decisions manifest |
+| `Compare-FoImage.Tests.ps1` | `Unit` | Image compare helper (Pixel / SSIM) |
 
 ## Image verification decisions
 
@@ -70,9 +71,9 @@ Machine-readable thresholds and scope rules live in `ImageTestDecisions.psd1` (l
 
 | Topic | Decision |
 |-------|----------|
-| JPEG (default profile) | Pixel compare via `magick compare -metric AE`; SSIM ≥ 0.999 fallback if AE > 0 |
+| JPEG (default profile) | Pixel compare via `magick compare -metric AE`; SSIM dissimilarity ≤ 0 fallback if AE > 0 |
 | ICO | Compare **largest embedded icon** only |
-| AVIF (default profile) | SSIM ≥ 0.995 (Tier C); not pixel-identical gate |
+| AVIF (default profile) | SSIM dissimilarity threshold (Tier C); calibrate in Phase 5 |
 | Python cross-check | Optional dev harness in Phase 7 only |
 | Committed fixtures | Budget &lt; 500 KB total under `Fixtures/Images/` |
 

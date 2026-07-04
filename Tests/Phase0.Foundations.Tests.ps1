@@ -7,9 +7,9 @@ Describe 'Image test decisions manifest' -Tag Unit {
     It 'Loads ImageTestDecisions.psd1 with expected keys' {
         $d = Get-FoImageTestDecisions
         $d.JpegPrimaryMode | Should Be 'PixelAE'
-        $d.JpegSSIMFallbackMinimum | Should Be 0.999
+        $d.JpegSSIMFallbackMaximum | Should Be 0
         $d.IcoCompareScope | Should Be 'LargestEmbedded'
-        $d.AvifDefaultSSIMMinimum | Should Be 0.995
+        $d.AvifDefaultSSIMDissimilarityMaximum | Should Be 0
         $d.FixtureBudgetBytes | Should Be 512000
         $d.Tags.ImageIntegration | Should Not BeNullOrEmpty
     }

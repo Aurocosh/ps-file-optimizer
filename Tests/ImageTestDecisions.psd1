@@ -1,10 +1,10 @@
 @{
     # Resolved in Phase 0 — see file-optimizer-dev/ps-optimizer/plans/01-image-testing-suite.md
-    JpegPrimaryMode           = 'PixelAE'
-    JpegSSIMFallbackMinimum   = 0.999
-    IcoCompareScope           = 'LargestEmbedded'
-    AvifDefaultSSIMMinimum      = 0.995
-    PythonCrossCheckPhase     = 7
+    JpegPrimaryMode                = 'PixelAE'
+    JpegSSIMFallbackMaximum        = 0
+    IcoCompareScope                = 'LargestEmbedded'
+    AvifDefaultSSIMDissimilarityMaximum = 0
+    PythonCrossCheckPhase          = 7
     FixtureBudgetBytes        = 512000
 
     # Pester tags — see Tests/README.md
