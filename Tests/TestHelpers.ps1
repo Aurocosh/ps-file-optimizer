@@ -18,6 +18,7 @@ foreach ($name in @(
 . (Join-Path $script:FoTestModuleRoot 'Public\Resolve-FoPluginExecutable.ps1')
 . (Join-Path $script:FoTestModuleRoot 'Private\Compare-FoImage.ps1')
 . (Join-Path $script:FoTestModuleRoot 'Private\Get-FoImageInfo.ps1')
+. (Join-Path $PSScriptRoot 'ImageTestHelpers.ps1')
 
 $script:FoImageTestDecisions = Import-FoDataFile -Path (Join-Path $PSScriptRoot 'ImageTestDecisions.psd1')
 
