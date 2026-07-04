@@ -4,7 +4,8 @@ function Invoke-FoPluginBundleDownload {
         [Parameter(Mandatory)]
         [string]$DestinationFile,
         [Parameter(Mandatory)]
-        [string]$Url
+        [string]$Url,
+        [bool]$ShowProgress = $true
     )
 
     $destDir = Split-Path -Parent $DestinationFile
@@ -17,16 +18,56 @@ function Invoke-FoPluginBundleDownload {
         Remove-Item -LiteralPath $partFile -Force -ErrorAction SilentlyContinue
     }
 
+    $activity = 'Downloading FileOptimizer bundle'
+    $fileName = Split-Path -Leaf $DestinationFile
+
     Write-Verbose "Downloading FileOptimizer bundle from $Url"
+    if ($ShowProgress) {
+        Write-Host "Downloading $fileName ..."
+    }
+
     try {
-        if ($PSVersionTable.PSVersion.Major -ge 6) {
-            Invoke-WebRequest -Uri $Url -OutFile $partFile -UseBasicParsing -ErrorAction Stop
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+
+        $request = [System.Net.HttpWebRequest]::Create($Url)
+        $request.UserAgent = 'PS-FileOptimizer/1.0'
+        $request.AllowAutoRedirect = $true
+        $request.Timeout = 600000
+        $request.ReadWriteTimeout = 600000
+
+        $response = $request.GetResponse()
+        try {
+            $totalBytes = $response.ContentLength
+            $inputStream = $response.GetResponseStream()
+            $outputStream = [System.IO.File]::Open($partFile, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
+            try {
+                $buffer = New-Object byte[] 65536
+                $bytesRead = 0
+                $totalRead = 0L
+
+                while (($bytesRead = $inputStream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                    $outputStream.Write($buffer, 0, $bytesRead)
+                    $totalRead += $bytesRead
+
+                    if ($ShowProgress) {
+                        if ($totalBytes -gt 0) {
+                            $pct = [math]::Min(100, [int](($totalRead * 100) / $totalBytes))
+                            $status = '{0} / {1}' -f (Format-FoFileSize -Bytes $totalRead), (Format-FoFileSize -Bytes $totalBytes)
+                            Write-Progress -Activity $activity -Status $status -CurrentOperation $fileName -PercentComplete $pct
+                        }
+                        else {
+                            Write-Progress -Activity $activity -Status (Format-FoFileSize -Bytes $totalRead) -CurrentOperation $fileName
+                        }
+                    }
+                }
+            }
+            finally {
+                $outputStream.Dispose()
+                $inputStream.Dispose()
+            }
         }
-        else {
-            $webClient = New-Object System.Net.WebClient
-            $webClient.Headers.Add('User-Agent', 'PS-FileOptimizer/1.0')
-            $webClient.DownloadFile($Url, $partFile)
-            $webClient.Dispose()
+        finally {
+            $response.Close()
         }
     }
     catch {
@@ -35,8 +76,18 @@ function Invoke-FoPluginBundleDownload {
         }
         throw "Failed to download FileOptimizer bundle from '$Url'. $($_.Exception.Message)"
     }
+    finally {
+        if ($ShowProgress) {
+            Write-Progress -Activity $activity -Completed
+        }
+    }
 
     Move-Item -LiteralPath $partFile -Destination $DestinationFile -Force
+
+    if ($ShowProgress) {
+        $size = (Get-Item -LiteralPath $DestinationFile).Length
+        Write-Host "Download complete ($(Format-FoFileSize -Bytes $size))."
+    }
 }
 
 function Copy-FoPluginFilesFromBundle {
@@ -97,7 +148,8 @@ function Install-FoPluginBundleCore {
         [string]$DestinationPath,
         [string]$ArchiveUrl,
         [string]$TempDirectory,
-        [switch]$Force
+        [switch]$Force,
+        [bool]$ShowProgress = $true
     )
 
     $dest = if ($DestinationPath) {
@@ -153,7 +205,7 @@ function Install-FoPluginBundleCore {
         }
 
         if ($PSCmdlet.ShouldProcess($url, 'Download FileOptimizer plugin bundle')) {
-            Invoke-FoPluginBundleDownload -DestinationFile $archivePath -Url $url
+            Invoke-FoPluginBundleDownload -DestinationFile $archivePath -Url $url -ShowProgress:$ShowProgress
             $downloaded = $true
         }
         else {

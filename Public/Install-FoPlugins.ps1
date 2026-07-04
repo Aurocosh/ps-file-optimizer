@@ -24,6 +24,9 @@ function Install-FoPlugins {
     .PARAMETER Force
     Overwrite existing files in DestinationPath.
 
+    .PARAMETER ShowProgress
+    Display download progress for the FileOptimizer archive. Default: true.
+
     .EXAMPLE
     Install-FoPlugins -Mode FullPortable
 
@@ -38,7 +41,8 @@ function Install-FoPlugins {
         [string]$DestinationPath,
         [string]$ArchiveUrl,
         [string]$TempDirectory,
-        [switch]$Force
+        [switch]$Force,
+        [bool]$ShowProgress = $true
     )
 
     Install-FoPluginBundleCore @PSBoundParameters

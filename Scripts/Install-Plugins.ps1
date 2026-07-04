@@ -5,7 +5,8 @@ param(
     [string]$ArchiveUrl,
     [string]$TempDirectory,
     [switch]$Force,
-    [switch]$WhatIf
+    [switch]$WhatIf,
+    [bool]$ShowProgress = $true
 )
 
 $moduleRoot = Split-Path -Parent $PSScriptRoot
@@ -17,6 +18,7 @@ $params = @{
     ArchiveUrl      = $ArchiveUrl
     TempDirectory   = $TempDirectory
     Force           = $Force
+    ShowProgress    = $ShowProgress
 }
 if ($WhatIf) {
     $params['WhatIf'] = $true
