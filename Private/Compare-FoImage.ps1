@@ -37,7 +37,8 @@ function Invoke-FoMagickCli {
         [string]$MagickExe,
         [Parameter(Mandatory)]
         [string[]]$ArgumentList,
-        [string]$WorkingDirectory
+        [string]$WorkingDirectory,
+        [int]$TimeoutSeconds = 90
     )
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
@@ -51,16 +52,37 @@ function Invoke-FoMagickCli {
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
 
-    $process = [System.Diagnostics.Process]::Start($psi)
-    $stdOut = $process.StandardOutput.ReadToEnd()
-    $stdErr = $process.StandardError.ReadToEnd()
-    $process.WaitForExit()
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $psi
+    $null = $process.Start()
 
-    return @{
-        ExitCode = $process.ExitCode
-        StdOut   = $stdOut.Trim()
-        StdErr   = $stdErr.Trim()
+    # Read stdout/stderr asynchronously to avoid pipe-buffer deadlocks when both streams are used.
+    $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+    $stderrTask = $process.StandardError.ReadToEndAsync()
+
+    $timeoutMs = [Math]::Max(1, $TimeoutSeconds) * 1000
+    $exited = $process.WaitForExit($timeoutMs)
+
+    if (-not $exited) {
+        try { $process.Kill() } catch { }
+        $null = $process.WaitForExit(5000)
+        $process.Dispose()
+        return @{
+            ExitCode = -1
+            StdOut   = ''
+            StdErr   = "magick.exe timed out after ${TimeoutSeconds}s"
+            TimedOut = $true
+        }
     }
+
+    $result = @{
+        ExitCode = $process.ExitCode
+        StdOut   = $stdoutTask.GetAwaiter().GetResult().Trim()
+        StdErr   = $stderrTask.GetAwaiter().GetResult().Trim()
+        TimedOut = $false
+    }
+    $process.Dispose()
+    return $result
 }
 
 function ConvertTo-FoCompareNormalizedImage {

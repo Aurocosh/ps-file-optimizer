@@ -121,4 +121,4 @@ $env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'plugins'
 
 Use `-SkipCompare` for size-only regression runs. Plugin versions are logged to verbose output at the start of `Invoke-FoTests.ps1` and corpus sweeps.
 
-Per-file compare or optimization errors are recorded in the CSV `Error` column; the sweep continues through the full corpus. Some codec-corpus BMP variants cannot be decoded by bundled ImageMagick for pixel compare — those rows fail with a compare error but do not abort the run.
+Per-file compare or optimization errors are recorded in the CSV `Error` column; the sweep continues through the full corpus. Some codec-corpus BMP variants cannot be decoded by bundled ImageMagick for pixel compare — those rows fail with a compare error but do not abort the run. Motion-JPEG fixtures (e.g. `mjpeg.jpg`) can hang ImageMagick during normalize-for-compare; `Invoke-FoMagickCli` enforces a 90s timeout so the sweep records a compare error instead of blocking indefinitely.

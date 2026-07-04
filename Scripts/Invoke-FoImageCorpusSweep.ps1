@@ -193,6 +193,7 @@ $index = 0
 foreach ($target in $targets) {
     $index++
     $label = if ($target.Id) { $target.Id } else { $target.RelativePath }
+    Write-Host ("[{0}/{1}] {2}" -f $index, $targets.Count, $label)
     Write-Progress -Activity 'Corpus sweep' -Status $label -PercentComplete (($index / $targets.Count) * 100)
 
     $itemWorkDir = Join-Path $sweepRoot (Get-FoCorpusSweepWorkDirectoryName -RelativePath $target.RelativePath -FullPath $target.Path)
