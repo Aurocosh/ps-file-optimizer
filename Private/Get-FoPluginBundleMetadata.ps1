@@ -1,20 +1,20 @@
-# Plugin bundle metadata — ps-file-optimizer-aux GitHub Release (plain .7z).
+# Plugin bundle metadata — ps-file-optimizer-aux GitHub Release (plain .zip).
 
 $script:FoPluginBundleVersion = '1.0.0'
 $script:FoPluginBundleReleaseTag = 'plugins-v1.0.0'
-$script:FoPluginBundleFormat = '7z'
+$script:FoPluginBundleFormat = 'zip'
 
 $script:FoPluginBundles = @{
     '64' = @{
-        Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.7z'
-        FileName = 'fo-plugins-win-x64-1.0.0.7z'
-        Sha256   = 'c4c596bcb8672af3452e3c1c2346f1816e1d5a598a2946ba899e5c7281d381aa'
+        Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.zip'
+        FileName = 'fo-plugins-win-x64-1.0.0.zip'
+        Sha256   = '56e76bcd440cfd222ff2ad742524e81d1d323b944f02347da6f9398822e62901'
         Folder   = 'Plugins64'
     }
     '32' = @{
-        Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x86-1.0.0.7z'
-        FileName = 'fo-plugins-win-x86-1.0.0.7z'
-        Sha256   = '3c64e5e055e6c3fc3f2fdc55b84a07b36c318b44958d0bf47ca6e79e1cfa31fc'
+        Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x86-1.0.0.zip'
+        FileName = 'fo-plugins-win-x86-1.0.0.zip'
+        Sha256   = 'd72772d9d20da14993eb213006432cd7903dce91d95e276114f2afda22d29894'
         Folder   = 'Plugins32'
     }
 }
@@ -136,7 +136,7 @@ function Get-FoPluginBundleSettings {
             Url          = $env:FO_PLUGIN_BUNDLE_URL
             FileName     = $fileName
             Sha256       = if ($env:FO_PLUGIN_BUNDLE_SHA256) { $env:FO_PLUGIN_BUNDLE_SHA256 } else { $ArchiveSha256 }
-            Format       = if ($env:FO_PLUGIN_BUNDLE_FORMAT) { $env:FO_PLUGIN_BUNDLE_FORMAT } else { '7z' }
+            Format       = if ($env:FO_PLUGIN_BUNDLE_FORMAT) { $env:FO_PLUGIN_BUNDLE_FORMAT } else { 'zip' }
             Folder       = if ($env:FO_PLUGIN_BUNDLE_FOLDER) { $env:FO_PLUGIN_BUNDLE_FOLDER } else { 'Plugins64' }
         }
     }
@@ -148,7 +148,7 @@ function Get-FoPluginBundleSettings {
             Url          = $ArchiveUrl
             FileName     = [System.IO.Path]::GetFileName(($ArchiveUrl -split '\?')[0])
             Sha256       = $ArchiveSha256
-            Format       = '7z'
+            Format       = 'zip'
             Folder       = Get-FoPluginBundleFolderName -Architecture $arch
         }
     }

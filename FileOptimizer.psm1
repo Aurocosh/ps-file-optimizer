@@ -16,7 +16,6 @@ $script:FoExtensionMap = $null
 . (Join-Path $PSScriptRoot 'Private\Add-FoHistoryEntry.ps1')
 . (Join-Path $PSScriptRoot 'Private\Format-FoHistoryEntry.ps1')
 . (Join-Path $PSScriptRoot 'Private\Write-FoReport.ps1')
-. (Join-Path $PSScriptRoot 'Private\Expand-Fo7zArchive.ps1')
 
 # Pipelines
 . (Join-Path $PSScriptRoot 'Pipelines\_Helpers.ps1')

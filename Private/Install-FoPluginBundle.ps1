@@ -223,12 +223,10 @@ function Install-FoPluginBundleCore {
 
     $archivePath = Join-Path $tempRoot $bundle.FileName
     $extractRoot = Join-Path $tempRoot 'extract'
-    $bootstrapDir = Join-Path $tempRoot '7z-bootstrap'
 
     $downloaded = $false
     $extracted = $false
     $copyResult = $null
-    $sevenZipBootstrap = $null
 
     try {
         if (-not (Test-Path -LiteralPath $tempRoot)) {
@@ -254,9 +252,14 @@ function Install-FoPluginBundleCore {
             }
         }
 
-        if ($PSCmdlet.ShouldProcess($archivePath, 'Extract plugin bundle with 7-Zip')) {
-            $expand = Expand-Fo7zArchive -ArchivePath $archivePath -DestinationPath $extractRoot -PassThru
-            $sevenZipBootstrap = $expand.BootstrapDir
+        if ($PSCmdlet.ShouldProcess($archivePath, 'Extract plugin bundle')) {
+            if ($bundle.Format -ne 'zip') {
+                throw "Unsupported plugin bundle format '$($bundle.Format)'. Only zip is supported."
+            }
+            if (-not (Test-Path -LiteralPath $extractRoot)) {
+                New-Item -ItemType Directory -Path $extractRoot -Force | Out-Null
+            }
+            Expand-Archive -LiteralPath $archivePath -DestinationPath $extractRoot -Force
             $extracted = $true
         }
 
@@ -292,9 +295,6 @@ function Install-FoPluginBundleCore {
         }
     }
     finally {
-        if ($sevenZipBootstrap -and (Test-Path -LiteralPath $sevenZipBootstrap)) {
-            Remove-Item -LiteralPath $sevenZipBootstrap -Recurse -Force -ErrorAction SilentlyContinue
-        }
         if (Test-Path -LiteralPath $tempRoot) {
             Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
         }

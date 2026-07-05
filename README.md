@@ -42,7 +42,7 @@ Initialize-FoConfig -Scope Global
 
 - Windows PowerShell 5.1+ or PowerShell 7+
 - Plugin binaries from the [ps-file-optimizer-aux](https://github.com/Aurocosh/ps-file-optimizer-aux) release bundle (default), module `Plugins64\` / `Plugins32\`, or tools on PATH
-- `Install-FoPlugins` downloads a plain `.7z` archive (~76 MB x64, ~64 MB x86), verifies SHA256, and extracts with 7-Zip (`7z.exe`) or a temporary `7zr.exe` bootstrap. Only one architecture folder exists under the module root at a time.
+- `Install-FoPlugins` downloads a plain `.zip` archive (~107 MB x64, ~83 MB x86), verifies SHA256, and extracts with `Expand-Archive`. Only one architecture folder exists under the module root at a time.
 
 ## Layout
 
@@ -100,7 +100,7 @@ If plugins are missing, integration describes are **Skipped** rather than failed
 
 ### Plugin install integration (network, ~76 MB download)
 
-Validates `Install-FoPlugins` end-to-end: downloads the aux release `.7z`, verifies SHA256, extracts, copies plugins, and cleans up temp files. Skipped unless enabled:
+Validates `Install-FoPlugins` end-to-end: downloads the aux release `.zip`, verifies SHA256, extracts, copies plugins, and cleans up temp files. Skipped unless enabled:
 
 ```powershell
 $env:FO_RUN_INSTALL_INTEGRATION = '1'
@@ -110,8 +110,8 @@ $env:FO_RUN_INSTALL_INTEGRATION = '1'
 Override bundle URL for mirrors or pre-release testing:
 
 ```powershell
-$env:FO_PLUGIN_BUNDLE_URL = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.7z'
-$env:FO_PLUGIN_BUNDLE_SHA256 = 'c4c596bcb8672af3452e3c1c2346f1816e1d5a598a2946ba899e5c7281d381aa'
+$env:FO_PLUGIN_BUNDLE_URL = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.zip'
+$env:FO_PLUGIN_BUNDLE_SHA256 = '56e76bcd440cfd222ff2ad742524e81d1d323b944f02347da6f9398822e62901'
 ```
 
 Or run the manual smoke script:

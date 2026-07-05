@@ -4,8 +4,8 @@ function Install-FoPlugins {
     Downloads the plugin bundle and installs plugin binaries for PS-FileOptimizer.
 
     .DESCRIPTION
-    Downloads a plain .7z archive from the pinned ps-file-optimizer-aux GitHub Release (default),
-    verifies SHA256, extracts with 7-Zip, copies required plugin files into a portable plugin
+    Downloads a plain .zip archive from the pinned ps-file-optimizer-aux GitHub Release (default),
+    verifies SHA256, extracts with Expand-Archive, copies required plugin files into a portable plugin
     directory, then deletes temporary download and extracted files.
 
     Installs into {ModuleRoot}\Plugins64 or {ModuleRoot}\Plugins32 (never both). Legacy flat

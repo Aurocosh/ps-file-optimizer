@@ -3,28 +3,30 @@
 }
 
 Describe 'Get-FoPluginBundleSettings' -Tag Unit {
-    It 'Defaults to aux release x64 7z URL and SHA256' {
+    It 'Defaults to aux release x64 zip URL and SHA256' {
         $settings = Get-FoPluginBundleSettings
         $settings.Architecture | Should -Be '64'
         $settings.Url | Should -Match 'ps-file-optimizer-aux'
-        $settings.FileName | Should -Be 'fo-plugins-win-x64-1.0.0.7z'
-        $settings.Format | Should -Be '7z'
+        $settings.FileName | Should -Be 'fo-plugins-win-x64-1.0.0.zip'
+        $settings.Format | Should -Be 'zip'
         $settings.Folder | Should -Be 'Plugins64'
-        $settings.Sha256 | Should -Match '^[a-f0-9]{64}$'
+        $settings.Sha256 | Should -Be '56e76bcd440cfd222ff2ad742524e81d1d323b944f02347da6f9398822e62901'
     }
 
     It 'Resolves x86 bundle metadata when Architecture is 32' {
         $settings = Get-FoPluginBundleSettings -Architecture 32
         $settings.Architecture | Should -Be '32'
-        $settings.FileName | Should -Be 'fo-plugins-win-x86-1.0.0.7z'
+        $settings.FileName | Should -Be 'fo-plugins-win-x86-1.0.0.zip'
         $settings.Folder | Should -Be 'Plugins32'
+        $settings.Format | Should -Be 'zip'
         $settings.Url | Should -Match 'plugins-v1\.0\.0/fo-plugins-win-x86'
-        $settings.Sha256 | Should -Match '^[a-f0-9]{64}$'
+        $settings.Sha256 | Should -Be 'd72772d9d20da14993eb213006432cd7903dce91d95e276114f2afda22d29894'
     }
 
     It 'ArchiveUrl override uses supplied SHA256' {
-        $settings = Get-FoPluginBundleSettings -ArchiveUrl 'https://example.test/bundle.7z' -ArchiveSha256 'abc'
-        $settings.Url | Should -Be 'https://example.test/bundle.7z'
+        $settings = Get-FoPluginBundleSettings -ArchiveUrl 'https://example.test/bundle.zip' -ArchiveSha256 'abc'
+        $settings.Url | Should -Be 'https://example.test/bundle.zip'
+        $settings.Format | Should -Be 'zip'
         $settings.Sha256 | Should -Be 'abc'
     }
 }
