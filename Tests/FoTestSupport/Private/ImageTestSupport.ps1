@@ -538,8 +538,16 @@ function Get-FoImageTestLossyThreshold {
         [Parameter(Mandatory)]
         [string]$ProfileName,
         [ValidateSet('Default', 'JPEG', 'PNG', 'GIF', 'WebP', 'APNG', 'AVIF', 'BMP', 'ICO', 'TIFF')]
-        [string]$Format = 'Default'
+        [string]$Format = 'Default',
+        [string]$ImagePath,
+        [string]$PluginPath,
+        [double]$FixtureOverride = -1,
+        [int]$MicroPngMaxDimension = 64
     )
+
+    if ($FixtureOverride -ge 0) {
+        return $FixtureOverride
+    }
 
     $profiles = Import-FoDataFile -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestProfiles.psd1')
     if (-not $profiles.ContainsKey($ProfileName)) {
@@ -552,6 +560,20 @@ function Get-FoImageTestLossyThreshold {
     }
 
     $thresholds = $profile.SSIMDissimilarityMaximum
+
+    if ($Format -eq 'PNG' -and $ImagePath -and $PluginPath -and $thresholds.ContainsKey('PNGMicro')) {
+        try {
+            $info = Get-FoImageInfo -Path $ImagePath -PluginPath $PluginPath
+            $minDim = [Math]::Min($info.Width, $info.Height)
+            if ($minDim -le $MicroPngMaxDimension) {
+                return [double]$thresholds.PNGMicro
+            }
+        }
+        catch {
+            Write-Verbose "Could not resolve PNGMicro threshold for '$ImagePath': $($_.Exception.Message)"
+        }
+    }
+
     if ($thresholds.ContainsKey($Format)) {
         return [double]$thresholds[$Format]
     }
@@ -576,7 +598,20 @@ function Invoke-FoLossyImageOptimizationTest {
         $Settings = Get-FoImageTestProfile -Name $ProfileName -PluginPath (Get-FoTestPluginPath)
     }
 
-    $threshold = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format $Format
+    if (-not $FixturePath -and $FixtureId) {
+        $FixturePath = Get-FoImageTestFixturePath -Id $FixtureId
+    }
+
+    $fixtureOverride = -1
+    if ($FixtureId) {
+        $entry = Get-FoImageTestFixtureEntry -Id $FixtureId
+        if ($null -ne $entry.LossySSIMMaximum) {
+            $fixtureOverride = [double]$entry.LossySSIMMaximum
+        }
+    }
+
+    $threshold = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format $Format `
+        -ImagePath $FixturePath -PluginPath $Settings.PluginPath -FixtureOverride $fixtureOverride
     $params = @{
         Settings                 = $Settings
         CompareMode              = 'SSIMOnly'

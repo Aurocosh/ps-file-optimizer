@@ -46,6 +46,19 @@ Describe 'Image test profiles' -Tag Unit {
         Get-FoImageTestProfileCompareMode -Name 'LosslessDefault' | Should -Be 'Pixel'
     }
 
+    It 'Uses fixture LossySSIMMaximum override when set' {
+        Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format 'PNG' `
+            -FixtureOverride 1.05 | Should -Be 1.05
+    }
+
+    It 'Uses PNGMicro threshold for small PNG fixtures' -Skip:(-not (Test-FoPluginsAvailable)) {
+        $path = Get-FoImageTestFixturePath -Id 'png-basn0g04'
+        $pluginPath = Get-FoTestPluginPath
+        $threshold = Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format 'PNG' `
+            -ImagePath $path -PluginPath $pluginPath
+        $threshold | Should -Be 0.18
+    }
+
     It 'Builds LossyHighQuality settings from profile' {
         $settings = Get-FoImageTestProfile -Name 'LossyHighQuality'
         $settings.Level | Should -Be 9

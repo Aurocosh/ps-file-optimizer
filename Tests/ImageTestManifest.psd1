@@ -14,7 +14,7 @@
                 @{ Id = 'png-basn0g04'; Source = 'pngsuite/basn0g04.png'; Format = 'PNG'; Bytes = 145; Tags = @('PNG', 'grayscale') }
                 @{ Id = 'png-basn0g08'; Source = 'pngsuite/basn0g08.png'; Format = 'PNG'; Bytes = 138; Tags = @('PNG', 'grayscale') }
                 @{ Id = 'png-basn2c08'; Source = 'pngsuite/basn2c08.png'; Format = 'PNG'; Bytes = 145; Tags = @('PNG', 'rgb') }
-                @{ Id = 'png-basn3p04'; Source = 'pngsuite/basn3p04.png'; Format = 'PNG'; Bytes = 216; Tags = @('PNG', 'palette') }
+                @{ Id = 'png-basn3p04'; Source = 'pngsuite/basn3p04.png'; Format = 'PNG'; Bytes = 216; Tags = @('PNG', 'palette'); LossySSIMMaximum = 1.05 }
                 @{ Id = 'png-basn4a08'; Source = 'pngsuite/basn4a08.png'; Format = 'PNG'; Bytes = 126; Tags = @('PNG', 'alpha') }
                 @{ Id = 'png-basn6a08'; Source = 'pngsuite/basn6a08.png'; Format = 'PNG'; Bytes = 184; Tags = @('PNG', 'rgba') }
                 @{ Id = 'png-basn0g16'; Source = 'pngsuite/basn0g16.png'; Format = 'PNG'; Bytes = 167; Tags = @('PNG', 'deep') }

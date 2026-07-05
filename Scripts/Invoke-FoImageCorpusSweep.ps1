@@ -120,10 +120,11 @@ function Get-FoCorpusSweepTargets {
         $manifest = Get-FoImageTestManifest
         foreach ($entry in @($manifest.Tiers.A.Files)) {
             $targets += [PSCustomObject]@{
-                Id           = $entry.Id
-                RelativePath = $entry.Source
-                Format       = $entry.Format
-                Path         = Get-FoImageTestFixturePath -Id $entry.Id
+                Id                 = $entry.Id
+                RelativePath       = $entry.Source
+                Format             = $entry.Format
+                Path               = Get-FoImageTestFixturePath -Id $entry.Id
+                LossySSIMMaximum   = if ($null -ne $entry.LossySSIMMaximum) { [double]$entry.LossySSIMMaximum } else { -1 }
             }
         }
         return $targets
@@ -141,10 +142,11 @@ function Get-FoCorpusSweepTargets {
         }
         $relative = $file.FullName.Substring($tierRoot.Length).TrimStart('\', '/')
         $targets += [PSCustomObject]@{
-            Id           = $null
-            RelativePath = $relative
-            Format       = $file.Extension.TrimStart('.').ToUpperInvariant()
-            Path         = $file.FullName
+            Id               = $null
+            RelativePath     = $relative
+            Format           = $file.Extension.TrimStart('.').ToUpperInvariant()
+            Path             = $file.FullName
+            LossySSIMMaximum = -1
         }
     }
 
@@ -277,11 +279,23 @@ foreach ($target in $targets) {
             $params['SSIMDissimilarityMaximum'] = (Get-FoImageTestDecisions).AvifDefaultSSIMDissimilarityMaximum
         }
         else {
+            $fixtureOverride = -1
+            if ($null -ne $target.LossySSIMMaximum -and $target.LossySSIMMaximum -ge 0) {
+                $fixtureOverride = [double]$target.LossySSIMMaximum
+            }
+            $thresholdParams = @{
+                ProfileName     = $ProfileName
+                Format          = $format
+                ImagePath       = $target.Path
+                PluginPath      = $resolvedPluginPath
+                FixtureOverride = $fixtureOverride
+            }
             try {
-                $params['SSIMDissimilarityMaximum'] = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format $format
+                $params['SSIMDissimilarityMaximum'] = Get-FoImageTestLossyThreshold @thresholdParams
             }
             catch {
-                $params['SSIMDissimilarityMaximum'] = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format 'Default'
+                $thresholdParams['Format'] = 'Default'
+                $params['SSIMDissimilarityMaximum'] = Get-FoImageTestLossyThreshold @thresholdParams
             }
         }
     }

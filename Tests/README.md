@@ -99,7 +99,7 @@ Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the leg
 | `AvifDefaultSSIMDissimilarityMaximum` | AVIF integration tests (`LosslessDefault` profile) |
 | `PngDssimDissimilarityMaximum` | PNG pixel compare via [dssim](https://github.com/kornelski/dssim) when `plugins/dssim/dssim.exe` is present (default `0` = identical) |
 
-Lossy format ceilings live in `ImageTestProfiles.psd1` (`LossyHighQuality.SSIMDissimilarityMaximum`). ICO tests compare the largest embedded icon via `Compare-FoIcoLargest` (see `ImageOptimization.Ico.Tests.ps1`).
+Lossy format ceilings live in `ImageTestProfiles.psd1` (`LossyHighQuality.SSIMDissimilarityMaximum`). For PNG, `PNGMicro` applies when min(width,height) ≤ 64 (pngsuite fixtures). Tier A manifest entries may set `LossySSIMMaximum` for known outliers (e.g. palette PNG after pngquant). ICO tests compare the largest embedded icon via `Compare-FoIcoLargest` (see `ImageOptimization.Ico.Tests.ps1`).
 
 ## Tiered image compare (`Compare-FoImage`)
 
