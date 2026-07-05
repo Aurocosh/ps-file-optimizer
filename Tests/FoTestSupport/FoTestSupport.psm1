@@ -8,6 +8,7 @@ foreach ($name in @(
         'Get-FoModuleDefaults'
         'Format-FoFileSize'
         'Merge-FoSettings'
+        'Get-FoLevelFlags'
         'Get-ExtensionByContent'
         'Test-FoFileGate'
         'Invoke-FoOutputMode'
@@ -24,6 +25,11 @@ foreach ($name in @(
 . (Join-Path $script:FoModuleRoot 'Private\Install-FoPluginBundle.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Get-FoDssimBundleMetadata.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Install-FoDssimBundle.ps1')
+. (Join-Path $script:FoModuleRoot 'Private\Handlers\Invoke-FoNativeHandlers.ps1')
+. (Join-Path $script:FoModuleRoot 'Private\Invoke-FoPlugin.ps1')
+. (Join-Path $script:FoModuleRoot 'Pipelines\_Helpers.ps1')
+Get-ChildItem -Path (Join-Path $script:FoModuleRoot 'Pipelines\*.ps1') -Exclude '_Helpers.ps1' | ForEach-Object { . $_.FullName }
+. (Join-Path $script:FoModuleRoot 'Public\Get-FoPipeline.ps1')
 . (Join-Path $PSScriptRoot 'Private\ImageTestSupport.ps1')
 
 $script:FoImageTestDecisions = Import-FoDataFile -Path (Join-Path $script:FoTestSupportRoot 'ImageTestDecisions.psd1')
@@ -304,6 +310,11 @@ $script:FoTestSupportFunctions = @(
     'Test-FoPluginInstallIntegrationCore'
 )
 
+$script:FoTestSupportEngineFunctions = @(
+    'Get-FoExecutionPlan'
+    'Invoke-FoPlugin'
+)
+
 $fileOptimizerFunctions = @(
     'Optimize-FoFile'
     'Get-FoPipeline'
@@ -315,4 +326,4 @@ $fileOptimizerFunctions = @(
     'Install-FoPlugins'
     'Install-FoDssim'
 )
-Export-ModuleMember -Function ($script:FoTestSupportFunctions + $fileOptimizerFunctions)
+Export-ModuleMember -Function ($script:FoTestSupportFunctions + $script:FoTestSupportEngineFunctions + $fileOptimizerFunctions)

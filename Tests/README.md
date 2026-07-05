@@ -82,6 +82,7 @@ Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the leg
 | `FoTestSupport/` | Test support module (helpers, fixture paths, image orchestration) |
 | `Scripts/Invoke-FoTests.ps1` | Single entry point for local runs and CI |
 | `Scripts/Invoke-FoImageCorpusSweep.ps1` | L3 batch optimize + CSV metrics (Slow; needs plugins) |
+| `Scripts/Debug-FoPipelineSteps.ps1` | Step-by-step pipeline bisect when image compare fails (needs plugins) |
 | `Scripts/Install-Dssim.ps1` | Download pinned dssim 3.4.0 for PNG compare (test-only; 64-bit) |
 | `*.Tests.ps1` | Pester test files |
 | `ImageTestManifest.psd1` | **FO-ImageTest-v1** corpus (Tier A + aux release metadata) |

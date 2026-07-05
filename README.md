@@ -144,3 +144,15 @@ Corpus sweep (batch optimize + CSV metrics; requires plugins):
 $env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'Plugins64'
 ./Scripts/Invoke-FoImageCorpusSweep.ps1 -Tier A
 ```
+
+### Pipeline step debugger (image corruption)
+
+When an image integration test fails, bisect the pipeline to find which step first breaks visual compare:
+
+```powershell
+$env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'Plugins64'
+./Scripts/Debug-FoPipelineSteps.ps1 .\Tests\Fixtures\Images\pngsuite\basn2c08.png
+./Scripts/Debug-FoPipelineSteps.ps1 .\photo.jpg -ProfileName LossyHighQuality
+```
+
+The script compares against an untouched copy after each step, writes per-step snapshots and diff PNGs under a work directory, and reports the first failing step.
