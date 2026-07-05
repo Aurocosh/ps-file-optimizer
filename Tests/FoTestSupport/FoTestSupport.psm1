@@ -241,5 +241,6 @@ $fileOptimizerFunctions = @(
     'Undo-FoOptimization'
     'Get-FoHistory'
     'Install-FoPlugins'
+    'Install-FoDssim'
 )
 Export-ModuleMember -Function ($script:FoTestSupportFunctions + $fileOptimizerFunctions)

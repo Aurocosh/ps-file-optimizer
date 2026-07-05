@@ -81,6 +81,7 @@ Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the leg
 | `FoTestSupport/` | Test support module (helpers, fixture paths, image orchestration) |
 | `Scripts/Invoke-FoTests.ps1` | Single entry point for local runs and CI |
 | `Scripts/Invoke-FoImageCorpusSweep.ps1` | L3 batch optimize + CSV metrics (Slow; needs plugins) |
+| `Scripts/Install-Dssim.ps1` | Download pinned dssim 3.4.0 for PNG compare (test-only; 64-bit) |
 | `*.Tests.ps1` | Pester test files |
 | `ImageTestManifest.psd1` | **FO-ImageTest-v1** corpus (Tier A + aux release metadata) |
 | `ImageTestDecisions.psd1` | Compare thresholds (JPEG fallback, AVIF default, PNG DSSIM) |
@@ -110,12 +111,10 @@ Lossless verification uses a **format-aware tier** rather than a single ImageMag
 | **Other lossless** (GIF frame, WebP lossless, TIFF, …) | magick normalize + **AE** (Pixel mode) | Same as Phase 1 design. |
 | **Lossy profiles** | magick **SSIM** dissimilarity | JPEG may fall back to SSIM when AE fails; AVIF/WebP lossy use profile ceilings. |
 
-Install dssim alongside plugins:
+Install dssim for PNG compare (test-only, 64-bit):
 
 ```powershell
-./Scripts/Install-Plugins.ps1 -Component Both -Mode FullPortable
-# or DSSIM only:
-./Scripts/Install-Plugins.ps1 -Component Dssim
+./Scripts/Install-Dssim.ps1
 ```
 
 Pinned release: `dssim-3.4.0.zip` from [kornelski/dssim releases](https://github.com/kornelski/dssim/releases) — only `win/dssim.exe` is copied to `plugins/dssim/dssim.exe` (AGPL-3.0). Skipped automatically on 32-bit PowerShell.

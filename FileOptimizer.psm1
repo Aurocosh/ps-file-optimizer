@@ -38,6 +38,7 @@ Get-ChildItem -Path (Join-Path $PSScriptRoot 'Pipelines\*.ps1') -Exclude '_Helpe
 . (Join-Path $PSScriptRoot 'Public\Get-FoHistory.ps1')
 . (Join-Path $PSScriptRoot 'Public\Undo-FoOptimization.ps1')
 . (Join-Path $PSScriptRoot 'Public\Install-FoPlugins.ps1')
+. (Join-Path $PSScriptRoot 'Public\Install-FoDssim.ps1')
 
 Export-ModuleMember -Function @(
     'Optimize-FoFile'
@@ -49,4 +50,5 @@ Export-ModuleMember -Function @(
     'Undo-FoOptimization'
     'Get-FoHistory'
     'Install-FoPlugins'
+    'Install-FoDssim'
 )
