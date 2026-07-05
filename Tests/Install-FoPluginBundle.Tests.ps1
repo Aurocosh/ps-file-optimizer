@@ -10,7 +10,7 @@ Describe 'Get-FoPluginBundleSettings' -Tag Unit {
         $settings.FileName | Should -Be 'fo-plugins-win-x64-1.0.0.zip'
         $settings.Format | Should -Be 'zip'
         $settings.Folder | Should -Be 'Plugins64'
-        $settings.Sha256 | Should -Be '56e76bcd440cfd222ff2ad742524e81d1d323b944f02347da6f9398822e62901'
+        $settings.Sha256 | Should -Be 'd2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0'
     }
 
     It 'Resolves x86 bundle metadata when Architecture is 32' {
@@ -20,7 +20,7 @@ Describe 'Get-FoPluginBundleSettings' -Tag Unit {
         $settings.Folder | Should -Be 'Plugins32'
         $settings.Format | Should -Be 'zip'
         $settings.Url | Should -Match 'plugins-v1\.0\.0/fo-plugins-win-x86'
-        $settings.Sha256 | Should -Be 'd72772d9d20da14993eb213006432cd7903dce91d95e276114f2afda22d29894'
+        $settings.Sha256 | Should -Be '96bce923ca76a95db522eeea269a031a2b2a648fc0b44b45ef2a1fec202bc5b6'
     }
 
     It 'ArchiveUrl override uses supplied SHA256' {
