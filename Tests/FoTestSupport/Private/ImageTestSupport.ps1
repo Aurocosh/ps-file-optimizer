@@ -532,12 +532,85 @@ function Invoke-FoImageOptimizationTest {
     }
 }
 
+function Normalize-FoImageTestRelativePath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$RelativePath
+    )
+
+    return (($RelativePath -replace '\\', '/').TrimStart('/'))
+}
+
+function Resolve-FoImageTestLossyFormat {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Format
+    )
+
+    switch ($Format.ToUpperInvariant()) {
+        'JPG' { return 'JPEG' }
+        'JPE' { return 'JPEG' }
+        'WEBP' { return 'WebP' }
+        'TIF' { return 'TIFF' }
+        default { return $Format }
+    }
+}
+
+function Get-FoImageTestLossyFixtureOverride {
+    [CmdletBinding()]
+    param(
+        [string]$RelativePath,
+        [string]$FixtureId
+    )
+
+    if ($FixtureId -and -not $RelativePath) {
+        try {
+            $entry = Get-FoImageTestFixtureEntry -Id $FixtureId
+            $RelativePath = $entry.Source
+            if ($null -ne $entry.LossySSIMMaximum) {
+                return [double]$entry.LossySSIMMaximum
+            }
+        }
+        catch {
+            Write-Verbose "Could not resolve fixture override for id '$FixtureId': $($_.Exception.Message)"
+        }
+    }
+
+    if (-not $RelativePath) {
+        return -1
+    }
+
+    $normalized = Normalize-FoImageTestRelativePath -RelativePath $RelativePath
+
+    $manifest = Get-FoImageTestManifest
+    foreach ($entry in @($manifest.Tiers.A.Files)) {
+        if ((Normalize-FoImageTestRelativePath -RelativePath $entry.Source) -eq $normalized) {
+            if ($null -ne $entry.LossySSIMMaximum) {
+                return [double]$entry.LossySSIMMaximum
+            }
+            break
+        }
+    }
+
+    $overridesPath = Join-Path (Get-FoTestSupportRoot) 'ImageTestLossyOverrides.psd1'
+    if (Test-Path -LiteralPath $overridesPath) {
+        $overrides = Import-FoDataFile -Path $overridesPath
+        if ($overrides.Paths -and $overrides.Paths.ContainsKey($normalized)) {
+            return [double]$overrides.Paths[$normalized]
+        }
+    }
+
+    return -1
+}
+
 function Get-FoImageTestLossyThreshold {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
         [string]$ProfileName,
-        [ValidateSet('Default', 'JPEG', 'PNG', 'GIF', 'WebP', 'APNG', 'AVIF', 'BMP', 'ICO', 'TIFF')]
+        [ValidateSet('Default', 'JPEG', 'JPG', 'JPE', 'PNG', 'GIF', 'WebP', 'WEBP', 'APNG', 'AVIF', 'BMP', 'ICO', 'TIFF', 'TIF')]
         [string]$Format = 'Default',
         [string]$ImagePath,
         [string]$PluginPath,
@@ -548,6 +621,8 @@ function Get-FoImageTestLossyThreshold {
     if ($FixtureOverride -ge 0) {
         return $FixtureOverride
     }
+
+    $Format = Resolve-FoImageTestLossyFormat -Format $Format
 
     $profiles = Import-FoDataFile -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestProfiles.psd1')
     if (-not $profiles.ContainsKey($ProfileName)) {
@@ -587,7 +662,7 @@ function Invoke-FoLossyImageOptimizationTest {
         [string]$FixtureId,
         [string]$FixturePath,
         [string]$ProfileName = 'LossyHighQuality',
-        [ValidateSet('Default', 'JPEG', 'PNG', 'GIF', 'WebP', 'APNG', 'AVIF', 'BMP', 'ICO', 'TIFF')]
+        [ValidateSet('Default', 'JPEG', 'JPG', 'JPE', 'PNG', 'GIF', 'WebP', 'WEBP', 'APNG', 'AVIF', 'BMP', 'ICO', 'TIFF', 'TIF')]
         [string]$Format = 'Default',
         [string]$WorkDirectory,
         [string]$DiffOutputPath,
@@ -598,16 +673,9 @@ function Invoke-FoLossyImageOptimizationTest {
         $Settings = Get-FoImageTestProfile -Name $ProfileName -PluginPath (Get-FoTestPluginPath)
     }
 
-    if (-not $FixturePath -and $FixtureId) {
+    $fixtureOverride = Get-FoImageTestLossyFixtureOverride -FixtureId $FixtureId
+    if ($FixtureId -and -not $FixturePath) {
         $FixturePath = Get-FoImageTestFixturePath -Id $FixtureId
-    }
-
-    $fixtureOverride = -1
-    if ($FixtureId) {
-        $entry = Get-FoImageTestFixtureEntry -Id $FixtureId
-        if ($null -ne $entry.LossySSIMMaximum) {
-            $fixtureOverride = [double]$entry.LossySSIMMaximum
-        }
     }
 
     $threshold = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format $Format `

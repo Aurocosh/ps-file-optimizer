@@ -273,16 +273,12 @@ foreach ($target in $targets) {
     }
 
     if ($effectiveCompareMode -eq 'SSIMOnly') {
-        $format = if ($target.Format) { $target.Format } else { 'Default' }
-        if ($format -eq 'WEBP') { $format = 'WebP' }
+        $format = Resolve-FoImageTestLossyFormat -Format $(if ($target.Format) { $target.Format } else { 'Default' })
         if ($format -eq 'AVIF') {
             $params['SSIMDissimilarityMaximum'] = (Get-FoImageTestDecisions).AvifDefaultSSIMDissimilarityMaximum
         }
         else {
-            $fixtureOverride = -1
-            if ($null -ne $target.LossySSIMMaximum -and $target.LossySSIMMaximum -ge 0) {
-                $fixtureOverride = [double]$target.LossySSIMMaximum
-            }
+            $fixtureOverride = Get-FoImageTestLossyFixtureOverride -RelativePath $target.RelativePath -FixtureId $target.Id
             $thresholdParams = @{
                 ProfileName     = $ProfileName
                 Format          = $format

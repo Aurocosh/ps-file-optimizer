@@ -56,7 +56,19 @@ Describe 'Image test profiles' -Tag Unit {
         $pluginPath = Get-FoTestPluginPath
         $threshold = Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format 'PNG' `
             -ImagePath $path -PluginPath $pluginPath
-        $threshold | Should -Be 0.18
+        $threshold | Should -Be 0.78
+    }
+
+    It 'Maps JPG extension format to JPEG threshold' {
+        Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format 'JPG' | Should -Be 0.016
+    }
+
+    It 'Resolves manifest LossySSIMMaximum by fixture id' {
+        Get-FoImageTestLossyFixtureOverride -FixtureId 'png-basn3p04' | Should -Be 1.05
+    }
+
+    It 'Resolves Tier B path override from ImageTestLossyOverrides.psd1' {
+        Get-FoImageTestLossyFixtureOverride -RelativePath 'gb82-sc/graph.png' | Should -Be 1.40
     }
 
     It 'Builds LossyHighQuality settings from profile' {

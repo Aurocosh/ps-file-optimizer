@@ -210,6 +210,8 @@ $script:FoTestSupportFunctions = @(
     'Get-FoImageTestArtifactPaths'
     'Get-FoImageTestProfile'
     'Get-FoImageTestProfileCompareMode'
+    'Resolve-FoImageTestLossyFormat'
+    'Get-FoImageTestLossyFixtureOverride'
     'Copy-FoImageFixture'
     'Invoke-FoImageOptimizationTest'
     'Get-FoImageTestLossyThreshold'

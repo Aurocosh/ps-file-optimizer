@@ -87,6 +87,7 @@ Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the leg
 | `ImageTestManifest.psd1` | **FO-ImageTest-v1** corpus (Tier A + aux release metadata) |
 | `ImageTestDecisions.psd1` | Compare thresholds (JPEG fallback, AVIF default, PNG DSSIM) |
 | `ImageTestProfiles.psd1` | Settings profiles (`LosslessDefault`, `LossyHighQuality`) including preferred `CompareMode` per profile |
+| `ImageTestLossyOverrides.psd1` | Per-path SSIM ceilings for LossyHighQuality corpus sweeps (Tier B outliers) |
 | `Fixtures/Images/` | Tier A committed fixtures |
 
 ## Image compare thresholds
@@ -99,7 +100,7 @@ Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the leg
 | `AvifDefaultSSIMDissimilarityMaximum` | AVIF integration tests (`LosslessDefault` profile) |
 | `PngDssimDissimilarityMaximum` | PNG pixel compare via [dssim](https://github.com/kornelski/dssim) when `plugins/dssim/dssim.exe` is present (default `0` = identical) |
 
-Lossy format ceilings live in `ImageTestProfiles.psd1` (`LossyHighQuality.SSIMDissimilarityMaximum`). For PNG, `PNGMicro` applies when min(width,height) ≤ 64 (pngsuite fixtures). Tier A manifest entries may set `LossySSIMMaximum` for known outliers (e.g. palette PNG after pngquant). ICO tests compare the largest embedded icon via `Compare-FoIcoLargest` (see `ImageOptimization.Ico.Tests.ps1`).
+Lossy format ceilings live in `ImageTestProfiles.psd1` (`LossyHighQuality.SSIMDissimilarityMaximum`). For PNG, `PNGMicro` applies when min(width,height) ≤ 64. Tier A manifest entries and `ImageTestLossyOverrides.psd1` supply per-path `LossySSIMMaximum` for known outliers (palette pngquant, gb82-sc graph, JPEG conformance edge cases). Corpus sweeps map `.jpg` → `JPEG` for threshold lookup. ICO tests compare the largest embedded icon via `Compare-FoIcoLargest` (see `ImageOptimization.Ico.Tests.ps1`).
 
 ## Tiered image compare (`Compare-FoImage`)
 
