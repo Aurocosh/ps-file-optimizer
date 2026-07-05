@@ -32,8 +32,6 @@ function Invoke-FoPluginChain {
     }
 
     if ($allMissing.Count -gt 0) {
-        $groups = $plan.Plans.GroupName -join ', '
-        $msg = "Cannot optimize '$Path' ($groups): missing tools: $($allMissing -join ', ') (PluginSearchMode=$($Settings.PluginSearchMode), PluginPath=$($Settings.PluginPath))."
         if ($Settings.SkipMissingTools) {
             Write-Warning "Skipping '$Path' - missing tools: $($allMissing -join ', ')."
             return [PSCustomObject]@{
@@ -45,7 +43,10 @@ function Invoke-FoPluginChain {
                 Steps      = @()
             }
         }
-        throw $msg
+
+        if ($Settings.LogLevel -ge 2) {
+            Write-Host "Missing tools for '$Path' (continuing like FileOptimizer): $($allMissing -join ', ')"
+        }
     }
 
     $workFile = Join-Path ([System.IO.Path]::GetTempPath()) ('FileOptimizer_work_{0}_{1}' -f (Get-Random -Max 99999), [System.IO.Path]::GetFileName($Path))

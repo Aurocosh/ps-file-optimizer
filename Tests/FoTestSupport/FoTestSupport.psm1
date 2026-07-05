@@ -229,6 +229,8 @@ $script:FoTestSupportFunctions = @(
     'Compare-FoIcoLargest'
     'Get-FoPluginBundleSettings'
     'Resolve-FoPluginBundleArchitecture'
+    'Resolve-FoPluginArchitectureFromPath'
+    'Get-FoGhostscriptExecutableName'
     'Remove-FoInstalledPluginArchitectures'
     'Get-FoDssimBundleSettings'
     'Test-FoDssimCompareAvailable'

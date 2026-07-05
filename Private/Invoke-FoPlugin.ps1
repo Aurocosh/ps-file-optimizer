@@ -44,6 +44,22 @@ function Invoke-FoPlugin {
     $exitCode = 0
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
+    foreach ($requiredExe in (Get-FoStepRequiredExecutables -Step $Step)) {
+        $toolCheck = Resolve-FoPluginExecutable -Name $requiredExe -SearchMode $SearchMode -PluginPath $PluginPath
+        if (-not $toolCheck.Found) {
+            return @{
+                ExitCode   = 1
+                Skipped    = $true
+                Reason     = 'ToolMissing'
+                Tool       = $requiredExe
+                Accepted   = $false
+                SizeBefore = $sizeBefore
+                SizeAfter  = $sizeBefore
+                DurationMs = $sw.ElapsedMilliseconds
+            }
+        }
+    }
+
     if ($Step.Handler) {
         $handlerMap = @{
             DefluffPipe    = { Invoke-FoDefluffPipe -InputPath $InputFile -OutputPath $tmpOut -DefluffExe (Resolve-FoPluginExecutable -Name 'defluff.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path }
@@ -66,9 +82,6 @@ function Invoke-FoPlugin {
         $argTemplate = $argTemplate.Replace('%OUTPUTFILE%', '""')
 
         $resolved = Resolve-FoPluginExecutable -Name $Step.Executable -SearchMode $SearchMode -PluginPath $PluginPath
-        if (-not $resolved.Found) {
-            return @{ ExitCode = 1; Skipped = $false; Accepted = $false; SizeBefore = $sizeBefore; SizeAfter = $sizeBefore; DurationMs = $sw.ElapsedMilliseconds }
-        }
         $exePath = $resolved.Path
         $workDir = if ($resolved.Source -eq 'Portable' -and $PluginPath) { $PluginPath } else { Split-Path -Parent $exePath }
 

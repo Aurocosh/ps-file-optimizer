@@ -39,6 +39,21 @@ function Resolve-FoPluginBundleArchitecture {
     return $Architecture
 }
 
+function Resolve-FoPluginArchitectureFromPath {
+    [CmdletBinding()]
+    param(
+        [string]$PluginPath
+    )
+
+    if ($PluginPath) {
+        $leaf = Split-Path -Leaf ($PluginPath.TrimEnd('\', '/'))
+        if ($leaf -ieq 'Plugins32') { return '32' }
+        if ($leaf -ieq 'Plugins64') { return '64' }
+    }
+
+    return Resolve-FoPluginBundleArchitecture -Architecture Auto
+}
+
 function Get-FoPluginBundleFolderName {
     [CmdletBinding()]
     param(

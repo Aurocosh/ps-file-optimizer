@@ -43,6 +43,28 @@ Describe 'Resolve-FoPluginBundleArchitecture' -Tag Unit {
     }
 }
 
+Describe 'Resolve-FoPluginArchitectureFromPath' -Tag Unit {
+    It 'Detects architecture from installed plugin folder name' {
+        Resolve-FoPluginArchitectureFromPath -PluginPath 'C:\mod\Plugins32' | Should -Be '32'
+        Resolve-FoPluginArchitectureFromPath -PluginPath 'C:\mod\Plugins64' | Should -Be '64'
+    }
+
+    It 'Falls back to process bitness for generic plugin paths' {
+        $expected = if ([Environment]::Is64BitProcess) { '64' } else { '32' }
+        Resolve-FoPluginArchitectureFromPath -PluginPath 'C:\mod\plugins' | Should -Be $expected
+    }
+}
+
+Describe 'Get-FoGhostscriptExecutableName' -Tag Unit {
+    It 'Selects gswin32c for 32-bit plugin architecture' {
+        Get-FoGhostscriptExecutableName -Architecture 32 | Should -Be 'gswin32c.exe'
+    }
+
+    It 'Selects gswin64c for 64-bit plugin architecture' {
+        Get-FoGhostscriptExecutableName -Architecture 64 | Should -Be 'gswin64c.exe'
+    }
+}
+
 Describe 'Remove-FoInstalledPluginArchitectures' -Tag Unit {
     It 'Removes sibling architecture folders under module root' {
         $root = Join-Path $TestDrive 'mod'

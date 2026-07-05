@@ -145,11 +145,12 @@ Describe 'History and rollback' -Tag Unit {
 }
 
 Describe 'Missing tools policy' -Tag Unit {
-    It 'Throws when tools missing' {
+    It 'Continues per-step when tools missing (FileOptimizer parity)' {
         $png = Join-Path $env:TEMP "fo_miss_$(Get-Random).png"
         New-FoTestPng -Path $png
         try {
-            { Optimize-FoFile -Path $png -PluginPath 'C:\nonexistent_plugins' -PluginSearchMode PortableOnly -ErrorAction Stop } | Should -Throw
+            $r = Optimize-FoFile -Path $png -PluginPath 'C:\nonexistent_plugins' -PluginSearchMode PortableOnly -ErrorAction Stop
+            $r[0].Status | Should -BeIn @('Unchanged', 'Optimized')
         }
         finally {
             Remove-Item $png -Force -ErrorAction SilentlyContinue
