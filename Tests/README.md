@@ -150,6 +150,8 @@ $env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'plugins'
 ./Scripts/Invoke-FoImageCorpusSweep.ps1 -Tier B -MaxFiles 50 -OutputCsv .\tier-b.csv
 ```
 
-Use `-SkipCompare` for size-only regression runs. Plugin versions are logged to verbose output at the start of `Invoke-FoTests.ps1` and corpus sweeps.
+Use `-SkipCompare` for size-only regression runs. Default CSV name: `corpus-sweep-tier{tier}-{profile}-{timestamp}.csv` (e.g. `corpus-sweep-tiera-LosslessDefault-20260705-180000.csv`). Each row includes `OptimizeDurationMs` (plugin chain) and `CompareDurationMs` (visual compare; empty when `-SkipCompare` or optimization failed).
+
+Plugin versions are logged to verbose output at the start of `Invoke-FoTests.ps1` and corpus sweeps.
 
 Per-file compare or optimization errors are recorded in the CSV `Error` column; the sweep continues through the full corpus unless the error is a missing-dssim prerequisite (fails fast at sweep start or rethrows per file). **BMP** pixel compare uses bundled `ffmpeg.exe` (RGBA PNG) when ImageMagick normalize fails, and falls back to `imagew.exe` when ffmpeg cannot decode (e.g. 2-bit palette BMP) or when ffmpeg-normalized pixels still disagree (e.g. 4-bit palette v4 layouts). **PNG** pixel compare requires **dssim** under `plugins/dssim/dssim.exe` (64-bit) unless opted out. Motion-JPEG fixtures (e.g. `mjpeg.jpg`) can hang ImageMagick during normalize-for-compare; `Invoke-FoMagickCli` enforces a 90s timeout so the sweep records a compare error instead of blocking indefinitely.

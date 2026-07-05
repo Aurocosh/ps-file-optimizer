@@ -15,7 +15,7 @@
   Settings profile from Tests/ImageTestProfiles.psd1.
 
 .PARAMETER OutputCsv
-  CSV path for results. Default: ./corpus-sweep-{tier}-{timestamp}.csv under current directory.
+  CSV path for results. Default: ./corpus-sweep-tier{tier}-{profile}-{timestamp}.csv under current directory.
 
 .PARAMETER SkipCompare
   Size-only regression; skip visual compare.
@@ -127,7 +127,16 @@ function Get-FoCorpusSweepWorkDirectoryName {
     )
 
     $label = if ($RelativePath) { $RelativePath } else { [System.IO.Path]::GetFileName($FullPath) }
-    ($label -replace '[\\/:*?"<>|]', '_')
+    Get-FoCorpusSweepSafeLabel -Value $label
+}
+
+function Get-FoCorpusSweepSafeLabel {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Value
+    )
+
+    ($Value -replace '[\\/:*?"<>|]', '_')
 }
 
 function New-FoCorpusSweepResultRow {
@@ -147,9 +156,15 @@ function New-FoCorpusSweepResultRow {
             Status           = $Result.Optimization.Status
             OriginalSize     = $Result.Optimization.OriginalSize
             FinalSize        = $Result.Optimization.FinalSize
-            BytesSaved       = $Result.Optimization.BytesSaved
-            DurationMs       = $Result.Optimization.DurationMs
-            CompareMode      = $Result.CompareMode
+            BytesSaved         = $Result.Optimization.BytesSaved
+            OptimizeDurationMs = if ($null -ne $Result.OptimizeDurationMs) {
+                $Result.OptimizeDurationMs
+            }
+            else {
+                $Result.Optimization.DurationMs
+            }
+            CompareDurationMs  = $Result.CompareDurationMs
+            CompareMode          = $Result.CompareMode
             ComparePass      = if ($Result.Compare) { $Result.Compare.Pass } else { $null }
             MetricValue      = if ($Result.Compare) { $Result.Compare.MetricValue } else { $null }
             Pass             = $Result.Pass
@@ -167,9 +182,10 @@ function New-FoCorpusSweepResultRow {
         Status           = 'Error'
         OriginalSize     = $null
         FinalSize        = $null
-        BytesSaved       = $null
-        DurationMs       = $null
-        CompareMode      = $null
+        BytesSaved         = $null
+        OptimizeDurationMs = $null
+        CompareDurationMs  = $null
+        CompareMode        = $null
         ComparePass      = $null
         MetricValue      = $null
         Pass             = $false
@@ -254,7 +270,8 @@ foreach ($target in $targets) {
 Write-Progress -Activity 'Corpus sweep' -Completed
 
 if (-not $OutputCsv) {
-    $OutputCsv = Join-Path (Get-Location) ("corpus-sweep-tier{0}-{1}.csv" -f $Tier.ToLower(), (Get-Date -Format 'yyyyMMdd-HHmmss'))
+    $profileLabel = Get-FoCorpusSweepSafeLabel -Value $ProfileName
+    $OutputCsv = Join-Path (Get-Location) ("corpus-sweep-tier{0}-{1}-{2}.csv" -f $Tier.ToLower(), $profileLabel, (Get-Date -Format 'yyyyMMdd-HHmmss'))
 }
 $OutputCsv = [System.IO.Path]::GetFullPath($OutputCsv)
 $csvDir = Split-Path -Parent $OutputCsv

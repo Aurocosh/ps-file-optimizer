@@ -392,7 +392,10 @@ function Invoke-FoImageOptimizationTest {
     Copy-Item -LiteralPath $FixturePath -Destination $inputPath -Force
     Copy-Item -LiteralPath $FixturePath -Destination $beforePath -Force
 
+    $optimizeSw = [System.Diagnostics.Stopwatch]::StartNew()
     $optimization = Invoke-FoPluginChain -Path $inputPath -Settings $Settings
+    $optimizeSw.Stop()
+    $optimizeDurationMs = $optimizeSw.ElapsedMilliseconds
 
     $afterPath = if ($optimization.Status -eq 'Optimized') {
         $optimization.OutputPath
@@ -412,6 +415,7 @@ function Invoke-FoImageOptimizationTest {
 
     $compare = $null
     $compareError = $null
+    $compareDurationMs = $null
     $pass = $optimization.Status -in @('Optimized', 'Unchanged')
 
     if (-not $SkipCompare -and $pass) {
@@ -433,6 +437,7 @@ function Invoke-FoImageOptimizationTest {
             $compareParams['AllowMissingDssim'] = $true
         }
 
+        $compareSw = [System.Diagnostics.Stopwatch]::StartNew()
         try {
             $compare = Compare-FoImage @compareParams
 
@@ -455,6 +460,10 @@ function Invoke-FoImageOptimizationTest {
             }
             $compareError = $_.Exception.Message
             $pass = $false
+        }
+        finally {
+            $compareSw.Stop()
+            $compareDurationMs = $compareSw.ElapsedMilliseconds
         }
     }
 
@@ -485,6 +494,8 @@ function Invoke-FoImageOptimizationTest {
         Optimization     = $optimization
         Compare          = $compare
         CompareError     = $compareError
+        CompareDurationMs = $compareDurationMs
+        OptimizeDurationMs = $optimizeDurationMs
         CompareMode      = if ($CompareMode -eq 'SSIMOnly') { 'SSIMOnly' } else { $CompareMode }
         Decode           = $decode
         Pass             = $pass
