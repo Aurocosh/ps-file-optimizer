@@ -29,6 +29,7 @@ Each `*.Tests.ps1` imports the **FoTestSupport** module in a `BeforeDiscovery` b
 | `FO_PLUGIN_BUNDLE_SHA256` | Expected SHA256 when using `FO_PLUGIN_BUNDLE_URL`. |
 | `FO_DSSIM_BUNDLE_URL` | Override default DSSIM zip download URL (compare tool for PNG tests). |
 | `FO_DSSIM_BUNDLE_SHA256` | Expected SHA256 when using `FO_DSSIM_BUNDLE_URL`. |
+| `FO_COMPARE_ALLOW_MISSING_DSSIM` | Set to `1` to allow PNG pixel compare without dssim (ImageMagick AE fallback). |
 
 Example with plugins:
 
@@ -106,15 +107,22 @@ Lossless verification uses a **format-aware tier** rather than a single ImageMag
 
 | Format / case | Engine | Notes |
 |---------------|--------|-------|
-| **PNG** (both paths `.png`) | **dssim 3.4.0** when `{plugins}/dssim/dssim.exe` exists and PowerShell is 64-bit | Perceptual multiscale SSIM; score `0` = identical. Falls back to magick AE normalize path when dssim is absent (32-bit host). |
+| **PNG** (both paths `.png`) | **dssim 3.4.0** (required by default) | `{plugins}/dssim/dssim.exe`; 64-bit only. Throws if missing unless `-AllowMissingDssim` or `FO_COMPARE_ALLOW_MISSING_DSSIM=1`. |
 | **BMP / DIB** | magick normalize, with **ffmpeg → imagew** fallbacks | ImageMagick cannot decode some FO BMP variants; ffmpeg handles most; imagew covers 2-bit palette and ffmpeg disagreements. |
 | **Other lossless** (GIF frame, WebP lossless, TIFF, …) | magick normalize + **AE** (Pixel mode) | Same as Phase 1 design. |
 | **Lossy profiles** | magick **SSIM** dissimilarity | JPEG may fall back to SSIM when AE fails; AVIF/WebP lossy use profile ceilings. |
 
-Install dssim for PNG compare (test-only, 64-bit):
+Install dssim for PNG compare (required for corpus sweeps and PNG integration tests on 64-bit):
 
 ```powershell
 ./Scripts/Install-Dssim.ps1
+```
+
+To allow ImageMagick AE fallback when dssim is absent (not recommended for pngsuite/regression):
+
+```powershell
+./Scripts/Invoke-FoImageCorpusSweep.ps1 -Tier B -AllowMissingDssim
+# or: $env:FO_COMPARE_ALLOW_MISSING_DSSIM = '1'
 ```
 
 Pinned release: `dssim-3.4.0.zip` from [kornelski/dssim releases](https://github.com/kornelski/dssim/releases) — only `win/dssim.exe` is copied to `plugins/dssim/dssim.exe` (AGPL-3.0). Skipped automatically on 32-bit PowerShell.
@@ -144,4 +152,4 @@ $env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'plugins'
 
 Use `-SkipCompare` for size-only regression runs. Plugin versions are logged to verbose output at the start of `Invoke-FoTests.ps1` and corpus sweeps.
 
-Per-file compare or optimization errors are recorded in the CSV `Error` column; the sweep continues through the full corpus. **BMP** pixel compare uses bundled `ffmpeg.exe` (RGBA PNG) when ImageMagick normalize fails, and falls back to `imagew.exe` when ffmpeg cannot decode (e.g. 2-bit palette BMP) or when ffmpeg-normalized pixels still disagree (e.g. 4-bit palette v4 layouts). **PNG** pixel compare uses **dssim** when installed under `plugins/dssim/dssim.exe` (64-bit only). Motion-JPEG fixtures (e.g. `mjpeg.jpg`) can hang ImageMagick during normalize-for-compare; `Invoke-FoMagickCli` enforces a 90s timeout so the sweep records a compare error instead of blocking indefinitely.
+Per-file compare or optimization errors are recorded in the CSV `Error` column; the sweep continues through the full corpus unless the error is a missing-dssim prerequisite (fails fast at sweep start or rethrows per file). **BMP** pixel compare uses bundled `ffmpeg.exe` (RGBA PNG) when ImageMagick normalize fails, and falls back to `imagew.exe` when ffmpeg cannot decode (e.g. 2-bit palette BMP) or when ffmpeg-normalized pixels still disagree (e.g. 4-bit palette v4 layouts). **PNG** pixel compare requires **dssim** under `plugins/dssim/dssim.exe` (64-bit) unless opted out. Motion-JPEG fixtures (e.g. `mjpeg.jpg`) can hang ImageMagick during normalize-for-compare; `Invoke-FoMagickCli` enforces a 90s timeout so the sweep records a compare error instead of blocking indefinitely.

@@ -347,7 +347,8 @@ function Invoke-FoImageOptimizationTest {
         [string]$WorkDirectory,
         [string]$DiffOutputPath,
         [double]$SSIMDissimilarityMaximum = -1,
-        [switch]$SkipCompare
+        [switch]$SkipCompare,
+        [switch]$AllowMissingDssim
     )
 
     if (-not $FixtureId -and -not $FixturePath) {
@@ -428,6 +429,9 @@ function Invoke-FoImageOptimizationTest {
         if ($compareModeEffective -eq 'Pixel') {
             $compareParams['PngDssimDissimilarityMaximum'] = (Get-FoImageTestDecisions).PngDssimDissimilarityMaximum
         }
+        if ($AllowMissingDssim) {
+            $compareParams['AllowMissingDssim'] = $true
+        }
 
         try {
             $compare = Compare-FoImage @compareParams
@@ -437,7 +441,7 @@ function Invoke-FoImageOptimizationTest {
                 if ($ext -match '(?i)^\.jpe?g$') {
                     $jpegCompare = Test-FoJpegImageCompare -Before $beforePath -After $afterPath `
                         -PluginPath $Settings.PluginPath -SSIMDissimilarityMaximum $SSIMDissimilarityMaximum `
-                        -DiffOutputPath $DiffOutputPath
+                        -DiffOutputPath $DiffOutputPath -AllowMissingDssim:$AllowMissingDssim
                     $compare = $jpegCompare.Compare
                     $CompareMode = $jpegCompare.CompareMode
                 }
@@ -446,6 +450,9 @@ function Invoke-FoImageOptimizationTest {
             $pass = $compare.Pass
         }
         catch {
+            if (Test-FoCompareDssimRequiredError -Message $_.Exception.Message) {
+                throw
+            }
             $compareError = $_.Exception.Message
             $pass = $false
         }
@@ -582,7 +589,8 @@ function Compare-FoGifFrames {
         [Parameter(Mandatory)]
         [string]$After,
         [string]$PluginPath,
-        [string]$WorkDirectory
+        [string]$WorkDirectory,
+        [switch]$AllowMissingDssim
     )
 
     $beforeCount = Get-FoGifFrameCount -Path $Before -PluginPath $PluginPath
@@ -632,7 +640,8 @@ function Compare-FoGifFrames {
             }
         }
 
-        $compare = Compare-FoImage -Before $beforeFrame -After $afterFrame -Mode Pixel -PluginPath $PluginPath
+        $compare = Compare-FoImage -Before $beforeFrame -After $afterFrame -Mode Pixel -PluginPath $PluginPath `
+            -AllowMissingDssim:$AllowMissingDssim
         $frameResults += [PSCustomObject]@{
             FrameIndex  = $i
             Pass        = $compare.Pass
@@ -659,11 +668,12 @@ function Test-FoJpegImageCompare {
         [string]$After,
         [string]$PluginPath,
         [double]$SSIMDissimilarityMaximum = -1,
-        [string]$DiffOutputPath
+        [string]$DiffOutputPath,
+        [switch]$AllowMissingDssim
     )
 
     $compare = Compare-FoImage -Before $Before -After $After -Mode Pixel -PluginPath $PluginPath `
-        -DiffOutputPath $DiffOutputPath
+        -DiffOutputPath $DiffOutputPath -AllowMissingDssim:$AllowMissingDssim
     $mode = 'Pixel'
 
     if (-not $compare.Pass) {
@@ -749,7 +759,8 @@ function Compare-FoApngFrames {
         [Parameter(Mandatory)]
         [string]$After,
         [string]$PluginPath,
-        [string]$WorkDirectory
+        [string]$WorkDirectory,
+        [switch]$AllowMissingDssim
     )
 
     $workRoot = if ($WorkDirectory) {
@@ -785,7 +796,8 @@ function Compare-FoApngFrames {
     for ($i = 1; $i -le $beforeCount; $i++) {
         $beforeFrame = Join-Path $beforeDir ("frame_{0:D4}.png" -f $i)
         $afterFrame = Join-Path $afterDir ("frame_{0:D4}.png" -f $i)
-        $compare = Compare-FoImage -Before $beforeFrame -After $afterFrame -Mode Pixel -PluginPath $PluginPath
+        $compare = Compare-FoImage -Before $beforeFrame -After $afterFrame -Mode Pixel -PluginPath $PluginPath `
+            -AllowMissingDssim:$AllowMissingDssim
         $frameResults += [PSCustomObject]@{
             FrameIndex  = $i - 1
             Pass        = $compare.Pass
@@ -864,7 +876,8 @@ function Compare-FoIcoLargest {
         [Parameter(Mandatory)]
         [string]$After,
         [string]$PluginPath,
-        [string]$WorkDirectory
+        [string]$WorkDirectory,
+        [switch]$AllowMissingDssim
     )
 
     $beforeIndex = Get-FoIcoLargestIndex -Path $Before -PluginPath $PluginPath
@@ -910,7 +923,8 @@ function Compare-FoIcoLargest {
         }
     }
 
-    $compare = Compare-FoImage -Before $beforePng -After $afterPng -Mode Pixel -PluginPath $PluginPath
+    $compare = Compare-FoImage -Before $beforePng -After $afterPng -Mode Pixel -PluginPath $PluginPath `
+        -AllowMissingDssim:$AllowMissingDssim
     return [PSCustomObject]@{
         Pass        = $compare.Pass
         BeforeIndex = $beforeIndex

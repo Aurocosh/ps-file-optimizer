@@ -71,3 +71,27 @@ Describe 'Test-FoDssimCompareAvailable' -Tag Unit {
         }
     }
 }
+
+Describe 'Assert-FoDssimCompareAvailable' -Tag Unit {
+    It 'Throws when dssim.exe is not installed and opt-out is disabled' {
+        $fakeRoot = Join-Path $env:TEMP "FoDssimAssert_$(Get-Random)"
+        New-Item -ItemType Directory -Path $fakeRoot -Force | Out-Null
+        try {
+            { Assert-FoDssimCompareAvailable -PluginPath $fakeRoot } | Should -Throw '*DSSIM is required for PNG pixel compare*'
+        }
+        finally {
+            Remove-Item -LiteralPath $fakeRoot -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'Does not throw when AllowMissingDssim is set' {
+        $fakeRoot = Join-Path $env:TEMP "FoDssimAssert_$(Get-Random)"
+        New-Item -ItemType Directory -Path $fakeRoot -Force | Out-Null
+        try {
+            { Assert-FoDssimCompareAvailable -PluginPath $fakeRoot -AllowMissingDssim } | Should -Not -Throw
+        }
+        finally {
+            Remove-Item -LiteralPath $fakeRoot -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}

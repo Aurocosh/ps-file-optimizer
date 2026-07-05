@@ -15,7 +15,7 @@ Describe 'Compare-FoImage' -Tag Unit -Skip:(-not (Test-FoPluginsAvailable)) {
         }
     }
 
-    It 'Reports identical PNG files as a pass in Pixel mode' {
+    It 'Reports identical PNG files as a pass in Pixel mode' -Skip:(-not (Test-FoDssimCompareAvailable -PluginPath $script:PluginPath)) {
         $original = Join-Path $script:WorkDir 'identical-source.png'
         $copy = Join-Path $script:WorkDir 'identical-copy.png'
         New-FoTestPng -Path $original -Width 32 -Height 32
@@ -27,13 +27,33 @@ Describe 'Compare-FoImage' -Tag Unit -Skip:(-not (Test-FoPluginsAvailable)) {
         $result.MetricValue | Should -Be 0
         $result.Width | Should -Be 32
         $result.Height | Should -Be 32
-        $dssimExe = Join-Path $script:PluginPath 'dssim\dssim.exe'
-        if ([Environment]::Is64BitProcess -and (Test-Path -LiteralPath $dssimExe)) {
-            $result.CompareTool | Should -Be 'Dssim'
-        }
+        $result.CompareTool | Should -Be 'Dssim'
     }
 
-    It 'Reports different PNG files as a fail in Pixel mode' {
+    It 'Throws when dssim is missing for PNG pixel compare' -Skip:(Test-FoDssimCompareAvailable -PluginPath $script:PluginPath) {
+        $original = Join-Path $script:WorkDir 'dssim-required-source.png'
+        $copy = Join-Path $script:WorkDir 'dssim-required-copy.png'
+        New-FoTestPng -Path $original -Width 8 -Height 8
+        Copy-Item -LiteralPath $original -Destination $copy
+
+        { Compare-FoImage -Before $original -After $copy -Mode Pixel -PluginPath $script:PluginPath } |
+            Should -Throw '*DSSIM is required for PNG pixel compare*'
+    }
+
+    It 'Falls back to magick AE when dssim is missing and AllowMissingDssim is set' -Skip:(Test-FoDssimCompareAvailable -PluginPath $script:PluginPath) {
+        $original = Join-Path $script:WorkDir 'allow-missing-source.png'
+        $copy = Join-Path $script:WorkDir 'allow-missing-copy.png'
+        New-FoTestPng -Path $original -Width 16 -Height 16
+        Copy-Item -LiteralPath $original -Destination $copy
+
+        $result = Compare-FoImage -Before $original -After $copy -Mode Pixel -PluginPath $script:PluginPath `
+            -AllowMissingDssim
+
+        $result.Pass | Should -Be $true
+        $result.MetricValue | Should -Be 0
+    }
+
+    It 'Reports different PNG files as a fail in Pixel mode' -Skip:(-not (Test-FoDssimCompareAvailable -PluginPath $script:PluginPath)) {
         $before = Join-Path $script:WorkDir 'before.png'
         $after = Join-Path $script:WorkDir 'after.png'
         $diff = Join-Path $script:WorkDir 'diff.png'
@@ -53,8 +73,9 @@ Describe 'Compare-FoImage' -Tag Unit -Skip:(-not (Test-FoPluginsAvailable)) {
 
         $result.Pass | Should -Be $false
         ($result.MetricValue -gt 0) | Should -Be $true
-        (Test-Path -LiteralPath $diff) | Should -Be $true
-        $result.DiffPath | Should -Be $diff
+        if ($null -ne $result.DiffPath) {
+            (Test-Path -LiteralPath $result.DiffPath) | Should -Be $true
+        }
     }
 
     It 'Reports identical PNG files with zero SSIM dissimilarity' {

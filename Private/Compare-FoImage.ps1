@@ -659,6 +659,7 @@ function Compare-FoImage {
         [string]$Mode = 'Pixel',
         [double]$SSIMDissimilarityMaximum = 0,
         [double]$PngDssimDissimilarityMaximum = 0,
+        [switch]$AllowMissingDssim,
         [string]$MagickPath,
         [string]$PluginPath,
         [string]$DiffOutputPath
@@ -679,6 +680,8 @@ function Compare-FoImage {
                 -DissimilarityMaximum $PngDssimDissimilarityMaximum -MagickPath $MagickPath `
                 -PluginPath $PluginPath -DiffOutputPath $DiffOutputPath
         }
+
+        Assert-FoDssimCompareAvailable -PluginPath $PluginPath -AllowMissingDssim:$AllowMissingDssim
     }
 
     $magick = Get-FoCompareMagickPath -MagickPath $MagickPath -PluginPath $PluginPath

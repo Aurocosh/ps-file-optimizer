@@ -17,6 +17,13 @@
 .PARAMETER OutputCsv
   CSV path for results. Default: ./corpus-sweep-{tier}-{timestamp}.csv under current directory.
 
+.PARAMETER SkipCompare
+  Size-only regression; skip visual compare.
+
+.PARAMETER AllowMissingDssim
+  Allow PNG pixel compare to fall back to ImageMagick AE when dssim is not installed.
+  Default: require dssim (also opt out with FO_COMPARE_ALLOW_MISSING_DSSIM=1).
+
 .PARAMETER MaxFiles
   Limit files processed (0 = all). Useful for smoke runs.
 
@@ -38,6 +45,7 @@ param(
     [ValidateSet('Pixel', 'SSIM', 'SSIMOnly')]
     [string]$CompareMode = 'Pixel',
     [switch]$SkipCompare,
+    [switch]$AllowMissingDssim,
     [int]$MaxFiles = 0,
     [string]$CorpusRoot,
     [string]$WorkDirectory
@@ -61,6 +69,10 @@ else {
 }
 
 Write-FoTestPluginVersions -PluginPath $resolvedPluginPath -Verbose
+
+if (-not $SkipCompare -and $CompareMode -eq 'Pixel' -and -not (Test-FoCompareAllowMissingDssim -AllowMissingDssim:$AllowMissingDssim.IsPresent)) {
+    Assert-FoDssimCompareAvailable -PluginPath $resolvedPluginPath
+}
 
 $settings = Get-FoImageTestProfile -Name $ProfileName -PluginPath $resolvedPluginPath
 $imageExtensions = @('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tif', '.tiff', '.ico', '.avif')
@@ -206,6 +218,9 @@ foreach ($target in $targets) {
         WorkDirectory = $itemWorkDir
         SkipCompare   = $SkipCompare.IsPresent
     }
+    if ($AllowMissingDssim) {
+        $params['AllowMissingDssim'] = $true
+    }
 
     if ($CompareMode -eq 'SSIMOnly' -and $ProfileName -eq 'LossyHighQuality') {
         $format = if ($target.Format) { $target.Format } else { 'Default' }
@@ -229,6 +244,9 @@ foreach ($target in $targets) {
         $rows += New-FoCorpusSweepResultRow -Tier $Tier -Target $target -Result $result
     }
     catch {
+        if (Test-FoCompareDssimRequiredError -Message $_.Exception.Message) {
+            throw
+        }
         Write-Warning "Sweep error on '$label': $($_.Exception.Message)"
         $rows += New-FoCorpusSweepResultRow -Tier $Tier -Target $target -ErrorMessage $_.Exception.Message
     }

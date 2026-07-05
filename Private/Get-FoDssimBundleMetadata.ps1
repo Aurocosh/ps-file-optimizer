@@ -6,6 +6,70 @@ $script:FoDssimBundleFileName = 'dssim-3.4.0.zip'
 $script:FoDssimBundleSha256 = 'c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c'
 $script:FoDssimWindowsRelativePath = 'win\dssim.exe'
 $script:FoDssimInstallRelativePath = 'dssim\dssim.exe'
+$script:FoCompareDssimRequiredPrefix = 'DSSIM is required for PNG pixel compare'
+
+function Test-FoCompareAllowMissingDssim {
+    [CmdletBinding()]
+    param(
+        [switch]$AllowMissingDssim
+    )
+
+    if ($AllowMissingDssim) {
+        return $true
+    }
+
+    $envVal = $env:FO_COMPARE_ALLOW_MISSING_DSSIM
+    if ($envVal -and ($envVal -match '^(1|true|yes)$')) {
+        return $true
+    }
+
+    return $false
+}
+
+function Test-FoCompareDssimRequiredError {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Message
+    )
+
+    return ($Message -like "$($script:FoCompareDssimRequiredPrefix)*")
+}
+
+function Get-FoDssimCompareRequiredMessage {
+    [CmdletBinding()]
+    param(
+        [string]$PluginPath
+    )
+
+    $expectedPath = Get-FoDssimInstallPath -PluginPath $PluginPath
+    $hint = if (-not [Environment]::Is64BitProcess) {
+        'DSSIM requires 64-bit PowerShell. Pass -AllowMissingDssim or set FO_COMPARE_ALLOW_MISSING_DSSIM=1 to fall back to ImageMagick AE.'
+    }
+    else {
+        'Run Scripts/Install-Dssim.ps1 (or Install-FoDssim). Pass -AllowMissingDssim or set FO_COMPARE_ALLOW_MISSING_DSSIM=1 to fall back to ImageMagick AE.'
+    }
+
+    return "$($script:FoCompareDssimRequiredPrefix) but dssim.exe was not found at '$expectedPath'. $hint"
+}
+
+function Assert-FoDssimCompareAvailable {
+    [CmdletBinding()]
+    param(
+        [string]$PluginPath,
+        [switch]$AllowMissingDssim
+    )
+
+    if (Test-FoCompareAllowMissingDssim -AllowMissingDssim:$AllowMissingDssim) {
+        return
+    }
+
+    if (Test-FoDssimCompareAvailable -PluginPath $PluginPath) {
+        return
+    }
+
+    throw (Get-FoDssimCompareRequiredMessage -PluginPath $PluginPath)
+}
 
 function Get-FoDssimBundleSettings {
     [CmdletBinding()]
