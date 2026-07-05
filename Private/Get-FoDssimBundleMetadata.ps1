@@ -122,12 +122,19 @@ function Get-FoDssimInstallPath {
         if (Get-Command Get-FoTestPluginPath -ErrorAction SilentlyContinue) {
             $searchPath = Get-FoTestPluginPath
         }
-        elseif (Get-Command Get-FoDefaultPluginPath -ErrorAction SilentlyContinue) {
+        if (-not $searchPath -and (Get-Command Get-FoDefaultPluginPath -ErrorAction SilentlyContinue)) {
             $searchPath = Get-FoDefaultPluginPath
         }
-        else {
-            $searchPath = Join-Path $script:FoModuleRoot 'plugins'
+        if (-not $searchPath -and $script:FoModuleRoot) {
+            $legacy = Join-Path $script:FoModuleRoot 'plugins'
+            if (Test-Path -LiteralPath $legacy) {
+                $searchPath = $legacy
+            }
         }
+    }
+
+    if (-not $searchPath) {
+        return $null
     }
 
     return Join-Path ([System.IO.Path]::GetFullPath($searchPath)) ($script:FoDssimInstallRelativePath -replace '\\', [System.IO.Path]::DirectorySeparatorChar)
@@ -144,6 +151,9 @@ function Test-FoDssimCompareAvailable {
     }
 
     $path = Get-FoDssimInstallPath -PluginPath $PluginPath
+    if (-not $path) {
+        return $false
+    }
     return (Test-Path -LiteralPath $path)
 }
 
@@ -154,10 +164,11 @@ function Resolve-FoDssimExecutable {
     )
 
     $path = Get-FoDssimInstallPath -PluginPath $PluginPath
+    $found = $path -and (Test-Path -LiteralPath $path)
     return [PSCustomObject]@{
         Name   = 'dssim.exe'
-        Path   = if (Test-Path -LiteralPath $path) { $path } else { $null }
+        Path   = if ($found) { $path } else { $null }
         Source = 'Portable'
-        Found  = (Test-Path -LiteralPath $path)
+        Found  = $found
     }
 }
