@@ -7,6 +7,7 @@ Describe 'Image test decisions manifest' -Tag Unit {
         $d = Get-FoImageTestDecisions
         $d.JpegSSIMFallbackMaximum | Should -Be 0
         $d.AvifDefaultSSIMDissimilarityMaximum | Should -Be 0.005
+        $d.PngDssimDissimilarityMaximum | Should -Be 0
     }
 }
 

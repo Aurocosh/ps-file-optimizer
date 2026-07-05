@@ -27,6 +27,10 @@ Describe 'Compare-FoImage' -Tag Unit -Skip:(-not (Test-FoPluginsAvailable)) {
         $result.MetricValue | Should -Be 0
         $result.Width | Should -Be 32
         $result.Height | Should -Be 32
+        $dssimExe = Join-Path $script:PluginPath 'dssim\dssim.exe'
+        if ([Environment]::Is64BitProcess -and (Test-Path -LiteralPath $dssimExe)) {
+            $result.CompareTool | Should -Be 'Dssim'
+        }
     }
 
     It 'Reports different PNG files as a fail in Pixel mode' {

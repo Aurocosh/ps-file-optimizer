@@ -425,6 +425,9 @@ function Invoke-FoImageOptimizationTest {
         if ($compareModeEffective -eq 'SSIM' -and $SSIMDissimilarityMaximum -ge 0) {
             $compareParams['SSIMDissimilarityMaximum'] = $SSIMDissimilarityMaximum
         }
+        if ($compareModeEffective -eq 'Pixel') {
+            $compareParams['PngDssimDissimilarityMaximum'] = (Get-FoImageTestDecisions).PngDssimDissimilarityMaximum
+        }
 
         try {
             $compare = Compare-FoImage @compareParams

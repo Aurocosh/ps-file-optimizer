@@ -88,6 +88,177 @@ function Test-FoCompareBmpPath {
     return ($extension -match '(?i)^\.(bmp|dib)$')
 }
 
+function Test-FoComparePngPath {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Path
+    )
+
+    $extension = [System.IO.Path]::GetExtension($Path)
+    return ($extension -match '(?i)^\.png$')
+}
+
+function Get-FoCompareDssimPathOptional {
+    [CmdletBinding()]
+    param(
+        [string]$PluginPath
+    )
+
+    if (-not [Environment]::Is64BitProcess) {
+        return $null
+    }
+
+    $searchPath = $PluginPath
+    if (-not $searchPath) {
+        if (Get-Command Get-FoTestPluginPath -ErrorAction SilentlyContinue) {
+            $searchPath = Get-FoTestPluginPath
+        }
+        elseif (Get-Command Get-FoDefaultPluginPath -ErrorAction SilentlyContinue) {
+            $searchPath = Get-FoDefaultPluginPath
+        }
+    }
+    if (-not $searchPath) {
+        return $null
+    }
+
+    $candidate = Join-Path ([System.IO.Path]::GetFullPath($searchPath)) 'dssim\dssim.exe'
+    if (Test-Path -LiteralPath $candidate) {
+        return $candidate
+    }
+
+    return $null
+}
+
+function Invoke-FoDssimCli {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$DssimExe,
+        [Parameter(Mandatory)]
+        [string]$Before,
+        [Parameter(Mandatory)]
+        [string]$After,
+        [string]$DiffOutputPath,
+        [int]$TimeoutSeconds = 90
+    )
+
+    $args = @($Before, $After)
+    if ($DiffOutputPath) {
+        $args = @('-o', $DiffOutputPath) + $args
+    }
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $DssimExe
+    $psi.Arguments = ($args | ForEach-Object {
+            if ($_ -match '\s') { "`"$_`"" } else { $_ }
+        }) -join ' '
+    $psi.WorkingDirectory = Split-Path -Parent $DssimExe
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+
+    $process = New-Object System.Diagnostics.Process
+    $process.StartInfo = $psi
+    $null = $process.Start()
+
+    $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+    $stderrTask = $process.StandardError.ReadToEndAsync()
+
+    $timeoutMs = [Math]::Max(1, $TimeoutSeconds) * 1000
+    $exited = $process.WaitForExit($timeoutMs)
+
+    if (-not $exited) {
+        try { $process.Kill() } catch { }
+        $null = $process.WaitForExit(5000)
+        $process.Dispose()
+        throw "dssim.exe timed out after ${TimeoutSeconds}s"
+    }
+
+    $stdout = $stdoutTask.GetAwaiter().GetResult().Trim()
+    $stderr = $stderrTask.GetAwaiter().GetResult().Trim()
+    $exitCode = $process.ExitCode
+    $process.Dispose()
+
+    if ($exitCode -ne 0) {
+        $detail = if ($stderr) { $stderr } elseif ($stdout) { $stdout } else { "exit code $exitCode" }
+        throw "dssim compare failed: $detail"
+    }
+
+    $line = ($stdout -split "`n")[0].Trim()
+    $score = $null
+    if ($line -match '^([\d.]+(?:e[-+]?\d+)?)\s') {
+        $token = $Matches[1] -replace ',', '.'
+        $score = [double]::Parse($token, [Globalization.CultureInfo]::InvariantCulture)
+    }
+    elseif ($line -match '^([\d.]+(?:e[-+]?\d+)?)$') {
+        $token = $Matches[1] -replace ',', '.'
+        $score = [double]::Parse($token, [Globalization.CultureInfo]::InvariantCulture)
+    }
+    else {
+        throw "Unexpected dssim output: '$stdout'"
+    }
+
+    return @{
+        Score   = $score
+        RawLine = $line
+        StdErr  = $stderr
+    }
+}
+
+function Compare-FoImageViaDssim {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Before,
+        [Parameter(Mandatory)]
+        [string]$After,
+        [Parameter(Mandatory)]
+        [string]$DssimExe,
+        [double]$DissimilarityMaximum = 0,
+        [string]$MagickPath,
+        [string]$PluginPath,
+        [string]$DiffOutputPath
+    )
+
+    $diffPath = $null
+    if ($DiffOutputPath) {
+        $diffDir = Split-Path -Parent $DiffOutputPath
+        if ($diffDir -and -not (Test-Path -LiteralPath $diffDir)) {
+            New-Item -ItemType Directory -Path $diffDir -Force | Out-Null
+        }
+    }
+
+    $result = Invoke-FoDssimCli -DssimExe $DssimExe -Before $Before -After $After -DiffOutputPath $DiffOutputPath
+    $pass = ($result.Score -le $DissimilarityMaximum)
+
+    if ($DiffOutputPath -and -not $pass -and (Test-Path -LiteralPath $DiffOutputPath)) {
+        $diffPath = $DiffOutputPath
+    }
+
+    $magick = Get-FoCompareMagickPath -MagickPath $MagickPath -PluginPath $PluginPath
+    $beforeInfo = $null
+    try {
+        $beforeInfo = Get-FoImageInfo -Path $Before -MagickPath $magick -PluginPath $PluginPath
+    }
+    catch {
+        throw "dssim compare succeeded but magick identify failed for '$Before': $($_.Exception.Message)"
+    }
+
+    return [PSCustomObject]@{
+        Pass        = $pass
+        Mode        = 'Pixel'
+        Metric      = $result.RawLine
+        MetricValue = $result.Score
+        DiffPath    = $diffPath
+        Width       = $beforeInfo.Width
+        Height      = $beforeInfo.Height
+        BeforePath  = $Before
+        AfterPath   = $After
+        CompareTool = 'Dssim'
+    }
+}
+
 function Invoke-FoMagickCli {
     [CmdletBinding()]
     param(
@@ -487,6 +658,7 @@ function Compare-FoImage {
         [ValidateSet('Pixel', 'SSIM')]
         [string]$Mode = 'Pixel',
         [double]$SSIMDissimilarityMaximum = 0,
+        [double]$PngDssimDissimilarityMaximum = 0,
         [string]$MagickPath,
         [string]$PluginPath,
         [string]$DiffOutputPath
@@ -497,6 +669,16 @@ function Compare-FoImage {
     }
     if (-not (Test-Path -LiteralPath $After)) {
         throw "After image not found: $After"
+    }
+
+    $isPngCompare = (Test-FoComparePngPath -Path $Before) -and (Test-FoComparePngPath -Path $After)
+    if ($isPngCompare -and $Mode -eq 'Pixel') {
+        $dssimExe = Get-FoCompareDssimPathOptional -PluginPath $PluginPath
+        if ($dssimExe) {
+            return Compare-FoImageViaDssim -Before $Before -After $After -DssimExe $dssimExe `
+                -DissimilarityMaximum $PngDssimDissimilarityMaximum -MagickPath $MagickPath `
+                -PluginPath $PluginPath -DiffOutputPath $DiffOutputPath
+        }
     }
 
     $magick = Get-FoCompareMagickPath -MagickPath $MagickPath -PluginPath $PluginPath

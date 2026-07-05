@@ -42,3 +42,32 @@ Describe 'Test-FoDownloadedFileSha256' -Tag Unit {
         }
     }
 }
+
+Describe 'Get-FoDssimBundleSettings' -Tag Unit {
+    It 'Defaults to pinned dssim 3.4.0 GitHub release URL and SHA256' {
+        $settings = Get-FoDssimBundleSettings
+        $settings.Url | Should -Be 'https://github.com/kornelski/dssim/releases/download/3.4.0/dssim-3.4.0.zip'
+        $settings.FileName | Should -Be 'dssim-3.4.0.zip'
+        $settings.Version | Should -Be '3.4.0'
+        $settings.Sha256 | Should -Be 'c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c'
+    }
+
+    It 'ArchiveUrl override uses supplied SHA256' {
+        $settings = Get-FoDssimBundleSettings -ArchiveUrl 'https://example.test/dssim.zip' -ArchiveSha256 'abc'
+        $settings.Url | Should -Be 'https://example.test/dssim.zip'
+        $settings.Sha256 | Should -Be 'abc'
+    }
+}
+
+Describe 'Test-FoDssimCompareAvailable' -Tag Unit {
+    It 'Is false when dssim.exe is not installed' {
+        $fakeRoot = Join-Path $env:TEMP "FoDssimMissing_$(Get-Random)"
+        New-Item -ItemType Directory -Path $fakeRoot -Force | Out-Null
+        try {
+            Test-FoDssimCompareAvailable -PluginPath $fakeRoot | Should -Be $false
+        }
+        finally {
+            Remove-Item -LiteralPath $fakeRoot -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}

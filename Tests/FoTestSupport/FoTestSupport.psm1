@@ -22,6 +22,8 @@ foreach ($name in @(
 . (Join-Path $script:FoModuleRoot 'Private\Get-FoImageInfo.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Get-FoPluginBundleMetadata.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Install-FoPluginBundle.ps1')
+. (Join-Path $script:FoModuleRoot 'Private\Get-FoDssimBundleMetadata.ps1')
+. (Join-Path $script:FoModuleRoot 'Private\Install-FoDssimBundle.ps1')
 . (Join-Path $PSScriptRoot 'Private\ImageTestSupport.ps1')
 
 $script:FoImageTestDecisions = Import-FoDataFile -Path (Join-Path $script:FoTestSupportRoot 'ImageTestDecisions.psd1')
@@ -223,6 +225,8 @@ $script:FoTestSupportFunctions = @(
     'Get-FoIcoLargestIndex'
     'Compare-FoIcoLargest'
     'Get-FoPluginBundleSettings'
+    'Get-FoDssimBundleSettings'
+    'Test-FoDssimCompareAvailable'
     'Test-FoDownloadedFileSha256'
     'Invoke-FoPluginBundleDownload'
     'Write-FoTestPluginVersions'
