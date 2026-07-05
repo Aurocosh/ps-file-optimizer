@@ -178,15 +178,31 @@ Describe 'Extension map' -Tag Unit {
 }
 
 Describe 'Get-FoRequiredPluginExecutables' -Tag Unit {
-    It 'Install plan lists all pipeline executables' {
+    It 'Install plan lists all pipeline executables for x64' {
         $dir = Join-Path $env:TEMP "FoInstallPlan_$(Get-Random)"
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
         try {
-            $result = Install-FoPlugins -Mode FullPortable -DestinationPath $dir -WhatIf
+            $result = Install-FoPlugins -Mode FullPortable -Architecture 64 -DestinationPath $dir -WhatIf
             $result.ExecutablesNeeded.Count | Should -BeGreaterThan 50
             ($result.ExecutablesNeeded -contains 'oxipng.exe') | Should -Be $true
             ($result.ExecutablesNeeded -contains 'defluff.exe') | Should -Be $true
             ($result.ExecutablesNeeded -contains 'gswin64c.exe') | Should -Be $true
+        }
+        finally {
+            Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'Install plan uses x86 Ghostscript and omits 64-only tools for Architecture 32' {
+        $dir = Join-Path $env:TEMP "FoInstallPlan32_$(Get-Random)"
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        try {
+            $result = Install-FoPlugins -Mode FullPortable -Architecture 32 -DestinationPath $dir -WhatIf
+            ($result.ExecutablesNeeded -contains 'gswin32c.exe') | Should -Be $true
+            ($result.ExecutablesNeeded -contains 'gswin64c.exe') | Should -Be $false
+            ($result.ExecutablesNeeded -contains 'minify.exe') | Should -Be $false
+            ($result.ExecutablesNeeded -contains 'optivorbis.exe') | Should -Be $false
+            ($result.ExecutablesNeeded -contains 'tinydng-cli.exe') | Should -Be $false
         }
         finally {
             Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue

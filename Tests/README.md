@@ -23,7 +23,7 @@ Each `*.Tests.ps1` imports the **FoTestSupport** module in a `BeforeDiscovery` b
 |----------|---------|
 | `FO_TEST_PLUGIN_PATH` | Directory containing plugin executables (`magick.exe`, `oxipng.exe`, …). Used by image integration tests. When unset, tests fall back to `Get-FoDefaultPluginPath` (module `plugins\` or `FO_PLUGIN_PATH`). |
 | `FO_TEST_CORPUS_PATH` | Root for downloaded image test tiers B–D (default: `Tests/Fixtures/Corpus/`). |
-| `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to enable network install integration tests (~76 MB aux release download). |
+| `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to enable network install integration tests (~110 MB x64 + ~85 MB x86 aux zip downloads). |
 | `FO_RUN_CORPUS_INTEGRATION` | Set to `1` to enable Tier B corpus download integration test (~1 MB). |
 | `FO_PLUGIN_BUNDLE_URL` | Override default plugin bundle download URL. |
 | `FO_PLUGIN_BUNDLE_SHA256` | Expected SHA256 when using `FO_PLUGIN_BUNDLE_URL`. |
@@ -71,7 +71,7 @@ Recommended invocations:
 | Job | Runner | Command |
 |-----|--------|---------|
 | `unit` | `windows-latest` | `Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow` |
-| `integration-downloads` | `windows-latest` (push to `master` only) | `Invoke-FoTests.ps1 -Tag Integration` with `FO_RUN_*=1` |
+| `integration-downloads` | `windows-latest` (push to `master` only) | `Invoke-FoTests.ps1 -Tag Integration` with `FO_RUN_*=1` (x64 + x86 plugin install) |
 
 Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the legacy Windows PowerShell 5.1 Pester 3 conflict.
 

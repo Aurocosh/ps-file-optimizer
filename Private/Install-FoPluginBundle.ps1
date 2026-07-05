@@ -191,7 +191,7 @@ function Install-FoPluginBundleCore {
 
     $bundle = Get-FoPluginBundleSettings -Architecture $Architecture -ArchiveUrl $ArchiveUrl -ArchiveSha256 $ArchiveSha256
     $url = $bundle.Url
-    $requiredExes = Get-FoRequiredPluginExecutables
+    $requiredExes = Get-FoRequiredPluginExecutables -Architecture $resolvedArch
 
     $exesToInstall = switch ($Mode) {
         'FullPortable' { $requiredExes }

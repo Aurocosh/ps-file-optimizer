@@ -184,15 +184,31 @@ function Test-FoDownloadedFileSha256 {
     }
 }
 
+# Executables present in Plugins64 but absent from FO Plugins32 (not required for x86 bundle install).
+$script:FoPlugin64OnlyExecutables = @(
+    'minify.exe'
+    'optivorbis.exe'
+    'tinydng-cli.exe'
+)
+
 # Ghostscript is chosen at runtime in PDF.ps1 via -Executable $gs (not a string literal).
 function Get-FoGhostscriptExecutableName {
-    if ([Environment]::Is64BitProcess) { return 'gswin64c.exe' }
+    [CmdletBinding()]
+    param(
+        [ValidateSet('32', '64')]
+        [string]$Architecture = $(if ([Environment]::Is64BitProcess) { '64' } else { '32' })
+    )
+
+    if ($Architecture -eq '64') { return 'gswin64c.exe' }
     return 'gswin32c.exe'
 }
 
 function Get-FoRequiredPluginExecutables {
     [CmdletBinding()]
-    param()
+    param(
+        [ValidateSet('32', '64')]
+        [string]$Architecture = $(if ([Environment]::Is64BitProcess) { '64' } else { '32' })
+    )
 
     $exes = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 
@@ -202,7 +218,7 @@ function Get-FoRequiredPluginExecutables {
         }
     }
 
-    [void]$exes.Add((Get-FoGhostscriptExecutableName))
+    [void]$exes.Add((Get-FoGhostscriptExecutableName -Architecture $Architecture))
 
     $pipelineDir = Join-Path $script:FoModuleRoot 'Pipelines'
     Get-ChildItem -LiteralPath $pipelineDir -Filter '*.ps1' -File -ErrorAction Stop |
@@ -213,6 +229,12 @@ function Get-FoRequiredPluginExecutables {
                 [void]$exes.Add($m.Groups[1].Value)
             }
         }
+
+    if ($Architecture -eq '32') {
+        foreach ($only64 in $script:FoPlugin64OnlyExecutables) {
+            [void]$exes.Remove($only64)
+        }
+    }
 
     return @($exes | Sort-Object)
 }

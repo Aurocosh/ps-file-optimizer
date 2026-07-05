@@ -98,7 +98,7 @@ If plugins are missing, integration describes are **Skipped** rather than failed
 | `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to run install download integration tests |
 | `FO_RUN_CORPUS_INTEGRATION` | Set to `1` to run Tier B corpus download integration test |
 
-### Plugin install integration (network, ~76 MB download)
+### Plugin install integration (network, ~195 MB total for x64 + x86 zip)
 
 Validates `Install-FoPlugins` end-to-end: downloads the aux release `.zip`, verifies SHA256, extracts, copies plugins, and cleans up temp files. Skipped unless enabled:
 
