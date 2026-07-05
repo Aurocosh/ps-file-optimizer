@@ -1,5 +1,6 @@
 @{
     LosslessDefault = @{
+        CompareMode    = 'Pixel'
         PNGAllowLossy  = $false
         JPEGAllowLossy = $false
         GIFAllowLossy  = $false
@@ -9,6 +10,7 @@
         HistoryEnabled = $false
     }
     LossyHighQuality = @{
+        CompareMode    = 'SSIMOnly'
         PNGAllowLossy  = $true
         JPEGAllowLossy = $true
         GIFAllowLossy  = $true

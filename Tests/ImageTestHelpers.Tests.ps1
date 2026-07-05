@@ -42,6 +42,8 @@ Describe 'Image test profiles' -Tag Unit {
         $settings.JPEGAllowLossy | Should -Be $false
         $settings.HistoryEnabled | Should -Be $false
         $settings.PluginSearchMode | Should -Be 'PortableOnly'
+        $settings.ContainsKey('CompareMode') | Should -Be $false
+        Get-FoImageTestProfileCompareMode -Name 'LosslessDefault' | Should -Be 'Pixel'
     }
 
     It 'Builds LossyHighQuality settings from profile' {
@@ -49,6 +51,8 @@ Describe 'Image test profiles' -Tag Unit {
         $settings.Level | Should -Be 9
         $settings.PNGAllowLossy | Should -Be $true
         $settings.JPEGAllowLossy | Should -Be $true
+        $settings.ContainsKey('CompareMode') | Should -Be $false
+        Get-FoImageTestProfileCompareMode -Name 'LossyHighQuality' | Should -Be 'SSIMOnly'
     }
 }
 

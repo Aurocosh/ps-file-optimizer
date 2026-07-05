@@ -12,7 +12,17 @@
   B, C, D — recursive scan under Tests/Fixtures/Corpus/tier-{b,c,d}/ (download via Get-ImageTestCorpus.ps1).
 
 .PARAMETER ProfileName
-  Settings profile from Tests/ImageTestProfiles.psd1.
+  Settings profile from Tests/ImageTestProfiles.psd1. Each profile declares a preferred
+  CompareMode (Pixel or SSIMOnly); the sweep uses that unless -CompareMode is supplied.
+
+.PARAMETER CompareMode
+  Visual verification mode passed to Invoke-FoImageOptimizationTest:
+  Pixel — lossless pixel/dssim compare (PNG uses dssim when installed).
+  SSIM / SSIMOnly — ImageMagick SSIM dissimilarity; SSIMOnly skips pixel compare first.
+  When omitted, the value from ImageTestProfiles.psd1 for -ProfileName is used.
+
+.PARAMETER PluginPath
+  Plugin directory (magick.exe, oxipng.exe, …). Defaults to FO_TEST_PLUGIN_PATH or module plugins/.
 
 .PARAMETER OutputCsv
   CSV path for results. Default: ./corpus-sweep-tier{tier}-{profile}-{timestamp}.csv under current directory.
@@ -27,8 +37,22 @@
 .PARAMETER MaxFiles
   Limit files processed (0 = all). Useful for smoke runs.
 
+.PARAMETER CorpusRoot
+  Override FO_TEST_CORPUS_PATH for Tier B/C/D scans.
+
+.PARAMETER WorkDirectory
+  Root folder for per-file work dirs and failure artifacts. Defaults to a temp folder.
+
 .EXAMPLE
   .\Scripts\Invoke-FoImageCorpusSweep.ps1 -Tier A -ProfileName LosslessDefault
+
+.EXAMPLE
+  .\Scripts\Invoke-FoImageCorpusSweep.ps1 -Tier A -ProfileName LossyHighQuality
+  Uses SSIMOnly compare mode from the LossyHighQuality profile.
+
+.EXAMPLE
+  .\Scripts\Invoke-FoImageCorpusSweep.ps1 -Tier A -ProfileName LossyHighQuality -CompareMode Pixel
+  Force pixel compare despite the profile default (not recommended for lossy profiles).
 
 .EXAMPLE
   .\Scripts\Get-ImageTestCorpus.ps1 -Tier B
@@ -43,7 +67,7 @@ param(
     [string]$OutputCsv,
     [string]$PluginPath,
     [ValidateSet('Pixel', 'SSIM', 'SSIMOnly')]
-    [string]$CompareMode = 'Pixel',
+    [string]$CompareMode,
     [switch]$SkipCompare,
     [switch]$AllowMissingDssim,
     [int]$MaxFiles = 0,
@@ -70,7 +94,14 @@ else {
 
 Write-FoTestPluginVersions -PluginPath $resolvedPluginPath -Verbose
 
-if (-not $SkipCompare -and $CompareMode -eq 'Pixel' -and -not (Test-FoCompareAllowMissingDssim -AllowMissingDssim:$AllowMissingDssim.IsPresent)) {
+$effectiveCompareMode = if ($PSBoundParameters.ContainsKey('CompareMode')) {
+    $CompareMode
+}
+else {
+    Get-FoImageTestProfileCompareMode -Name $ProfileName
+}
+
+if (-not $SkipCompare -and $effectiveCompareMode -eq 'Pixel' -and -not (Test-FoCompareAllowMissingDssim -AllowMissingDssim:$AllowMissingDssim.IsPresent)) {
     Assert-FoDssimCompareAvailable -PluginPath $resolvedPluginPath
 }
 
@@ -212,8 +243,9 @@ else {
 }
 New-Item -ItemType Directory -Path $sweepRoot -Force | Out-Null
 
-Write-Host ("Corpus sweep: Tier {0}, {1} file(s), profile {2}, compare {3}" -f `
-        $Tier, $targets.Count, $ProfileName, $(if ($SkipCompare) { 'skipped' } else { $CompareMode }))
+Write-Host ("Corpus sweep: Tier {0}, {1} file(s), profile {2}, compare {3}{4}" -f `
+        $Tier, $targets.Count, $ProfileName, $(if ($SkipCompare) { 'skipped' } else { $effectiveCompareMode }), `
+        $(if (-not $SkipCompare -and -not $PSBoundParameters.ContainsKey('CompareMode')) { ' (from profile)' } else { '' }))
 Write-Host "Work directory: $sweepRoot"
 
 $rows = @()
@@ -230,7 +262,7 @@ foreach ($target in $targets) {
     $params = @{
         FixturePath   = $target.Path
         Settings      = $settings
-        CompareMode   = $CompareMode
+        CompareMode   = $effectiveCompareMode
         WorkDirectory = $itemWorkDir
         SkipCompare   = $SkipCompare.IsPresent
     }
@@ -238,18 +270,20 @@ foreach ($target in $targets) {
         $params['AllowMissingDssim'] = $true
     }
 
-    if ($CompareMode -eq 'SSIMOnly' -and $ProfileName -eq 'LossyHighQuality') {
+    if ($effectiveCompareMode -eq 'SSIMOnly') {
         $format = if ($target.Format) { $target.Format } else { 'Default' }
         if ($format -eq 'WEBP') { $format = 'WebP' }
-        try {
-            $params['SSIMDissimilarityMaximum'] = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format $format
+        if ($format -eq 'AVIF') {
+            $params['SSIMDissimilarityMaximum'] = (Get-FoImageTestDecisions).AvifDefaultSSIMDissimilarityMaximum
         }
-        catch {
-            $params['SSIMDissimilarityMaximum'] = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format 'Default'
+        else {
+            try {
+                $params['SSIMDissimilarityMaximum'] = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format $format
+            }
+            catch {
+                $params['SSIMDissimilarityMaximum'] = Get-FoImageTestLossyThreshold -ProfileName $ProfileName -Format 'Default'
+            }
         }
-    }
-    elseif ($CompareMode -eq 'SSIMOnly' -and $target.Format -eq 'AVIF') {
-        $params['SSIMDissimilarityMaximum'] = (Get-FoImageTestDecisions).AvifDefaultSSIMDissimilarityMaximum
     }
 
     try {

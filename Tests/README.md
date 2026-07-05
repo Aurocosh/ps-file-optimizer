@@ -86,7 +86,7 @@ Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the leg
 | `*.Tests.ps1` | Pester test files |
 | `ImageTestManifest.psd1` | **FO-ImageTest-v1** corpus (Tier A + aux release metadata) |
 | `ImageTestDecisions.psd1` | Compare thresholds (JPEG fallback, AVIF default, PNG DSSIM) |
-| `ImageTestProfiles.psd1` | Settings profiles (`LosslessDefault`, `LossyHighQuality`) |
+| `ImageTestProfiles.psd1` | Settings profiles (`LosslessDefault`, `LossyHighQuality`) including preferred `CompareMode` per profile |
 | `Fixtures/Images/` | Tier A committed fixtures |
 
 ## Image compare thresholds
@@ -146,9 +146,12 @@ Batch-optimize many fixtures and export CSV metrics (tagged **Slow** — not par
 ```powershell
 $env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'plugins'
 ./Scripts/Invoke-FoImageCorpusSweep.ps1 -Tier A -ProfileName LosslessDefault
+./Scripts/Invoke-FoImageCorpusSweep.ps1 -Tier A -ProfileName LossyHighQuality
 ./Scripts/Get-ImageTestCorpus.ps1 -Tier B
 ./Scripts/Invoke-FoImageCorpusSweep.ps1 -Tier B -MaxFiles 50 -OutputCsv .\tier-b.csv
 ```
+
+Each profile in `ImageTestProfiles.psd1` declares a preferred `CompareMode` (`Pixel` for lossless, `SSIMOnly` for lossy). The sweep uses that unless you pass `-CompareMode` explicitly.
 
 Use `-SkipCompare` for size-only regression runs. Default CSV name: `corpus-sweep-tier{tier}-{profile}-{timestamp}.csv` (e.g. `corpus-sweep-tiera-LosslessDefault-20260705-180000.csv`). Each row includes `OptimizeDurationMs` (plugin chain) and `CompareDurationMs` (visual compare; empty when `-SkipCompare` or optimization failed).
 

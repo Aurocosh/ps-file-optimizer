@@ -141,6 +141,36 @@ function Test-FoImageTestFixturesPresent {
     }
 }
 
+function Get-FoImageTestProfileEntry {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    $profiles = Import-FoDataFile -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestProfiles.psd1')
+    if (-not $profiles.ContainsKey($Name)) {
+        throw "Unknown image test profile '$Name'."
+    }
+
+    return $profiles[$Name]
+}
+
+function Get-FoImageTestProfileCompareMode {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    $entry = Get-FoImageTestProfileEntry -Name $Name
+    if (-not $entry.CompareMode) {
+        throw "Profile '$Name' has no CompareMode. Add CompareMode to Tests/ImageTestProfiles.psd1."
+    }
+
+    return [string]$entry.CompareMode
+}
+
 function Get-FoImageTestProfile {
     [CmdletBinding()]
     param(
@@ -149,14 +179,13 @@ function Get-FoImageTestProfile {
         [string]$PluginPath
     )
 
-    $profiles = Import-FoDataFile -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestProfiles.psd1')
-    if (-not $profiles.ContainsKey($Name)) {
-        throw "Unknown image test profile '$Name'."
-    }
+    $profileMetadataKeys = @('CompareMode', 'SSIMDissimilarityMaximum')
+    $entry = Get-FoImageTestProfileEntry -Name $Name
 
     $bound = @{}
-    foreach ($key in $profiles[$Name].Keys) {
-        $bound[$key] = $profiles[$Name][$key]
+    foreach ($key in $entry.Keys) {
+        if ($key -in $profileMetadataKeys) { continue }
+        $bound[$key] = $entry[$key]
     }
 
     if ($PluginPath) {
