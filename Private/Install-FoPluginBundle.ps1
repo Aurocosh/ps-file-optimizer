@@ -143,8 +143,10 @@ function Copy-FoPluginFilesFromBundle {
 function Install-FoPluginBundleCore {
     [CmdletBinding(SupportsShouldProcess)]
     param(
-        [ValidateSet('FullPortable', 'Missing')]
+        [ValidateSet('FullPortable', 'Missing', 'Remove')]
         [string]$Mode = 'FullPortable',
+        [ValidateSet('Auto', '32', '64')]
+        [string]$Architecture = 'Auto',
         [string]$DestinationPath,
         [string]$ArchiveUrl,
         [string]$ArchiveSha256,
@@ -153,14 +155,41 @@ function Install-FoPluginBundleCore {
         [bool]$ShowProgress = $true
     )
 
+    $resolvedArch = Resolve-FoPluginBundleArchitecture -Architecture $Architecture
+    $folderName = Get-FoPluginBundleFolderName -Architecture $resolvedArch
+
+    if ($Mode -eq 'Remove') {
+        $removed = Remove-FoInstalledPluginArchitectures -Scope All
+        return [PSCustomObject]@{
+            Mode              = $Mode
+            Architecture      = $resolvedArch
+            DestinationPath   = $null
+            Downloaded        = $false
+            Extracted         = $false
+            ExecutablesNeeded = @()
+            FilesCopied       = @()
+            FilesSkipped      = @()
+            FilesMissing      = @()
+            RemovedPaths      = $removed
+            Message           = if ($removed.Count) {
+                "Removed $($removed.Count) plugin folder(s): $($removed -join '; ')"
+            }
+            else {
+                'No plugin folders found to remove.'
+            }
+        }
+    }
+
     $dest = if ($DestinationPath) {
         [System.IO.Path]::GetFullPath($DestinationPath)
     }
     else {
-        Join-Path $script:FoModuleRoot 'plugins'
+        Join-Path $script:FoModuleRoot $folderName
     }
 
-    $bundle = Get-FoPluginBundleSettings -ArchiveUrl $ArchiveUrl -ArchiveSha256 $ArchiveSha256
+    $null = Remove-FoInstalledPluginArchitectures -Scope $resolvedArch -ExcludeFolderNames @($folderName)
+
+    $bundle = Get-FoPluginBundleSettings -Architecture $Architecture -ArchiveUrl $ArchiveUrl -ArchiveSha256 $ArchiveSha256
     $url = $bundle.Url
     $requiredExes = Get-FoRequiredPluginExecutables
 
@@ -231,7 +260,7 @@ function Install-FoPluginBundleCore {
             $extracted = $true
         }
 
-        $sourcePlugins = Resolve-FoBundledPluginDirectory -ExtractRoot $extractRoot
+        $sourcePlugins = Resolve-FoBundledPluginDirectory -ExtractRoot $extractRoot -ExpectedFolder $bundle.Folder
         $filesToCopy = Get-FoPluginInstallFilePlan -Executables $exesToInstall -SourcePluginDir $sourcePlugins
 
         $copyResult = Copy-FoPluginFilesFromBundle `
@@ -242,9 +271,11 @@ function Install-FoPluginBundleCore {
 
         return [PSCustomObject]@{
             Mode              = $Mode
+            Architecture      = $resolvedArch
             DestinationPath   = $dest
             ArchiveUrl        = $url
             ArchiveFormat     = $bundle.Format
+            BundleFolder      = $bundle.Folder
             Downloaded        = $downloaded
             Extracted         = $extracted
             ExecutablesNeeded = $exesToInstall

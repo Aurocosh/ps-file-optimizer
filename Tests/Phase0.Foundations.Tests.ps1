@@ -65,7 +65,23 @@ Describe 'Test-FoPluginsAvailable' -Tag Unit {
         }
     }
 
-    It 'Finds magick.exe when plugins are present' -Skip:(-not (Test-FoPluginsAvailable)) {
-        Test-FoPluginsAvailable | Should -Be $true
+    It 'Finds magick.exe when plugins are present' {
+        $pluginDir = Join-Path $TestDrive 'plugins'
+        New-Item -ItemType Directory -Path $pluginDir -Force | Out-Null
+        New-Item -ItemType File -Path (Join-Path $pluginDir 'magick.exe') -Force | Out-Null
+
+        $previous = $env:FO_TEST_PLUGIN_PATH
+        $env:FO_TEST_PLUGIN_PATH = $pluginDir
+        try {
+            Test-FoPluginsAvailable | Should -Be $true
+        }
+        finally {
+            if ($null -eq $previous) {
+                Remove-Item Env:FO_TEST_PLUGIN_PATH -ErrorAction SilentlyContinue
+            }
+            else {
+                $env:FO_TEST_PLUGIN_PATH = $previous
+            }
+        }
     }
 }

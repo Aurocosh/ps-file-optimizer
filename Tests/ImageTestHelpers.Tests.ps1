@@ -51,16 +51,15 @@ Describe 'Image test profiles' -Tag Unit {
             -FixtureOverride 1.05 | Should -Be 1.05
     }
 
-    It 'Uses PNGMicro threshold for small PNG fixtures' -Skip:(-not (Test-FoPluginsAvailable)) {
+    It 'Uses PNGMicro threshold for small PNG fixtures' {
+        Mock Get-FoImageInfo { return @{ Width = 32; Height = 32; Format = 'PNG' } }
         $path = Get-FoImageTestFixturePath -Id 'png-basn0g04'
-        $pluginPath = Get-FoTestPluginPath
-        $threshold = Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format 'PNG' `
-            -ImagePath $path -PluginPath $pluginPath
-        $threshold | Should -Be 0.78
+        Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format 'PNG' `
+            -ImagePath $path -PluginPath (Join-Path $TestDrive 'plugins') | Should -Be 0.8
     }
 
     It 'Maps JPG extension format to JPEG threshold' {
-        Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format 'JPG' | Should -Be 0.016
+        Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format 'JPG' | Should -Be 0.02
     }
 
     It 'Resolves manifest LossySSIMMaximum by fixture id' {

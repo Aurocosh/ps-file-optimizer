@@ -64,9 +64,19 @@ function Get-FoDefaultPluginPath {
         }
     }
 
-    $candidate = Join-Path $script:FoModuleRoot 'plugins'
-    if (Test-Path -LiteralPath $candidate) {
-        return ([System.IO.Path]::GetFullPath($candidate))
+    $prefer64 = [Environment]::Is64BitProcess
+    $candidates = if ($prefer64) {
+        @('Plugins64', 'Plugins32', 'plugins')
+    }
+    else {
+        @('Plugins32', 'Plugins64', 'plugins')
+    }
+
+    foreach ($name in $candidates) {
+        $candidate = Join-Path $script:FoModuleRoot $name
+        if (Test-Path -LiteralPath $candidate) {
+            return ([System.IO.Path]::GetFullPath($candidate))
+        }
     }
 
     return $null

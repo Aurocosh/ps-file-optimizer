@@ -1,6 +1,8 @@
 param(
-    [ValidateSet('FullPortable', 'Missing')]
+    [ValidateSet('FullPortable', 'Missing', 'Remove')]
     [string]$Mode = 'FullPortable',
+    [ValidateSet('Auto', '32', '64')]
+    [string]$Architecture = 'Auto',
     [string]$PluginPath,
     [string]$ArchiveUrl,
     [string]$ArchiveSha256,
@@ -15,6 +17,7 @@ Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
 $params = @{
     Mode            = $Mode
+    Architecture    = $Architecture
     DestinationPath = $PluginPath
     ArchiveUrl      = $ArchiveUrl
     ArchiveSha256   = $ArchiveSha256
@@ -27,7 +30,10 @@ if ($WhatIf) {
 }
 
 $result = Install-FoPlugins @params
-$result | Format-List Mode, DestinationPath, Downloaded, Extracted, Message
+$result | Format-List Mode, Architecture, DestinationPath, Downloaded, Extracted, Message
+if ($result.RemovedPaths) {
+    Write-Host "Removed: $($result.RemovedPaths -join ', ')"
+}
 if ($result.FilesCopied) {
     Write-Host "Copied $($result.FilesCopied.Count) file(s)."
 }

@@ -1,14 +1,124 @@
 # Plugin bundle metadata — ps-file-optimizer-aux GitHub Release (plain .7z).
 
 $script:FoPluginBundleVersion = '1.0.0'
-$script:FoPluginBundleUrl = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.7z'
-$script:FoPluginBundleFileName = 'fo-plugins-win-x64-1.0.0.7z'
-$script:FoPluginBundleSha256 = 'e314ad6ca1a435528fcc1a8c4737728c1d33bd8dd2197db7d36048ed65a1a5b8'
+$script:FoPluginBundleReleaseTag = 'plugins-v1.0.0'
 $script:FoPluginBundleFormat = '7z'
+
+$script:FoPluginBundles = @{
+    '64' = @{
+        Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.7z'
+        FileName = 'fo-plugins-win-x64-1.0.0.7z'
+        Sha256   = 'e314ad6ca1a435528fcc1a8c4737728c1d33bd8dd2197db7d36048ed65a1a5b8'
+        Folder   = 'Plugins64'
+    }
+    '32' = @{
+        Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x86-1.0.0.7z'
+        FileName = 'fo-plugins-win-x86-1.0.0.7z'
+        Sha256   = ''
+        Folder   = 'Plugins32'
+    }
+}
+
+# Legacy single-bundle aliases (x64)
+$script:FoPluginBundleUrl = $script:FoPluginBundles['64'].Url
+$script:FoPluginBundleFileName = $script:FoPluginBundles['64'].FileName
+$script:FoPluginBundleSha256 = $script:FoPluginBundles['64'].Sha256
+
+function Resolve-FoPluginBundleArchitecture {
+    [CmdletBinding()]
+    param(
+        [ValidateSet('Auto', '32', '64')]
+        [string]$Architecture = 'Auto'
+    )
+
+    if ($Architecture -eq 'Auto') {
+        if ([Environment]::Is64BitProcess) { return '64' }
+        return '32'
+    }
+
+    return $Architecture
+}
+
+function Get-FoPluginBundleFolderName {
+    [CmdletBinding()]
+    param(
+        [ValidateSet('32', '64')]
+        [Parameter(Mandatory)]
+        [string]$Architecture
+    )
+
+    if ($Architecture -eq '64') { return 'Plugins64' }
+    return 'Plugins32'
+}
+
+function Get-FoPluginInstallRootPath {
+    [CmdletBinding()]
+    param(
+        [string]$ModuleRoot = $script:FoModuleRoot
+    )
+
+    if (-not $ModuleRoot) { return $null }
+    return [System.IO.Path]::GetFullPath($ModuleRoot)
+}
+
+function Get-FoInstalledPluginArchitecturePaths {
+    [CmdletBinding()]
+    param(
+        [string]$ModuleRoot = $script:FoModuleRoot
+    )
+
+    $root = Get-FoPluginInstallRootPath -ModuleRoot $ModuleRoot
+    if (-not $root) { return @() }
+
+    $paths = @()
+    foreach ($name in @('Plugins64', 'Plugins32', 'plugins')) {
+        $candidate = Join-Path $root $name
+        if (Test-Path -LiteralPath $candidate) {
+            $paths += [PSCustomObject]@{
+                Name = $name
+                Path = $candidate
+            }
+        }
+    }
+    return $paths
+}
+
+function Remove-FoInstalledPluginArchitectures {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [string]$ModuleRoot = $script:FoModuleRoot,
+        [ValidateSet('32', '64', 'All')]
+        [string]$Scope = 'All',
+        [string[]]$ExcludeFolderNames = @()
+    )
+
+    $root = Get-FoPluginInstallRootPath -ModuleRoot $ModuleRoot
+    if (-not $root) { return @() }
+
+    $targets = switch ($Scope) {
+        'All' { @('Plugins64', 'Plugins32', 'plugins') }
+        '64'  { @('Plugins32', 'plugins') }
+        '32'  { @('Plugins64', 'plugins') }
+    }
+
+    $removed = @()
+    foreach ($name in $targets) {
+        if ($name -in $ExcludeFolderNames) { continue }
+        $path = Join-Path $root $name
+        if (-not (Test-Path -LiteralPath $path)) { continue }
+        if ($PSCmdlet.ShouldProcess($path, 'Remove plugin directory')) {
+            Remove-Item -LiteralPath $path -Recurse -Force
+            $removed += $path
+        }
+    }
+    return $removed
+}
 
 function Get-FoPluginBundleSettings {
     [CmdletBinding()]
     param(
+        [ValidateSet('Auto', '32', '64')]
+        [string]$Architecture = 'Auto',
         [string]$ArchiveUrl,
         [string]$ArchiveSha256
     )
@@ -22,27 +132,36 @@ function Get-FoPluginBundleSettings {
         }
 
         return [PSCustomObject]@{
-            Url      = $env:FO_PLUGIN_BUNDLE_URL
-            FileName = $fileName
-            Sha256   = if ($env:FO_PLUGIN_BUNDLE_SHA256) { $env:FO_PLUGIN_BUNDLE_SHA256 } else { $ArchiveSha256 }
-            Format   = if ($env:FO_PLUGIN_BUNDLE_FORMAT) { $env:FO_PLUGIN_BUNDLE_FORMAT } else { '7z' }
+            Architecture = Resolve-FoPluginBundleArchitecture -Architecture $(if ($env:FO_PLUGIN_BUNDLE_ARCH) { $env:FO_PLUGIN_BUNDLE_ARCH } else { $Architecture })
+            Url          = $env:FO_PLUGIN_BUNDLE_URL
+            FileName     = $fileName
+            Sha256       = if ($env:FO_PLUGIN_BUNDLE_SHA256) { $env:FO_PLUGIN_BUNDLE_SHA256 } else { $ArchiveSha256 }
+            Format       = if ($env:FO_PLUGIN_BUNDLE_FORMAT) { $env:FO_PLUGIN_BUNDLE_FORMAT } else { '7z' }
+            Folder       = if ($env:FO_PLUGIN_BUNDLE_FOLDER) { $env:FO_PLUGIN_BUNDLE_FOLDER } else { 'Plugins64' }
         }
     }
 
     if ($ArchiveUrl) {
+        $arch = Resolve-FoPluginBundleArchitecture -Architecture $Architecture
         return [PSCustomObject]@{
-            Url      = $ArchiveUrl
-            FileName = [System.IO.Path]::GetFileName(($ArchiveUrl -split '\?')[0])
-            Sha256   = $ArchiveSha256
-            Format   = '7z'
+            Architecture = $arch
+            Url          = $ArchiveUrl
+            FileName     = [System.IO.Path]::GetFileName(($ArchiveUrl -split '\?')[0])
+            Sha256       = $ArchiveSha256
+            Format       = '7z'
+            Folder       = Get-FoPluginBundleFolderName -Architecture $arch
         }
     }
 
+    $resolvedArch = Resolve-FoPluginBundleArchitecture -Architecture $Architecture
+    $entry = $script:FoPluginBundles[$resolvedArch]
     return [PSCustomObject]@{
-        Url      = $script:FoPluginBundleUrl
-        FileName = $script:FoPluginBundleFileName
-        Sha256   = $script:FoPluginBundleSha256
-        Format   = $script:FoPluginBundleFormat
+        Architecture = $resolvedArch
+        Url          = $entry.Url
+        FileName     = $entry.FileName
+        Sha256       = $entry.Sha256
+        Format       = $script:FoPluginBundleFormat
+        Folder       = $entry.Folder
     }
 }
 
@@ -238,13 +357,19 @@ function Resolve-FoBundledPluginDirectory {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [string]$ExtractRoot
+        [string]$ExtractRoot,
+        [string]$ExpectedFolder
     )
 
-    $candidates = @(
+    $candidates = @()
+    if ($ExpectedFolder) {
+        $candidates += Join-Path $ExtractRoot $ExpectedFolder
+    }
+    $candidates += @(
         $ExtractRoot
         (Join-Path $ExtractRoot 'plugins')
         (Join-Path $ExtractRoot 'Plugins64')
+        (Join-Path $ExtractRoot 'Plugins32')
     )
 
     foreach ($dir in $candidates) {

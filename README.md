@@ -22,21 +22,27 @@ Initialize-FoConfig -Scope Global
 # Rollback last 3 optimizations
 .\Scripts\Undo-Optimization.ps1 -Last 3
 
-# Install all plugin binaries into .\plugins (downloads aux release bundle once)
+# Install all plugin binaries into .\Plugins64 (64-bit PS) or .\Plugins32 (32-bit PS)
 .\Scripts\Install-Plugins.ps1 -Mode FullPortable
+
+# Remove installed plugin folders (Plugins64, Plugins32, legacy plugins/)
+.\Scripts\Install-Plugins.ps1 -Mode Remove
+
+# Force 32-bit bundle on 64-bit PowerShell
+.\Scripts\Install-Plugins.ps1 -Mode FullPortable -Architecture 32
 
 # Download Tier B image test corpus for nightly integration (optional)
 .\Scripts\Get-ImageTestCorpus.ps1 -Tier B
 
 # Fill in only missing tools in an existing plugin folder
-.\Scripts\Install-Plugins.ps1 -Mode Missing -PluginPath .\plugins
+.\Scripts\Install-Plugins.ps1 -Mode Missing -PluginPath .\Plugins64
 ```
 
 ## Requirements
 
 - Windows PowerShell 5.1+ or PowerShell 7+
-- Plugin binaries from the [ps-file-optimizer-aux](https://github.com/Aurocosh/ps-file-optimizer-aux) release bundle (default), module `plugins\`, or tools on PATH
-- `Install-FoPlugins` downloads a plain `.7z` archive (~76 MB), verifies SHA256, and extracts with 7-Zip (`7z.exe`) or a temporary `7zr.exe` bootstrap
+- Plugin binaries from the [ps-file-optimizer-aux](https://github.com/Aurocosh/ps-file-optimizer-aux) release bundle (default), module `Plugins64\` / `Plugins32\`, or tools on PATH
+- `Install-FoPlugins` downloads a plain `.7z` archive (~76 MB x64, ~64 MB x86), verifies SHA256, and extracts with 7-Zip (`7z.exe`) or a temporary `7zr.exe` bootstrap. Only one architecture folder exists under the module root at a time.
 
 ## Layout
 
@@ -48,7 +54,9 @@ Initialize-FoConfig -Scope Global
 | `Pipelines/` | Per-format plugin chains (39 groups) |
 | `Data/ExtensionMap.psd1` | Extension → pipeline mapping |
 | `Scripts/` | CLI entry points (`Install-Plugins.ps1` downloads plugin bundle from aux release) |
-| `plugins/` | Default target for `Install-FoPlugins` (gitignored if present) |
+| `plugins/` | Legacy flat plugin dir (removed when switching architecture; gitignored if present) |
+| `Plugins64/` | Default install target on 64-bit PowerShell (gitignored if present) |
+| `Plugins32/` | Default install target on 32-bit PowerShell (gitignored if present) |
 | `Tests/Fixtures/Corpus/` | Downloaded image test tiers B–D (gitignored); Tier A under `Fixtures/Images/` |
 
 ## Configuration
@@ -76,7 +84,7 @@ See [`Tests/README.md`](Tests/README.md) for tags, environment variables, and im
 Require plugin binaries (`magick.exe` and format-specific tools). Point tests at your plugin folder:
 
 ```powershell
-$env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'plugins'
+$env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'Plugins64'
 ./Scripts/Invoke-FoTests.ps1 -Tag ImageIntegration
 ```
 
@@ -84,8 +92,8 @@ If plugins are missing, integration describes are **Skipped** rather than failed
 
 | Variable | Purpose |
 |----------|---------|
-| `FO_PLUGIN_PATH` | Default plugin directory when set (overrides module `plugins\` for normal runs) |
-| `FO_TEST_PLUGIN_PATH` | Plugin directory for integration tests (falls back to `FO_PLUGIN_PATH` or module `plugins\`) |
+| `FO_PLUGIN_PATH` | Default plugin directory when set (overrides module `Plugins64\` / `Plugins32\` for normal runs) |
+| `FO_TEST_PLUGIN_PATH` | Plugin directory for integration tests (falls back to `FO_PLUGIN_PATH` or module plugin folders) |
 | `FO_TEST_CORPUS_PATH` | Root for downloaded image test tiers B–D (default: `Tests/Fixtures/Corpus/`) |
 | `FO_RUN_INSTALL_INTEGRATION` | Set to `1` to run install download integration tests |
 | `FO_RUN_CORPUS_INTEGRATION` | Set to `1` to run Tier B corpus download integration test |
@@ -133,6 +141,6 @@ $env:FO_RUN_CORPUS_INTEGRATION = '1'
 Corpus sweep (batch optimize + CSV metrics; requires plugins):
 
 ```powershell
-$env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'plugins'
+$env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'Plugins64'
 ./Scripts/Invoke-FoImageCorpusSweep.ps1 -Tier A
 ```

@@ -4,12 +4,16 @@
 
 Describe 'Install-FoPlugins integration' -Tag Integration -Skip:(-not $env:FO_RUN_INSTALL_INTEGRATION) {
     It 'Downloads plugin bundle, installs plugins, and cleans temporary files' {
-        $dest = Join-Path $env:TEMP "FoInstallIntegration_dest_$(Get-Random)"
+        $moduleRoot = Join-Path $env:TEMP "FoInstallIntegration_mod_$(Get-Random)"
+        $dest = Join-Path $moduleRoot 'Plugins64'
         $tempRoot = Join-Path $env:TEMP "FoInstallIntegration_temp_$(Get-Random)"
         New-Item -ItemType Directory -Path $dest -Force | Out-Null
 
         try {
-            $result = Install-FoPlugins -Mode FullPortable -DestinationPath $dest -TempDirectory $tempRoot
+            $result = Install-FoPlugins -Mode FullPortable -Architecture 64 -DestinationPath $dest -TempDirectory $tempRoot
+
+            $result.Architecture | Should -Be '64'
+            $result.DestinationPath | Should -Be ([System.IO.Path]::GetFullPath($dest))
 
             $result.Downloaded | Should -Be $true
             $result.Extracted | Should -Be $true
@@ -45,7 +49,7 @@ Describe 'Install-FoPlugins integration' -Tag Integration -Skip:(-not $env:FO_RU
             (Resolve-FoPluginExecutable -Name 'oxipng.exe' -SearchMode PortableOnly -PluginPath $dest).Found | Should -Be $true
         }
         finally {
-            Remove-Item -LiteralPath $dest -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $moduleRoot -Recurse -Force -ErrorAction SilentlyContinue
             Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
         }
     }

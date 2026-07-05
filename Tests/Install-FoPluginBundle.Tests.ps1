@@ -3,18 +3,65 @@
 }
 
 Describe 'Get-FoPluginBundleSettings' -Tag Unit {
-    It 'Defaults to aux release 7z URL and SHA256' {
+    It 'Defaults to aux release x64 7z URL and SHA256' {
         $settings = Get-FoPluginBundleSettings
+        $settings.Architecture | Should -Be '64'
         $settings.Url | Should -Match 'ps-file-optimizer-aux'
         $settings.FileName | Should -Be 'fo-plugins-win-x64-1.0.0.7z'
         $settings.Format | Should -Be '7z'
+        $settings.Folder | Should -Be 'Plugins64'
         $settings.Sha256 | Should -Match '^[a-f0-9]{64}$'
+    }
+
+    It 'Resolves x86 bundle metadata when Architecture is 32' {
+        $settings = Get-FoPluginBundleSettings -Architecture 32
+        $settings.Architecture | Should -Be '32'
+        $settings.FileName | Should -Be 'fo-plugins-win-x86-1.0.0.7z'
+        $settings.Folder | Should -Be 'Plugins32'
+        $settings.Url | Should -Match 'plugins-v1\.0\.0/fo-plugins-win-x86'
     }
 
     It 'ArchiveUrl override uses supplied SHA256' {
         $settings = Get-FoPluginBundleSettings -ArchiveUrl 'https://example.test/bundle.7z' -ArchiveSha256 'abc'
         $settings.Url | Should -Be 'https://example.test/bundle.7z'
         $settings.Sha256 | Should -Be 'abc'
+    }
+}
+
+Describe 'Resolve-FoPluginBundleArchitecture' -Tag Unit {
+    It 'Auto matches process bitness' {
+        $expected = if ([Environment]::Is64BitProcess) { '64' } else { '32' }
+        Resolve-FoPluginBundleArchitecture -Architecture Auto | Should -Be $expected
+    }
+
+    It 'Honors explicit 32 and 64' {
+        Resolve-FoPluginBundleArchitecture -Architecture 32 | Should -Be '32'
+        Resolve-FoPluginBundleArchitecture -Architecture 64 | Should -Be '64'
+    }
+}
+
+Describe 'Remove-FoInstalledPluginArchitectures' -Tag Unit {
+    It 'Removes sibling architecture folders under module root' {
+        $root = Join-Path $TestDrive 'mod'
+        New-Item -ItemType Directory -Path (Join-Path $root 'Plugins64') -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $root 'Plugins32') -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $root 'plugins') -Force | Out-Null
+
+        $removed = Remove-FoInstalledPluginArchitectures -ModuleRoot $root -Scope 64
+        $removed.Count | Should -Be 2
+        Test-Path -LiteralPath (Join-Path $root 'Plugins64') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $root 'Plugins32') | Should -Be $false
+        Test-Path -LiteralPath (Join-Path $root 'plugins') | Should -Be $false
+    }
+
+    It 'Remove mode deletes all plugin folders' {
+        $root = Join-Path $TestDrive 'mod2'
+        New-Item -ItemType Directory -Path (Join-Path $root 'Plugins64') -Force | Out-Null
+        New-Item -ItemType Directory -Path (Join-Path $root 'plugins') -Force | Out-Null
+
+        $removed = Remove-FoInstalledPluginArchitectures -ModuleRoot $root -Scope All
+        $removed.Count | Should -Be 2
+        Test-Path -LiteralPath (Join-Path $root 'Plugins64') | Should -Be $false
     }
 }
 

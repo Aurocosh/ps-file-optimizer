@@ -8,12 +8,20 @@ function Install-FoPlugins {
     verifies SHA256, extracts with 7-Zip, copies required plugin files into a portable plugin
     directory, then deletes temporary download and extracted files.
 
+    Installs into {ModuleRoot}\Plugins64 or {ModuleRoot}\Plugins32 (never both). Legacy flat
+    {ModuleRoot}\plugins is removed when switching architecture.
+
     .PARAMETER Mode
     FullPortable — copy all executables and support files required by ps-file-optimizer pipelines.
     Missing — copy only executables not already present in DestinationPath (plus their support files).
+    Remove — delete Plugins64, Plugins32, and legacy plugins under the module root (no download).
+
+    .PARAMETER Architecture
+    Auto — match the current PowerShell process bitness (64-bit → Plugins64, 32-bit → Plugins32).
+    32 or 64 — force a specific bundle and destination folder.
 
     .PARAMETER DestinationPath
-    Target plugin directory (flat folder of .exe / .dll files). Defaults to {ModuleRoot}\plugins.
+    Target plugin directory. Defaults to {ModuleRoot}\Plugins64 or {ModuleRoot}\Plugins32 per -Architecture.
 
     .PARAMETER ArchiveUrl
     Override the default bundle download URL. SHA256 verification applies only when -ArchiveSha256
@@ -33,7 +41,7 @@ function Install-FoPlugins {
 
     .NOTES
     Environment overrides: FO_PLUGIN_BUNDLE_URL, FO_PLUGIN_BUNDLE_SHA256, FO_PLUGIN_BUNDLE_FILENAME,
-    FO_PLUGIN_BUNDLE_FORMAT.
+    FO_PLUGIN_BUNDLE_FORMAT, FO_PLUGIN_BUNDLE_ARCH, FO_PLUGIN_BUNDLE_FOLDER.
 
     For the optional DSSIM compare tool (test-only), use `Install-FoDssim` or `Scripts/Install-Dssim.ps1`.
 
@@ -41,12 +49,17 @@ function Install-FoPlugins {
     Install-FoPlugins -Mode FullPortable
 
     .EXAMPLE
-    Install-FoPlugins -Mode Missing -DestinationPath (Join-Path $HOME 'FoPlugins')
+    Install-FoPlugins -Mode Remove
+
+    .EXAMPLE
+    Install-FoPlugins -Mode Missing -Architecture 64 -DestinationPath (Join-Path $HOME 'FoPlugins64')
     #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
-        [ValidateSet('FullPortable', 'Missing')]
+        [ValidateSet('FullPortable', 'Missing', 'Remove')]
         [string]$Mode = 'FullPortable',
+        [ValidateSet('Auto', '32', '64')]
+        [string]$Architecture = 'Auto',
         [Alias('PluginPath')]
         [string]$DestinationPath,
         [string]$ArchiveUrl,

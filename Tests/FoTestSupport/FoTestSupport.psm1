@@ -228,6 +228,8 @@ $script:FoTestSupportFunctions = @(
     'Get-FoIcoLargestIndex'
     'Compare-FoIcoLargest'
     'Get-FoPluginBundleSettings'
+    'Resolve-FoPluginBundleArchitecture'
+    'Remove-FoInstalledPluginArchitectures'
     'Get-FoDssimBundleSettings'
     'Test-FoDssimCompareAvailable'
     'Test-FoCompareAllowMissingDssim'
