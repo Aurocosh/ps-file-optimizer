@@ -126,9 +126,13 @@ function Get-FoDssimInstallPath {
             $searchPath = Get-FoDefaultPluginPath
         }
         if (-not $searchPath -and $script:FoModuleRoot) {
-            $legacy = Join-Path $script:FoModuleRoot 'plugins'
-            if (Test-Path -LiteralPath $legacy) {
-                $searchPath = $legacy
+            $prefer64 = [Environment]::Is64BitProcess
+            foreach ($name in $(if ($prefer64) { @('Plugins64', 'Plugins32') } else { @('Plugins32', 'Plugins64') })) {
+                $candidate = Join-Path $script:FoModuleRoot $name
+                if (Test-Path -LiteralPath $candidate) {
+                    $searchPath = $candidate
+                    break
+                }
             }
         }
     }

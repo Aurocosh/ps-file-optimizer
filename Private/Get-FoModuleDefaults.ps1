@@ -66,10 +66,10 @@ function Get-FoDefaultPluginPath {
 
     $prefer64 = [Environment]::Is64BitProcess
     $candidates = if ($prefer64) {
-        @('Plugins64', 'Plugins32', 'plugins')
+        @('Plugins64', 'Plugins32')
     }
     else {
-        @('Plugins32', 'Plugins64', 'plugins')
+        @('Plugins32', 'Plugins64')
     }
 
     foreach ($name in $candidates) {

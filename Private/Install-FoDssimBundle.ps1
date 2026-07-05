@@ -13,7 +13,7 @@ function Install-FoDssimBundleCore {
         [System.IO.Path]::GetFullPath($DestinationPath)
     }
     else {
-        Join-Path $script:FoModuleRoot 'plugins'
+        Get-FoDefaultPluginPath
     }
 
     $destExe = Join-Path $pluginRoot ($script:FoDssimInstallRelativePath -replace '\\', [System.IO.Path]::DirectorySeparatorChar)

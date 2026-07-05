@@ -38,7 +38,8 @@ function Initialize-FoConfig {
         $tempBackup = Join-Path $env:TEMP 'FileOptimizer\backups'
         $pluginPath = Get-FoDefaultPluginPath
         if (-not $pluginPath) {
-            $pluginPath = Join-Path $script:FoModuleRoot 'plugins'
+            $folder = if ([Environment]::Is64BitProcess) { 'Plugins64' } else { 'Plugins32' }
+            $pluginPath = Join-Path $script:FoModuleRoot $folder
         }
         $content = $content.Replace('__FO_TEMP_BACKUP__', $tempBackup)
         $content = $content.Replace('__FO_PLUGIN_PATH__', $pluginPath)

@@ -62,11 +62,6 @@ function Get-FoTestPluginPath {
     $default = Get-FoDefaultPluginPath
     if ($default) { return $default }
 
-    $modulePlugins = Join-Path $script:FoModuleRoot 'plugins'
-    if (Test-Path -LiteralPath $modulePlugins) {
-        return ([System.IO.Path]::GetFullPath($modulePlugins))
-    }
-
     return $null
 }
 
