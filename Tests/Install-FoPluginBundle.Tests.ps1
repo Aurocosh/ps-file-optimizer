@@ -19,6 +19,7 @@ Describe 'Get-FoPluginBundleSettings' -Tag Unit {
         $settings.FileName | Should -Be 'fo-plugins-win-x86-1.0.0.7z'
         $settings.Folder | Should -Be 'Plugins32'
         $settings.Url | Should -Match 'plugins-v1\.0\.0/fo-plugins-win-x86'
+        $settings.Sha256 | Should -Match '^[a-f0-9]{64}$'
     }
 
     It 'ArchiveUrl override uses supplied SHA256' {

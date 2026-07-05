@@ -8,13 +8,13 @@ $script:FoPluginBundles = @{
     '64' = @{
         Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.7z'
         FileName = 'fo-plugins-win-x64-1.0.0.7z'
-        Sha256   = 'e314ad6ca1a435528fcc1a8c4737728c1d33bd8dd2197db7d36048ed65a1a5b8'
+        Sha256   = 'c4c596bcb8672af3452e3c1c2346f1816e1d5a598a2946ba899e5c7281d381aa'
         Folder   = 'Plugins64'
     }
     '32' = @{
         Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x86-1.0.0.7z'
         FileName = 'fo-plugins-win-x86-1.0.0.7z'
-        Sha256   = ''
+        Sha256   = '3c64e5e055e6c3fc3f2fdc55b84a07b36c318b44958d0bf47ca6e79e1cfa31fc'
         Folder   = 'Plugins32'
     }
 }
