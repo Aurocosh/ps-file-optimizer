@@ -34,6 +34,18 @@ function Invoke-FoPlugin {
     if ($null -eq $stepArgs) { $stepArgs = '' }
     $usesTmpOut = $stepArgs -and ($stepArgs -match '%TMPOUTPUTFILE%')
     $usesTmpInOnly = $stepArgs -and ($stepArgs -match '%TMPINPUTFILE%') -and -not $usesTmpOut -and ($stepArgs -notmatch '%OUTPUTFILE%')
+    $usesInPlace = $Step.Mode -eq 'InPlace'
+    if (-not $usesInPlace -and $stepArgs -and ($stepArgs -match '%INPUTFILE%') -and
+        ($stepArgs -notmatch '%TMPOUTPUTFILE%') -and ($stepArgs -notmatch '%OUTPUTFILE%') -and
+        ($stepArgs -notmatch '%TMPINPUTFILE%')) {
+        $usesInPlace = $true
+    }
+
+    $inplaceBackup = $null
+    if ($usesInPlace) {
+        $inplaceBackup = Join-Path $tempDir "FileOptimizer_inplacebak_${rand}_$baseName"
+        Copy-Item -LiteralPath $InputFile -Destination $inplaceBackup -Force
+    }
 
     if ($usesTmpInOnly -or ($Step.Handler -and $Step.Mode -eq 'TempInput')) {
         Copy-Item -LiteralPath $InputFile -Destination $tmpIn -Force
@@ -102,7 +114,13 @@ function Invoke-FoPlugin {
     $accepted = $false
 
     if ($exitCode -eq 0) {
-        if ($usesTmpOut -or $Step.Handler) {
+        if ($usesInPlace) {
+            $sizeAfter = (Get-Item -LiteralPath $InputFile).Length
+            if ($sizeAfter -ge 8 -and $sizeAfter -lt $sizeBefore) {
+                $accepted = $true
+            }
+        }
+        elseif ($usesTmpOut -or $Step.Handler) {
             if (Test-Path -LiteralPath $tmpOut) {
                 $sizeAfter = (Get-Item -LiteralPath $tmpOut).Length
                 if ($sizeAfter -ge 8 -and $sizeAfter -lt $sizeBefore) {
@@ -131,9 +149,14 @@ function Invoke-FoPlugin {
         }
     }
 
+    if ($usesInPlace -and -not $accepted -and $inplaceBackup -and (Test-Path -LiteralPath $inplaceBackup)) {
+        Copy-Item -LiteralPath $inplaceBackup -Destination $InputFile -Force
+        $sizeAfter = $sizeBefore
+    }
+
     if (-not $Settings.Debug) {
-        foreach ($t in @($tmpIn, $tmpOut)) {
-            if (Test-Path -LiteralPath $t) { Remove-Item -LiteralPath $t -Force -ErrorAction SilentlyContinue }
+        foreach ($t in @($tmpIn, $tmpOut, $inplaceBackup)) {
+            if ($t -and (Test-Path -LiteralPath $t)) { Remove-Item -LiteralPath $t -Force -ErrorAction SilentlyContinue }
         }
     }
 
