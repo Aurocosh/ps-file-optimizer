@@ -15,10 +15,14 @@ function Install-FoDssim {
     Plugin directory root (same folder as pipeline executables). Defaults to {ModuleRoot}\plugins.
 
     .PARAMETER ArchiveUrl
-    Override the default dssim zip download URL.
+    Override the default dssim zip download URL. Custom URLs require -ArchiveSha256 unless
+    -AllowUnverifiedDownload is specified.
 
     .PARAMETER ArchiveSha256
     Expected SHA256 of the bundle at -ArchiveUrl.
+
+    .PARAMETER AllowUnverifiedDownload
+    Allow downloading a custom bundle URL without SHA256 verification. Not recommended.
 
     .PARAMETER TempDirectory
     Optional parent for temporary download/extract folders. A unique subfolder is always removed afterward.
@@ -46,6 +50,7 @@ function Install-FoDssim {
         [string]$ArchiveSha256,
         [string]$TempDirectory,
         [switch]$Force,
+        [switch]$AllowUnverifiedDownload,
         [bool]$ShowProgress = $true
     )
 

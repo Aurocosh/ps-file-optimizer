@@ -41,6 +41,7 @@ function Get-FoModuleDefaults {
         PDFSkipLayered    = $false
         LeanifyIterations = -1
         PNGWolfIterations = -1
+        PluginTimeoutSeconds = 1800
     }
 }
 

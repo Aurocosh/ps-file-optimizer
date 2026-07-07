@@ -129,13 +129,35 @@ function Remove-FoInstalledPluginArchitectures {
     return $removed
 }
 
+function Assert-FoBundleSha256Policy {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Url,
+        [string]$Sha256,
+        [switch]$AllowUnverifiedDownload,
+        [Parameter(Mandatory)]
+        [string]$BundleLabel
+    )
+
+    if ($Sha256) { return }
+
+    if ($AllowUnverifiedDownload) {
+        Write-Warning "Downloading $BundleLabel from '$Url' without SHA256 verification."
+        return
+    }
+
+    throw "Custom $BundleLabel URL requires SHA256 verification. Supply -ArchiveSha256, set the matching FO_*_BUNDLE_SHA256 environment variable, or pass -AllowUnverifiedDownload to skip verification."
+}
+
 function Get-FoPluginBundleSettings {
     [CmdletBinding()]
     param(
         [ValidateSet('Auto', '32', '64')]
         [string]$Architecture = 'Auto',
         [string]$ArchiveUrl,
-        [string]$ArchiveSha256
+        [string]$ArchiveSha256,
+        [switch]$AllowUnverifiedDownload
     )
 
     if ($env:FO_PLUGIN_BUNDLE_URL) {
@@ -146,17 +168,24 @@ function Get-FoPluginBundleSettings {
             [System.IO.Path]::GetFileName(($env:FO_PLUGIN_BUNDLE_URL -split '\?')[0])
         }
 
+        $sha256 = if ($env:FO_PLUGIN_BUNDLE_SHA256) { $env:FO_PLUGIN_BUNDLE_SHA256 } else { $ArchiveSha256 }
+        Assert-FoBundleSha256Policy -Url $env:FO_PLUGIN_BUNDLE_URL -Sha256 $sha256 `
+            -AllowUnverifiedDownload:$AllowUnverifiedDownload -BundleLabel 'plugin bundle'
+
         return [PSCustomObject]@{
             Architecture = Resolve-FoPluginBundleArchitecture -Architecture $(if ($env:FO_PLUGIN_BUNDLE_ARCH) { $env:FO_PLUGIN_BUNDLE_ARCH } else { $Architecture })
             Url          = $env:FO_PLUGIN_BUNDLE_URL
             FileName     = $fileName
-            Sha256       = if ($env:FO_PLUGIN_BUNDLE_SHA256) { $env:FO_PLUGIN_BUNDLE_SHA256 } else { $ArchiveSha256 }
+            Sha256       = $sha256
             Format       = if ($env:FO_PLUGIN_BUNDLE_FORMAT) { $env:FO_PLUGIN_BUNDLE_FORMAT } else { 'zip' }
             Folder       = if ($env:FO_PLUGIN_BUNDLE_FOLDER) { $env:FO_PLUGIN_BUNDLE_FOLDER } else { 'Plugins64' }
         }
     }
 
     if ($ArchiveUrl) {
+        Assert-FoBundleSha256Policy -Url $ArchiveUrl -Sha256 $ArchiveSha256 `
+            -AllowUnverifiedDownload:$AllowUnverifiedDownload -BundleLabel 'plugin bundle'
+
         $arch = Resolve-FoPluginBundleArchitecture -Architecture $Architecture
         return [PSCustomObject]@{
             Architecture = $arch
@@ -185,11 +214,13 @@ function Test-FoDownloadedFileSha256 {
     param(
         [Parameter(Mandatory)]
         [string]$Path,
-        [string]$ExpectedSha256
+        [string]$ExpectedSha256,
+        [switch]$AllowUnverifiedDownload
     )
 
     if (-not $ExpectedSha256) {
-        return
+        if ($AllowUnverifiedDownload) { return }
+        throw 'Downloaded bundle SHA256 is required but was not provided.'
     }
 
     $actual = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()

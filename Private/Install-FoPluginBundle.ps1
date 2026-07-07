@@ -152,6 +152,7 @@ function Install-FoPluginBundleCore {
         [string]$ArchiveSha256,
         [string]$TempDirectory,
         [switch]$Force,
+        [switch]$AllowUnverifiedDownload,
         [bool]$ShowProgress = $true
     )
 
@@ -189,7 +190,8 @@ function Install-FoPluginBundleCore {
 
     $null = Remove-FoInstalledPluginArchitectures -Scope $resolvedArch -ExcludeFolderNames @($folderName)
 
-    $bundle = Get-FoPluginBundleSettings -Architecture $Architecture -ArchiveUrl $ArchiveUrl -ArchiveSha256 $ArchiveSha256
+    $bundle = Get-FoPluginBundleSettings -Architecture $Architecture -ArchiveUrl $ArchiveUrl -ArchiveSha256 $ArchiveSha256 `
+        -AllowUnverifiedDownload:$AllowUnverifiedDownload
     $url = $bundle.Url
     $requiredExes = Get-FoRequiredPluginExecutables -Architecture $resolvedArch
 
@@ -235,7 +237,8 @@ function Install-FoPluginBundleCore {
 
         if ($PSCmdlet.ShouldProcess($url, 'Download plugin bundle')) {
             Invoke-FoPluginBundleDownload -DestinationFile $archivePath -Url $url -ShowProgress:$ShowProgress
-            Test-FoDownloadedFileSha256 -Path $archivePath -ExpectedSha256 $bundle.Sha256
+            Test-FoDownloadedFileSha256 -Path $archivePath -ExpectedSha256 $bundle.Sha256 `
+                -AllowUnverifiedDownload:$AllowUnverifiedDownload
             $downloaded = $true
         }
         else {

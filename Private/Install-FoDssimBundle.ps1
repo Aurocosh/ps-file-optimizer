@@ -6,6 +6,7 @@ function Install-FoDssimBundleCore {
         [string]$ArchiveSha256,
         [string]$TempDirectory,
         [switch]$Force,
+        [switch]$AllowUnverifiedDownload,
         [bool]$ShowProgress = $true
     )
 
@@ -44,7 +45,8 @@ function Install-FoDssimBundleCore {
         }
     }
 
-    $bundle = Get-FoDssimBundleSettings -ArchiveUrl $ArchiveUrl -ArchiveSha256 $ArchiveSha256
+    $bundle = Get-FoDssimBundleSettings -ArchiveUrl $ArchiveUrl -ArchiveSha256 $ArchiveSha256 `
+        -AllowUnverifiedDownload:$AllowUnverifiedDownload
     $tempRoot = if ($TempDirectory) {
         [System.IO.Path]::GetFullPath($TempDirectory)
     }
@@ -62,7 +64,8 @@ function Install-FoDssimBundleCore {
 
         if ($PSCmdlet.ShouldProcess($bundle.Url, 'Download DSSIM bundle')) {
             Invoke-FoPluginBundleDownload -DestinationFile $archivePath -Url $bundle.Url -ShowProgress:$ShowProgress
-            Test-FoDownloadedFileSha256 -Path $archivePath -ExpectedSha256 $bundle.Sha256
+            Test-FoDownloadedFileSha256 -Path $archivePath -ExpectedSha256 $bundle.Sha256 `
+                -AllowUnverifiedDownload:$AllowUnverifiedDownload
         }
         else {
             return [PSCustomObject]@{

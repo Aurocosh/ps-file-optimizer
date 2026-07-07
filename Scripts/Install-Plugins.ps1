@@ -8,6 +8,7 @@ param(
     [string]$ArchiveSha256,
     [string]$TempDirectory,
     [switch]$Force,
+    [switch]$AllowUnverifiedDownload,
     [switch]$WhatIf,
     [bool]$ShowProgress = $true
 )
@@ -19,11 +20,12 @@ $params = @{
     Mode            = $Mode
     Architecture    = $Architecture
     DestinationPath = $PluginPath
-    ArchiveUrl      = $ArchiveUrl
-    ArchiveSha256   = $ArchiveSha256
-    TempDirectory   = $TempDirectory
-    Force           = $Force
-    ShowProgress    = $ShowProgress
+    ArchiveUrl               = $ArchiveUrl
+    ArchiveSha256            = $ArchiveSha256
+    TempDirectory            = $TempDirectory
+    Force                    = $Force
+    AllowUnverifiedDownload  = $AllowUnverifiedDownload
+    ShowProgress             = $ShowProgress
 }
 if ($WhatIf) {
     $params['WhatIf'] = $true

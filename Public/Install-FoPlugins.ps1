@@ -24,11 +24,14 @@ function Install-FoPlugins {
     Target plugin directory. Defaults to {ModuleRoot}\Plugins64 or {ModuleRoot}\Plugins32 per -Architecture.
 
     .PARAMETER ArchiveUrl
-    Override the default bundle download URL. SHA256 verification applies only when -ArchiveSha256
-    is also supplied (or FO_PLUGIN_BUNDLE_SHA256 is set).
+    Override the default bundle download URL. Custom URLs require -ArchiveSha256 unless
+    -AllowUnverifiedDownload is specified.
 
     .PARAMETER ArchiveSha256
     Expected SHA256 of the bundle at -ArchiveUrl.
+
+    .PARAMETER AllowUnverifiedDownload
+    Allow downloading a custom bundle URL without SHA256 verification. Not recommended.
 
     .PARAMETER TempDirectory
     Optional parent for temporary download/extract folders. A unique subfolder is always removed afterward.
@@ -66,6 +69,7 @@ function Install-FoPlugins {
         [string]$ArchiveSha256,
         [string]$TempDirectory,
         [switch]$Force,
+        [switch]$AllowUnverifiedDownload,
         [bool]$ShowProgress = $true
     )
 

@@ -6,7 +6,9 @@ function New-FoStep {
         [string]$Handler,
         [ValidateSet('TempInput', 'TempOutput', 'InPlace')]
         [string]$Mode = 'TempInput',
-        [scriptblock]$Gate
+        [scriptblock]$Gate,
+        [int]$ErrorMin = 0,
+        [int]$ErrorMax = 0
     )
 
     [PSCustomObject]@{
@@ -16,7 +18,29 @@ function New-FoStep {
         Handler    = $Handler
         Mode       = $Mode
         Gate       = $Gate
+        ErrorMin   = $ErrorMin
+        ErrorMax   = $ErrorMax
     }
+}
+
+function Test-FoStepExitCodeAccepted {
+    param(
+        [Parameter(Mandatory)]
+        $Step,
+        [Parameter(Mandatory)]
+        [int]$ExitCode
+    )
+
+    $min = 0
+    $max = 0
+    if ($null -ne $Step.PSObject.Properties['ErrorMin']) { $min = [int]$Step.ErrorMin }
+    if ($null -ne $Step.PSObject.Properties['ErrorMax']) { $max = [int]$Step.ErrorMax }
+
+    if ($min -eq 0 -and $max -eq 0) {
+        return $ExitCode -eq 0
+    }
+
+    return $ExitCode -ge $min -and $ExitCode -le $max
 }
 
 function Get-FoActiveSteps {

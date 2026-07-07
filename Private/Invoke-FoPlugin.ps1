@@ -105,15 +105,46 @@ function Invoke-FoPlugin {
         $psi.CreateNoWindow = $true
 
         $p = [System.Diagnostics.Process]::Start($psi)
-        $p.WaitForExit()
-        $exitCode = $p.ExitCode
+        $timeoutSec = 0
+        if ($null -ne $Settings.PluginTimeoutSeconds) {
+            $timeoutSec = [Math]::Max(0, [int]$Settings.PluginTimeoutSeconds)
+        }
+
+        $timedOut = $false
+        if ($timeoutSec -gt 0) {
+            $timeoutMs = $timeoutSec * 1000
+            if (-not $p.WaitForExit($timeoutMs)) {
+                $timedOut = $true
+                try { $p.Kill() } catch { }
+                try { $p.WaitForExit(5000) } catch { }
+            }
+        }
+        else {
+            $p.WaitForExit()
+        }
+
+        $exitCode = if ($timedOut) { -1 } else { $p.ExitCode }
         $p.Dispose()
+
+        if ($timedOut) {
+            $sw.Stop()
+            return @{
+                ExitCode   = $exitCode
+                Skipped    = $false
+                Accepted   = $false
+                Reason     = 'Timeout'
+                SizeBefore = $sizeBefore
+                SizeAfter  = $sizeBefore
+                DurationMs = $sw.ElapsedMilliseconds
+            }
+        }
     }
 
     $sw.Stop()
     $accepted = $false
+    $exitOk = Test-FoStepExitCodeAccepted -Step $Step -ExitCode $exitCode
 
-    if ($exitCode -eq 0) {
+    if ($exitOk) {
         if ($usesInPlace) {
             $sizeAfter = (Get-Item -LiteralPath $InputFile).Length
             if ($sizeAfter -ge 8 -and $sizeAfter -lt $sizeBefore) {

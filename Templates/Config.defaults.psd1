@@ -26,4 +26,5 @@
     XMLEnableLeanify  = $false
     LUAEnableLeanify  = $false
     MiscDisable       = $false
+    PluginTimeoutSeconds = 1800
 }

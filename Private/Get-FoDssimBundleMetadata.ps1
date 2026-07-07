@@ -75,7 +75,8 @@ function Get-FoDssimBundleSettings {
     [CmdletBinding()]
     param(
         [string]$ArchiveUrl,
-        [string]$ArchiveSha256
+        [string]$ArchiveSha256,
+        [switch]$AllowUnverifiedDownload
     )
 
     if ($env:FO_DSSIM_BUNDLE_URL) {
@@ -86,15 +87,22 @@ function Get-FoDssimBundleSettings {
             [System.IO.Path]::GetFileName(($env:FO_DSSIM_BUNDLE_URL -split '\?')[0])
         }
 
+        $sha256 = if ($env:FO_DSSIM_BUNDLE_SHA256) { $env:FO_DSSIM_BUNDLE_SHA256 } else { $ArchiveSha256 }
+        Assert-FoBundleSha256Policy -Url $env:FO_DSSIM_BUNDLE_URL -Sha256 $sha256 `
+            -AllowUnverifiedDownload:$AllowUnverifiedDownload -BundleLabel 'DSSIM bundle'
+
         return [PSCustomObject]@{
             Version  = $script:FoDssimVersion
             Url      = $env:FO_DSSIM_BUNDLE_URL
             FileName = $fileName
-            Sha256   = if ($env:FO_DSSIM_BUNDLE_SHA256) { $env:FO_DSSIM_BUNDLE_SHA256 } else { $ArchiveSha256 }
+            Sha256   = $sha256
         }
     }
 
     if ($ArchiveUrl) {
+        Assert-FoBundleSha256Policy -Url $ArchiveUrl -Sha256 $ArchiveSha256 `
+            -AllowUnverifiedDownload:$AllowUnverifiedDownload -BundleLabel 'DSSIM bundle'
+
         return [PSCustomObject]@{
             Version  = $script:FoDssimVersion
             Url      = $ArchiveUrl

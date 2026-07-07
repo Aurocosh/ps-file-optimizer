@@ -29,6 +29,17 @@ Describe 'Get-FoPluginBundleSettings' -Tag Unit {
         $settings.Format | Should -Be 'zip'
         $settings.Sha256 | Should -Be 'abc'
     }
+
+    It 'Rejects custom ArchiveUrl without SHA256' {
+        { Get-FoPluginBundleSettings -ArchiveUrl 'https://example.test/bundle.zip' } |
+            Should -Throw '*requires SHA256 verification*'
+    }
+
+    It 'Allows custom ArchiveUrl without SHA256 when opt-out is set' {
+        $settings = Get-FoPluginBundleSettings -ArchiveUrl 'https://example.test/bundle.zip' -AllowUnverifiedDownload
+        $settings.Url | Should -Be 'https://example.test/bundle.zip'
+        $settings.Sha256 | Should -BeNullOrEmpty
+    }
 }
 
 Describe 'Resolve-FoPluginBundleArchitecture' -Tag Unit {
@@ -128,6 +139,17 @@ Describe 'Get-FoDssimBundleSettings' -Tag Unit {
         $settings = Get-FoDssimBundleSettings -ArchiveUrl 'https://example.test/dssim.zip' -ArchiveSha256 'abc'
         $settings.Url | Should -Be 'https://example.test/dssim.zip'
         $settings.Sha256 | Should -Be 'abc'
+    }
+
+    It 'Rejects custom ArchiveUrl without SHA256' {
+        { Get-FoDssimBundleSettings -ArchiveUrl 'https://example.test/dssim.zip' } |
+            Should -Throw '*requires SHA256 verification*'
+    }
+
+    It 'Allows custom ArchiveUrl without SHA256 when opt-out is set' {
+        $settings = Get-FoDssimBundleSettings -ArchiveUrl 'https://example.test/dssim.zip' -AllowUnverifiedDownload
+        $settings.Url | Should -Be 'https://example.test/dssim.zip'
+        $settings.Sha256 | Should -BeNullOrEmpty
     }
 }
 
