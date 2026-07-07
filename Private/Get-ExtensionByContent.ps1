@@ -11,7 +11,7 @@ function Get-ExtensionByContent {
     $mapPath = if ($script:FoModuleRoot) { Join-Path $script:FoModuleRoot 'Data\ExtensionMap.psd1' } else { $null }
     $allExts = @()
     if ($mapPath -and (Test-Path -LiteralPath $mapPath)) {
-        $allExts = (Import-FoDataFile -Path $mapPath).Keys
+        $allExts = (Import-FoPsd1File -Path $mapPath).Keys
     }
 
     $needsDetect = $Force -or -not $ext -or ($ext -notin $allExts)
@@ -66,7 +66,7 @@ function Get-ExtensionByContent {
 function Get-FoExtensionMap {
     if (-not $script:FoExtensionMap) {
         $path = Join-Path $script:FoModuleRoot 'Data\ExtensionMap.psd1'
-        $script:FoExtensionMap = Import-FoDataFile -Path $path
+        $script:FoExtensionMap = Import-FoPsd1File -Path $path
     }
     return $script:FoExtensionMap
 }

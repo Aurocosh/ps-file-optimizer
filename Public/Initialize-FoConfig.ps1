@@ -1,14 +1,14 @@
 function Initialize-FoConfig {
     <#
     .SYNOPSIS
-    Writes a default config PSD1 from the module template.
+    Writes a default config JSON from the module template.
 
     .DESCRIPTION
-    Copies Templates\Config.defaults.psd1 to the global config path or a local path,
+    Copies Templates\Config.defaults.json to the global config path or a local path,
     substituting default backup and plugin folder placeholders.
 
     .PARAMETER Scope
-    Global — write to %USERPROFILE%\.config\FileOptimizer\config.psd1.
+    Global — write to %USERPROFILE%\.config\FileOptimizer\config.json.
     Local — write to -Path (required).
 
     .PARAMETER Path
@@ -32,7 +32,7 @@ function Initialize-FoConfig {
         [switch]$Force
     )
 
-    $template = Join-Path $script:FoModuleRoot 'Templates\Config.defaults.psd1'
+    $template = Join-Path $script:FoModuleRoot 'Templates\Config.defaults.json'
     if (-not (Test-Path -LiteralPath $template)) {
         throw "Config template not found: $template"
     }
@@ -65,8 +65,8 @@ function Initialize-FoConfig {
             $folder = if ([Environment]::Is64BitProcess) { 'Plugins64' } else { 'Plugins32' }
             $pluginPath = Join-Path $script:FoModuleRoot $folder
         }
-        $content = $content.Replace('__FO_TEMP_BACKUP__', $tempBackup)
-        $content = $content.Replace('__FO_PLUGIN_PATH__', $pluginPath)
+        $content = $content.Replace('__FO_TEMP_BACKUP__', ($tempBackup -replace '\\', '\\'))
+        $content = $content.Replace('__FO_PLUGIN_PATH__', ($pluginPath -replace '\\', '\\'))
         Set-Content -LiteralPath $target -Value $content -Encoding UTF8
         Write-Host "Config written to: $target"
     }

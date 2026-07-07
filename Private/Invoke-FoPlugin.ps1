@@ -102,9 +102,19 @@ function Invoke-FoPlugin {
         $psi.Arguments = $argTemplate
         $psi.WorkingDirectory = $workDir
         $psi.UseShellExecute = $false
+        $psi.RedirectStandardError = $true
         $psi.CreateNoWindow = $true
 
         $p = [System.Diagnostics.Process]::Start($psi)
+        $stderrBuilder = New-Object System.Text.StringBuilder
+        $stderrSourceId = 'FoPluginStderr_{0}' -f (Get-Random)
+        $stderrEvent = Register-ObjectEvent -InputObject $p -EventName ErrorDataReceived -SourceIdentifier $stderrSourceId -MessageData $stderrBuilder -Action {
+            if ($EventArgs.Data) {
+                [void]$Event.MessageData.AppendLine($EventArgs.Data)
+            }
+        }
+        $p.BeginErrorReadLine()
+
         $timeoutSec = 0
         if ($null -ne $Settings.PluginTimeoutSeconds) {
             $timeoutSec = [Math]::Max(0, [int]$Settings.PluginTimeoutSeconds)
@@ -121,6 +131,20 @@ function Invoke-FoPlugin {
         }
         else {
             $p.WaitForExit()
+        }
+
+        $stderr = $null
+        try {
+            $p.CancelErrorRead()
+            $stderr = $stderrBuilder.ToString()
+        }
+        catch { }
+        if ($stderrEvent) {
+            Unregister-Event -SourceIdentifier $stderrSourceId -ErrorAction SilentlyContinue
+            Remove-Job -Id $stderrEvent.Id -Force -ErrorAction SilentlyContinue
+        }
+        if ($Settings.LogLevel -ge 3 -and $stderr) {
+            Write-Verbose ("Plugin stderr ({0}): {1}" -f $Step.Name, $stderr.Trim())
         }
 
         $exitCode = if ($timedOut) { -1 } else { $p.ExitCode }
@@ -165,15 +189,6 @@ function Invoke-FoPlugin {
                 $sizeAfter = (Get-Item -LiteralPath $tmpIn).Length
                 if ($sizeAfter -ge 8 -and $sizeAfter -lt $sizeBefore) {
                     Copy-Item -LiteralPath $tmpIn -Destination $InputFile -Force
-                    $accepted = $true
-                }
-            }
-        }
-        elseif ($stepArgs -match '%TMPOUTPUTFILE%') {
-            if (Test-Path -LiteralPath $tmpOut) {
-                $sizeAfter = (Get-Item -LiteralPath $tmpOut).Length
-                if ($sizeAfter -ge 8 -and $sizeAfter -lt $sizeBefore) {
-                    Copy-Item -LiteralPath $tmpOut -Destination $InputFile -Force
                     $accepted = $true
                 }
             }

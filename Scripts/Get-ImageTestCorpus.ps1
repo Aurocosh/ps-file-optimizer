@@ -32,7 +32,7 @@ $moduleRoot = Split-Path -Parent $PSScriptRoot
 Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 Import-Module (Join-Path $moduleRoot 'Tests\FoTestSupport\FoTestSupport.psd1') -Force
 
-$manifest = Import-FoDataFile -Path (Join-Path $moduleRoot 'Tests\ImageTestManifest.psd1')
+$manifest = Import-FoPsd1File -Path (Join-Path $moduleRoot 'Tests\ImageTestManifest.psd1')
 
 function Expand-FoZipArchive {
     param(

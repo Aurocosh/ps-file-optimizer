@@ -33,7 +33,7 @@ function Get-FoPNGPipeline {
     }
 
     $strip = if ($Context.IsAPNG) { '--strip safe ' } elseif (-not $s.PNGCopyMetadata) { '--strip all ' } else { '--strip safe ' }
-  $lossy = if ($s.PNGAllowLossy) { '--scale16 ' } else { '' }
+    $lossy = if ($s.PNGAllowLossy) { '--scale16 ' } else { '' }
     $steps += New-FoStep -Name 'OxiPNG (6/16)' -Executable 'oxipng.exe' -Arguments "--zopfli --alpha --quiet -o$oxi $lossy$strip`"%TMPINPUTFILE%`"" -Mode TempInput
 
     if (-not $Context.IsAPNG -and -not $s.PNGCopyMetadata) {

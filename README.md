@@ -71,9 +71,9 @@ Related pipelines automatically skip missing steps when these tools are unavaila
 
 ## Configuration
 
-Precedence: module defaults → `%USERPROFILE%\.config\FileOptimizer\config.psd1` → `-ConfigPath` → explicit parameters.
+Precedence: module defaults → `%USERPROFILE%\.config\FileOptimizer\config.json` → `-ConfigPath` → explicit parameters.
 
-See `Templates\Config.defaults.psd1` for available keys.
+See `Templates\Config.defaults.json` for available keys.
 
 ## Tests
 

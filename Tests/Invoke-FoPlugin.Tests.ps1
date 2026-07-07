@@ -121,8 +121,8 @@ Describe 'Invoke-FoPlugin timeouts' -Tag Unit {
         Set-Content -LiteralPath $workFile -Value ('A' * 64) -NoNewline
 
         $step = [PSCustomObject]@{
-            Name = 'sleep'; Executable = 'cmd.exe'
-            Arguments = '/c timeout /t 30 /nobreak >nul'
+            Name = 'sleep'; Executable = 'powershell.exe'
+            Arguments = '-NoProfile -ExecutionPolicy Bypass -Command "Start-Sleep -Seconds 30"'
             Handler = $null; Mode = 'TempOutput'; Gate = $null
         }
         $settings = Get-FoConfig
@@ -135,5 +135,29 @@ Describe 'Invoke-FoPlugin timeouts' -Tag Unit {
         $result.Reason | Should -Be 'Timeout'
         $result.Accepted | Should -Be $false
         $sw.Elapsed.TotalSeconds | Should -BeLessThan 10
+    }
+
+    It 'Completes when a plugin writes large stderr volume' {
+        $workDir = Join-Path $TestDrive 'plugin-stderr'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $workFile = Join-Path $workDir 'test.dat'
+        Set-Content -LiteralPath $workFile -Value ('A' * 64) -NoNewline
+
+        $step = [PSCustomObject]@{
+            Name = 'stderr-flood'
+            Executable = 'powershell.exe'
+            Arguments = '-NoProfile -ExecutionPolicy Bypass -Command "1..5000 | ForEach-Object { [Console]::Error.WriteLine($_) }; exit 0"'
+            Handler = $null; Mode = 'TempOutput'; Gate = $null
+        }
+        $settings = Get-FoConfig
+        $settings.PluginTimeoutSeconds = 30
+
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly
+        $sw.Stop()
+
+        $result.ExitCode | Should -Be 0
+        $result.Reason | Should -BeNullOrEmpty
+        $sw.Elapsed.TotalSeconds | Should -BeLessThan 15
     }
 }

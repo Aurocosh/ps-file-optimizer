@@ -2,7 +2,8 @@ $script:FoModuleRoot = $PSScriptRoot
 $script:FoExtensionMap = $null
 
 # Private helpers
-. (Join-Path $PSScriptRoot 'Private\Import-FoDataFile.ps1')
+. (Join-Path $PSScriptRoot 'Private\Import-FoPsd1File.ps1')
+. (Join-Path $PSScriptRoot 'Private\Import-FoJsonFile.ps1')
 . (Join-Path $PSScriptRoot 'Private\Get-FoModuleDefaults.ps1')
 . (Join-Path $PSScriptRoot 'Private\Format-FoFileSize.ps1')
 . (Join-Path $PSScriptRoot 'Private\Merge-FoSettings.ps1')

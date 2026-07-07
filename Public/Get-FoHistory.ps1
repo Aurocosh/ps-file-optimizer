@@ -4,14 +4,14 @@ function Get-FoHistory {
     Displays or returns optimization history entries.
 
     .DESCRIPTION
-    Reads history.psd1 and shows recent entries. Use -Format Object in scripts
+    Reads history.json and shows recent entries. Use -Format Object in scripts
     to receive structured entry objects instead of formatted text.
 
     .PARAMETER Last
     Maximum number of entries to return (default 10).
 
     .PARAMETER HistoryPath
-    Override path to history.psd1.
+    Override path to history.json.
 
     .PARAMETER Format
     Summary — one line per entry (default, for CLI).

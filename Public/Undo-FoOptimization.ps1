@@ -14,7 +14,7 @@ function Undo-FoOptimization {
     Roll back the N most recent pending history entries.
 
     .PARAMETER HistoryPath
-    Override path to history.psd1. Defaults to settings or global history path.
+    Override path to history.json. Defaults to settings or global history path.
 
     .EXAMPLE
     Undo-FoOptimization -Last 3
@@ -37,7 +37,14 @@ function Undo-FoOptimization {
     $entries = @($data.Entries | Where-Object { $_.ReversalStatus -eq 'Pending' } | Sort-Object Timestamp -Descending)
 
     if ($Path) {
-        $normalized = @($Path | ForEach-Object { [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $_ -ErrorAction SilentlyContinue).Path) })
+        $normalized = @()
+        foreach ($p in $Path) {
+            $resolved = Resolve-Path -LiteralPath $p -ErrorAction SilentlyContinue
+            if (-not $resolved) {
+                throw "Path not found: $p"
+            }
+            $normalized += [System.IO.Path]::GetFullPath($resolved.Path)
+        }
         $entries = @($entries | Where-Object {
             $op = [System.IO.Path]::GetFullPath($_.OriginalPath)
             $opt = if ($_.OptimizedPath) { [System.IO.Path]::GetFullPath($_.OptimizedPath) } else { '' }

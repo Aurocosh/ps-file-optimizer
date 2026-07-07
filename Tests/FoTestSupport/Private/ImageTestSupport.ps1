@@ -17,7 +17,7 @@ function Get-FoImageTestManifest {
     [CmdletBinding()]
     param()
 
-    Import-FoDataFile -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestManifest.psd1')
+    Import-FoPsd1File -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestManifest.psd1')
 }
 
 function Get-FoImageTestFixtureEntry {
@@ -148,7 +148,7 @@ function Get-FoImageTestProfileEntry {
         [string]$Name
     )
 
-    $profiles = Import-FoDataFile -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestProfiles.psd1')
+    $profiles = Import-FoPsd1File -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestProfiles.psd1')
     if (-not $profiles.ContainsKey($Name)) {
         throw "Unknown image test profile '$Name'."
     }
@@ -596,7 +596,7 @@ function Get-FoImageTestLossyFixtureOverride {
 
     $overridesPath = Join-Path (Get-FoTestSupportRoot) 'ImageTestLossyOverrides.psd1'
     if (Test-Path -LiteralPath $overridesPath) {
-        $overrides = Import-FoDataFile -Path $overridesPath
+        $overrides = Import-FoPsd1File -Path $overridesPath
         if ($overrides.Paths -and $overrides.Paths.ContainsKey($normalized)) {
             return [double]$overrides.Paths[$normalized]
         }
@@ -624,7 +624,7 @@ function Get-FoImageTestLossyThreshold {
 
     $Format = Resolve-FoImageTestLossyFormat -Format $Format
 
-    $profiles = Import-FoDataFile -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestProfiles.psd1')
+    $profiles = Import-FoPsd1File -Path (Join-Path (Get-FoTestSupportRoot) 'ImageTestProfiles.psd1')
     if (-not $profiles.ContainsKey($ProfileName)) {
         throw "Unknown image test profile '$ProfileName'."
     }

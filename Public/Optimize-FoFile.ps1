@@ -89,6 +89,12 @@ function Optimize-FoFile {
                 continue
             }
 
+            if ((Get-Item -LiteralPath $file).Length -eq 0) {
+                Write-FoLog -LogLevel $settings.LogLevel -RequiredLevel 1 -Message "Skipped $file (zero-byte file)"
+                $script:FoBatchResults.Add([PSCustomObject]@{ Path = $file; Status = 'Skipped'; Reason = 'ZeroByte' })
+                continue
+            }
+
             $groups = Get-FoPipelineGroupsForFile -Path $file
             if ($groups.Count -eq 0) {
                 Write-FoLog -LogLevel $settings.LogLevel -RequiredLevel 1 -Message "Skipped $file (unsupported extension)"

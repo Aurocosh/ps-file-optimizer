@@ -2,6 +2,17 @@ BeforeDiscovery {
     Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
 }
 
+Describe 'Test-FoFileGate' -Tag Unit {
+    It 'Optimize-FoFile skips zero-byte files' {
+        $path = Join-Path $TestDrive 'empty.bin'
+        New-Item -ItemType File -Path $path -Force | Out-Null
+        $results = @(Optimize-FoFile -Path $path -Confirm:$false)
+        $results.Count | Should -Be 1
+        $results[0].Status | Should -Be 'Skipped'
+        $results[0].Reason | Should -Be 'ZeroByte'
+    }
+}
+
 Describe 'Test-FoIsAPNG' -Tag Unit {
     It 'Detects valid APNG fixture' {
         $path = Join-Path (Get-FoImageTestFixtureRoot) 'apng-conformance\valid\3frame_rgb.png'

@@ -9,20 +9,44 @@ function Invoke-FoDefluffPipe {
 
     $workDir = Split-Path -Parent $DefluffExe
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = 'cmd.exe'
-    $psi.Arguments = "/c `"`"$DefluffExe`" < `"$InputPath`" > `"$OutputPath`"`""
+    $psi.FileName = $DefluffExe
     $psi.WorkingDirectory = $workDir
     $psi.UseShellExecute = $false
+    $psi.RedirectStandardInput = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
     $psi.CreateNoWindow = $true
 
     $p = [System.Diagnostics.Process]::Start($psi)
-    $p.WaitForExit()
-    $exitCode = $p.ExitCode
-    $p.Dispose()
+    try {
+        $inputStream = [System.IO.File]::OpenRead($InputPath)
+        try {
+            $inputStream.CopyTo($p.StandardInput.BaseStream)
+        }
+        finally {
+            $inputStream.Dispose()
+        }
+        $p.StandardInput.Close()
 
-    if ($exitCode -ne 0) { return $exitCode }
-    if (-not (Test-Path -LiteralPath $OutputPath)) { return 1 }
-    return 0
+        $outputStream = [System.IO.File]::Create($OutputPath)
+        try {
+            $p.StandardOutput.BaseStream.CopyTo($outputStream)
+        }
+        finally {
+            $outputStream.Dispose()
+        }
+        $p.StandardOutput.Close()
+        $null = $p.StandardError.ReadToEnd()
+        $p.WaitForExit()
+
+        if ($p.ExitCode -ne 0) { return $p.ExitCode }
+        if (-not (Test-Path -LiteralPath $OutputPath)) { return 1 }
+        return 0
+    }
+    finally {
+        if ($p -and -not $p.HasExited) { $p.Kill() }
+        if ($p) { $p.Dispose() }
+    }
 }
 
 function Invoke-FoGzipRecompress {
@@ -115,8 +139,8 @@ function Invoke-FoSqliteOptimize {
         [string]$SqliteExe
     )
 
-    $sqlFile = "$InputPath.sql"
-    if (Test-Path -LiteralPath $sqlFile) { Remove-Item -LiteralPath $sqlFile -Force }
+    $tempDir = [System.IO.Path]::GetTempPath()
+    $sqlFile = Join-Path $tempDir ("FileOptimizer_sqlite_{0}.sql" -f (Get-Random -Maximum 999999))
     if (Test-Path -LiteralPath $OutputPath) { Remove-Item -LiteralPath $OutputPath -Force }
 
     try {
@@ -124,7 +148,7 @@ function Invoke-FoSqliteOptimize {
         $dump = & $SqliteExe $InputPath '.dump' 2>&1
         if ($LASTEXITCODE -ne 0) { return $LASTEXITCODE }
         Add-Content -LiteralPath $sqlFile -Value ($dump -join "`n") -Encoding UTF8
-        & $SqliteExe $OutputPath ".read $sqlFile" 2>&1 | Out-Null
+        & $SqliteExe $OutputPath (".read `"$sqlFile`"") 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
             if (Test-Path -LiteralPath $OutputPath) { Remove-Item -LiteralPath $OutputPath -Force }
             return $LASTEXITCODE

@@ -4,17 +4,17 @@ function Get-FoConfig {
     Returns merged FileOptimizer settings.
 
     .DESCRIPTION
-    Merges module defaults, global config (%USERPROFILE%\.config\FileOptimizer\config.psd1),
+    Merges module defaults, global config (%USERPROFILE%\.config\FileOptimizer\config.json),
     optional -ConfigPath, and any bound parameters passed to this cmdlet.
 
     .PARAMETER ConfigPath
-    Optional local PSD1 file merged after global config.
+    Optional local JSON config file merged after global config.
 
     .EXAMPLE
     Get-FoConfig
 
     .EXAMPLE
-    $s = Get-FoConfig -ConfigPath .\my-settings.psd1
+    $s = Get-FoConfig -ConfigPath .\my-settings.json
     $s.Level
     #>
     [CmdletBinding()]

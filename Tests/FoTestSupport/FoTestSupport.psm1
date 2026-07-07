@@ -4,7 +4,8 @@ $script:FoModuleRoot = Split-Path -Parent $script:FoTestSupportRoot
 Import-Module (Join-Path $script:FoModuleRoot 'FileOptimizer.psd1') -Force
 
 foreach ($name in @(
-        'Import-FoDataFile'
+        'Import-FoPsd1File'
+        'Import-FoJsonFile'
         'Get-FoModuleDefaults'
         'Format-FoFileSize'
         'Merge-FoSettings'
@@ -33,7 +34,7 @@ Get-ChildItem -Path (Join-Path $script:FoModuleRoot 'Pipelines\*.ps1') -Exclude 
 . (Join-Path $script:FoModuleRoot 'Public\Get-FoPipeline.ps1')
 . (Join-Path $PSScriptRoot 'Private\ImageTestSupport.ps1')
 
-$script:FoImageTestDecisions = Import-FoDataFile -Path (Join-Path $script:FoTestSupportRoot 'ImageTestDecisions.psd1')
+$script:FoImageTestDecisions = Import-FoPsd1File -Path (Join-Path $script:FoTestSupportRoot 'ImageTestDecisions.psd1')
 
 function Get-FoTestSupportRoot {
     return $script:FoTestSupportRoot
@@ -285,7 +286,8 @@ $script:FoTestSupportFunctions = @(
     'Get-FoTestPluginPath'
     'Test-FoPluginsAvailable'
     'New-FoTestPng'
-    'Import-FoDataFile'
+    'Import-FoPsd1File'
+    'Import-FoJsonFile'
     'Format-FoFileSize'
     'Merge-FoSettings'
     'Invoke-FoOutputMode'

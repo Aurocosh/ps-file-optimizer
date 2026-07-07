@@ -135,7 +135,7 @@ Describe 'Invoke-FoOutputMode TempMove backup paths' -Tag Unit {
 Describe 'History and rollback' -Tag Unit {
     It 'Records entry and rolls back TempMove' {
         $histDir = Join-Path $env:TEMP "FoHist_$(Get-Random)"
-        $histFile = Join-Path $histDir 'history.psd1'
+        $histFile = Join-Path $histDir 'history.json'
         $workDir = Join-Path $histDir 'work'
         $bakRoot = Join-Path $histDir 'backups'
         New-Item -ItemType Directory -Path $workDir -Force | Out-Null
@@ -211,7 +211,7 @@ Describe 'Missing tools policy' -Tag Unit {
 Describe 'Extension map' -Tag Unit {
     It 'Loads extension map with many entries' {
         $mapPath = Join-Path (Get-FoTestModuleRoot) 'Data\ExtensionMap.psd1'
-        $map = Import-FoDataFile -Path $mapPath
+        $map = Import-FoPsd1File -Path $mapPath
         ($map.Keys.Count -ge 370) | Should -Be $true
     }
 }

@@ -7,14 +7,14 @@ function Merge-FoSettings {
     $settings = Get-FoModuleDefaults
     $globalPath = Get-FoGlobalConfigPath
     if (Test-Path -LiteralPath $globalPath) {
-        $globalCfg = Import-FoDataFile -Path $globalPath
+        $globalCfg = Import-FoJsonFile -Path $globalPath
         foreach ($key in $globalCfg.Keys) {
             $settings[$key] = $globalCfg[$key]
         }
     }
 
     if ($BoundParameters.ConfigPath -and (Test-Path -LiteralPath $BoundParameters.ConfigPath)) {
-        $localCfg = Import-FoDataFile -Path $BoundParameters.ConfigPath
+        $localCfg = Import-FoJsonFile -Path $BoundParameters.ConfigPath
         foreach ($key in $localCfg.Keys) {
             $settings[$key] = $localCfg[$key]
         }

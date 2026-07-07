@@ -47,12 +47,12 @@ function Get-FoModuleDefaults {
 
 function Get-FoGlobalConfigPath {
     if ($env:FO_CONFIG_PATH) { return $env:FO_CONFIG_PATH }
-    return Join-Path (Join-Path (Join-Path $HOME '.config') 'FileOptimizer') 'config.psd1'
+    return Join-Path (Join-Path (Join-Path $HOME '.config') 'FileOptimizer') 'config.json'
 }
 
 function Get-FoDefaultHistoryPath {
     if ($env:FO_HISTORY_PATH) { return $env:FO_HISTORY_PATH }
-    return Join-Path (Join-Path (Join-Path $HOME '.config') 'FileOptimizer') 'history.psd1'
+    return Join-Path (Join-Path (Join-Path $HOME '.config') 'FileOptimizer') 'history.json'
 }
 
 function Get-FoDefaultPluginPath {
