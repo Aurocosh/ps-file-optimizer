@@ -5,6 +5,7 @@ function Invoke-FoPluginBundleDownload {
         [string]$DestinationFile,
         [Parameter(Mandatory)]
         [string]$Url,
+        [string]$ExpectedSha256,
         [bool]$ShowProgress = $true
     )
 
@@ -13,13 +14,27 @@ function Invoke-FoPluginBundleDownload {
         New-Item -ItemType Directory -Path $destDir -Force | Out-Null
     }
 
+    $fileName = Split-Path -Leaf $DestinationFile
+    $cacheRoot = $env:FO_PLUGIN_BUNDLE_CACHE_DIR
+    if ($cacheRoot -and $ExpectedSha256) {
+        $cacheDir = Join-Path $cacheRoot $ExpectedSha256.ToLowerInvariant()
+        $cachedPath = Join-Path $cacheDir $fileName
+        if (Test-Path -LiteralPath $cachedPath) {
+            Write-Verbose "Using cached bundle archive: $cachedPath"
+            if ($ShowProgress) {
+                Write-Host "Using cached $fileName ..."
+            }
+            Copy-Item -LiteralPath $cachedPath -Destination $DestinationFile -Force
+            return
+        }
+    }
+
     $partFile = "$DestinationFile.part"
     if (Test-Path -LiteralPath $partFile) {
         Remove-Item -LiteralPath $partFile -Force -ErrorAction SilentlyContinue
     }
 
     $activity = 'Downloading plugin bundle'
-    $fileName = Split-Path -Leaf $DestinationFile
 
     Write-Verbose "Downloading plugin bundle from $Url"
     if ($ShowProgress) {
@@ -83,6 +98,17 @@ function Invoke-FoPluginBundleDownload {
     }
 
     Move-Item -LiteralPath $partFile -Destination $DestinationFile -Force
+
+    if ($cacheRoot -and $ExpectedSha256) {
+        $cacheDir = Join-Path $cacheRoot $ExpectedSha256.ToLowerInvariant()
+        if (-not (Test-Path -LiteralPath $cacheDir)) {
+            New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+        }
+        $cachedPath = Join-Path $cacheDir $fileName
+        if (-not (Test-Path -LiteralPath $cachedPath)) {
+            Copy-Item -LiteralPath $DestinationFile -Destination $cachedPath -Force
+        }
+    }
 
     if ($ShowProgress) {
         $size = (Get-Item -LiteralPath $DestinationFile).Length
@@ -236,7 +262,8 @@ function Install-FoPluginBundleCore {
         }
 
         if ($PSCmdlet.ShouldProcess($url, 'Download plugin bundle')) {
-            Invoke-FoPluginBundleDownload -DestinationFile $archivePath -Url $url -ShowProgress:$ShowProgress
+            Invoke-FoPluginBundleDownload -DestinationFile $archivePath -Url $url -ExpectedSha256 $bundle.Sha256 `
+                -ShowProgress:$ShowProgress
             Test-FoDownloadedFileSha256 -Path $archivePath -ExpectedSha256 $bundle.Sha256 `
                 -AllowUnverifiedDownload:$AllowUnverifiedDownload
             $downloaded = $true

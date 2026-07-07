@@ -27,6 +27,7 @@ Each `*.Tests.ps1` imports the **FoTestSupport** module in a `BeforeDiscovery` b
 | `FO_RUN_CORPUS_INTEGRATION` | Set to `1` to enable Tier B corpus download integration test (~1 MB). |
 | `FO_PLUGIN_BUNDLE_URL` | Override default plugin bundle download URL. |
 | `FO_PLUGIN_BUNDLE_SHA256` | Expected SHA256 when using `FO_PLUGIN_BUNDLE_URL`. |
+| `FO_PLUGIN_BUNDLE_CACHE_DIR` | CI/local cache root for downloaded bundle zips (keyed by SHA256 subfolder). |
 | `FO_DSSIM_BUNDLE_URL` | Override default DSSIM zip download URL (compare tool for PNG tests). |
 | `FO_DSSIM_BUNDLE_SHA256` | Expected SHA256 when using `FO_DSSIM_BUNDLE_URL`. |
 | `FO_COMPARE_ALLOW_MISSING_DSSIM` | Set to `1` to allow PNG pixel compare without dssim (ImageMagick AE fallback). |

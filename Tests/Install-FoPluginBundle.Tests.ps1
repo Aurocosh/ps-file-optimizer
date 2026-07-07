@@ -189,3 +189,34 @@ Describe 'Assert-FoDssimCompareAvailable' -Tag Unit {
         }
     }
 }
+
+Describe 'Invoke-FoPluginBundleDownload bundle cache' -Tag Unit {
+    It 'Copies from FO_PLUGIN_BUNDLE_CACHE_DIR when archive is cached' {
+        $cacheRoot = Join-Path $env:TEMP "FoBundleCacheTest_$(Get-Random)"
+        $sha = 'abc123def4567890abc123def4567890abc123def4567890abc123def4567890'
+        $cacheDir = Join-Path $cacheRoot $sha
+        $fileName = 'test-bundle.zip'
+        $cachedFile = Join-Path $cacheDir $fileName
+        $destDir = Join-Path $env:TEMP "FoBundleDest_$(Get-Random)"
+        $destFile = Join-Path $destDir $fileName
+        New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+        Set-Content -LiteralPath $cachedFile -Value 'cached-bundle' -Encoding Ascii -NoNewline
+        $prev = $env:FO_PLUGIN_BUNDLE_CACHE_DIR
+        $env:FO_PLUGIN_BUNDLE_CACHE_DIR = $cacheRoot
+        try {
+            Invoke-FoPluginBundleDownload -DestinationFile $destFile -Url 'https://example.test/should-not-fetch.zip' `
+                -ExpectedSha256 $sha -ShowProgress:$false
+            Get-Content -LiteralPath $destFile -Raw | Should -Be 'cached-bundle'
+        }
+        finally {
+            if ($null -eq $prev) {
+                Remove-Item Env:FO_PLUGIN_BUNDLE_CACHE_DIR -ErrorAction SilentlyContinue
+            }
+            else {
+                $env:FO_PLUGIN_BUNDLE_CACHE_DIR = $prev
+            }
+            Remove-Item -LiteralPath $cacheRoot -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $destDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}

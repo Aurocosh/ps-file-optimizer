@@ -1,4 +1,5 @@
 # DSSIM compare tool metadata — upstream GitHub release (not ps-file-optimizer-aux).
+# CI cache keys in .github/workflows/pester.yml must be updated when FoDssimBundleSha256 below changes.
 
 $script:FoDssimVersion = '3.4.0'
 $script:FoDssimBundleUrl = 'https://github.com/kornelski/dssim/releases/download/3.4.0/dssim-3.4.0.zip'

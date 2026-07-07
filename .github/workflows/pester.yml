@@ -1,5 +1,10 @@
 name: Pester
 
+# CI bundle cache keys — bump when pins change in Get-FoPluginBundleMetadata.ps1 / Get-FoDssimBundleMetadata.ps1
+# Plugins x64 SHA256: d2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0
+# Plugins x86 SHA256: 96bce923ca76a95db522eeea269a031a2b2a648fc0b44b45ef2a1fec202bc5b6
+# DSSIM SHA256:       c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c
+
 on:
   push:
     branches: [master, main]
@@ -22,12 +27,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Restore installed plugin cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/FoPlugins64
+          key: fo-ci-plugins64-v1.0.0-d2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0-dssim-c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c
+
       - name: Install plugin bundle
         shell: pwsh
         run: |
           $pluginDir = Join-Path $env:RUNNER_TEMP 'FoPlugins64'
-          ./Scripts/Install-Plugins.ps1 -Mode FullPortable -Architecture 64 -PluginPath $pluginDir
-          ./Scripts/Install-Dssim.ps1 -PluginPath $pluginDir
+          $magick = Join-Path $pluginDir 'magick.exe'
+          $dssim = Join-Path $pluginDir 'win\dssim.exe'
+          if (-not ((Test-Path -LiteralPath $magick) -and (Test-Path -LiteralPath $dssim))) {
+            if (-not (Test-Path -LiteralPath $pluginDir)) {
+              New-Item -ItemType Directory -Path $pluginDir -Force | Out-Null
+            }
+            ./Scripts/Install-Plugins.ps1 -Mode FullPortable -Architecture 64 -PluginPath $pluginDir
+            ./Scripts/Install-Dssim.ps1 -PluginPath $pluginDir
+          }
+          else {
+            Write-Host "Plugin install cache hit ($pluginDir)."
+          }
           "FO_TEST_PLUGIN_PATH=$pluginDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Image smoke tests
@@ -41,10 +62,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Restore bundle archive cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/FoBundleArchiveCache
+          key: fo-ci-bundles-v1.0.0-d2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0-96bce923ca76a95db522eeea269a031a2b2a648fc0b44b45ef2a1fec202bc5b6-dssim-c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c
+
       - name: Integration tests
         shell: pwsh
         env:
           FO_RUN_INSTALL_INTEGRATION: '1'
           FO_RUN_CORPUS_INTEGRATION: '1'
+          FO_PLUGIN_BUNDLE_CACHE_DIR: ${{ runner.temp }}/FoBundleArchiveCache
         run: |
           ./Scripts/Invoke-FoTests.ps1 -Tag Integration

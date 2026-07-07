@@ -44,7 +44,7 @@ function Install-FoPlugins {
 
     .NOTES
     Environment overrides: FO_PLUGIN_BUNDLE_URL, FO_PLUGIN_BUNDLE_SHA256, FO_PLUGIN_BUNDLE_FILENAME,
-    FO_PLUGIN_BUNDLE_FORMAT, FO_PLUGIN_BUNDLE_ARCH, FO_PLUGIN_BUNDLE_FOLDER.
+    FO_PLUGIN_BUNDLE_FORMAT, FO_PLUGIN_BUNDLE_ARCH, FO_PLUGIN_BUNDLE_FOLDER, FO_PLUGIN_BUNDLE_CACHE_DIR.
 
     For the optional DSSIM compare tool (test-only), use `Install-FoDssim` or `Scripts/Install-Dssim.ps1`.
 

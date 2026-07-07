@@ -63,7 +63,8 @@ function Install-FoDssimBundleCore {
         }
 
         if ($PSCmdlet.ShouldProcess($bundle.Url, 'Download DSSIM bundle')) {
-            Invoke-FoPluginBundleDownload -DestinationFile $archivePath -Url $bundle.Url -ShowProgress:$ShowProgress
+            Invoke-FoPluginBundleDownload -DestinationFile $archivePath -Url $bundle.Url -ExpectedSha256 $bundle.Sha256 `
+                -ShowProgress:$ShowProgress
             Test-FoDownloadedFileSha256 -Path $archivePath -ExpectedSha256 $bundle.Sha256 `
                 -AllowUnverifiedDownload:$AllowUnverifiedDownload
         }
