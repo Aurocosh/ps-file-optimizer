@@ -56,11 +56,18 @@ function Invoke-FoGzipRecompress {
         $dp.StandardOutput.Close()
         $cp.StandardInput.Close()
         $dp.WaitForExit()
-        $stdout = $cp.StandardOutput.ReadToEnd()
+        $null = $dp.StandardError.ReadToEnd()
+        $outStream = [System.IO.File]::Create($OutputPath)
+        try {
+            $cp.StandardOutput.BaseStream.CopyTo($outStream)
+        }
+        finally {
+            $outStream.Dispose()
+        }
+        $null = $cp.StandardError.ReadToEnd()
         $cp.WaitForExit()
         if ($dp.ExitCode -ne 0) { return $dp.ExitCode }
         if ($cp.ExitCode -ne 0) { return $cp.ExitCode }
-        [System.IO.File]::WriteAllBytes($OutputPath, [System.Text.Encoding]::Latin1.GetBytes($stdout))
         return 0
     }
     finally {

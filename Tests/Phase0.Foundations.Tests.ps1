@@ -46,6 +46,32 @@ Describe 'Get-FoTestPluginPath' -Tag Unit {
             }
         }
     }
+
+    It 'Resolves FO_TEST_PLUGIN_PATH relative to module root when not found under CWD' {
+        $moduleRoot = Get-FoTestModuleRoot
+        $plugins64 = Join-Path $moduleRoot 'Plugins64'
+        if (-not (Test-Path -LiteralPath (Join-Path $plugins64 'magick.exe'))) {
+            Set-ItResult -Skipped -Because 'Plugins64/magick.exe is not installed'
+            return
+        }
+
+        $previous = $env:FO_TEST_PLUGIN_PATH
+        $previousLocation = Get-Location
+        $env:FO_TEST_PLUGIN_PATH = 'Plugins64'
+        try {
+            Set-Location (Join-Path $moduleRoot 'Tests')
+            Get-FoTestPluginPath | Should -Be ([System.IO.Path]::GetFullPath($plugins64))
+        }
+        finally {
+            Set-Location $previousLocation
+            if ($null -eq $previous) {
+                Remove-Item Env:FO_TEST_PLUGIN_PATH -ErrorAction SilentlyContinue
+            }
+            else {
+                $env:FO_TEST_PLUGIN_PATH = $previous
+            }
+        }
+    }
 }
 
 Describe 'Test-FoPluginsAvailable' -Tag Unit {

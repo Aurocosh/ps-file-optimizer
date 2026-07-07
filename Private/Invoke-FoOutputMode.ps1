@@ -1,3 +1,28 @@
+function Get-FoBackupRelativePath {
+    param(
+        [Parameter(Mandatory)]
+        [string]$TargetPath
+    )
+
+    $target = [System.IO.Path]::GetFullPath($TargetPath)
+    $cwd = [System.IO.Path]::GetFullPath((Get-Location).Path)
+    $prefix = $cwd
+    if (-not $prefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $prefix += [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    if ($target.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+        return $target.Substring($prefix.Length)
+    }
+
+    $hash = [System.BitConverter]::ToString(
+        [System.Security.Cryptography.SHA1]::Create().ComputeHash(
+            [System.Text.Encoding]::UTF8.GetBytes($target.ToLowerInvariant())
+        )
+    ).Replace('-', '').ToLowerInvariant()
+    return Join-Path $hash ([System.IO.Path]::GetFileName($target))
+}
+
 function Invoke-FoOutputMode {
     [CmdletBinding()]
     param(
@@ -44,10 +69,7 @@ function Invoke-FoOutputMode {
         }
         'BackupMove' {
             if (-not $Settings.BackupPath) { throw 'BackupMove requires BackupPath.' }
-            $rel = if ($target.StartsWith((Get-Location).Path)) {
-                $target.Substring((Get-Location).Path.Length).TrimStart('\', '/')
-            }
-            else { $name }
+            $rel = Get-FoBackupRelativePath -TargetPath $target
             $bakDest = Join-Path $Settings.BackupPath $rel
             $bakDir = Split-Path -Parent $bakDest
             if ($bakDir -and -not (Test-Path -LiteralPath $bakDir)) {
@@ -63,11 +85,7 @@ function Invoke-FoOutputMode {
         'TempMove' {
             $root = $Settings.TempBackupPath
             if (-not $root) { $root = Join-Path $env:TEMP 'FileOptimizer\backups' }
-            $rel = if ($dir) {
-                $leaf = Split-Path -Path (Get-Location) -Leaf
-                Join-Path $leaf $name
-            }
-            else { $name }
+            $rel = Get-FoBackupRelativePath -TargetPath $target
             $bakDest = Join-Path $root $rel
             $bakDir = Split-Path -Parent $bakDest
             if ($bakDir -and -not (Test-Path -LiteralPath $bakDir)) {

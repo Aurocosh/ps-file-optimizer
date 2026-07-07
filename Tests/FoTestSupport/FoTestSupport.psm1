@@ -53,14 +53,43 @@ function Get-FoImageTestFixtureRoot {
 function Get-FoTestPluginPath {
     if ($env:FO_TEST_PLUGIN_PATH) {
         $candidate = $env:FO_TEST_PLUGIN_PATH.Trim()
-        if ($candidate -and (Test-Path -LiteralPath $candidate)) {
-            return ([System.IO.Path]::GetFullPath($candidate))
+        if ($candidate) {
+            $resolved = Resolve-FoTestPluginPathCandidate -Candidate $candidate -ModuleRoot $script:FoModuleRoot
+            if ($resolved) { return $resolved }
         }
         return $null
     }
 
     $default = Get-FoDefaultPluginPath
     if ($default) { return $default }
+
+    return $null
+}
+
+function Resolve-FoTestPluginPathCandidate {
+    param(
+        [Parameter(Mandatory)]
+        [string]$Candidate,
+        [string]$ModuleRoot
+    )
+
+    if ([System.IO.Path]::IsPathRooted($Candidate)) {
+        if (Test-Path -LiteralPath $Candidate) {
+            return ([System.IO.Path]::GetFullPath($Candidate))
+        }
+        return $null
+    }
+
+    if (Test-Path -LiteralPath $Candidate) {
+        return ([System.IO.Path]::GetFullPath($Candidate))
+    }
+
+    if ($ModuleRoot) {
+        $fromModule = Join-Path $ModuleRoot $Candidate
+        if (Test-Path -LiteralPath $fromModule) {
+            return ([System.IO.Path]::GetFullPath($fromModule))
+        }
+    }
 
     return $null
 }
@@ -308,6 +337,7 @@ $script:FoTestSupportFunctions = @(
 $script:FoTestSupportEngineFunctions = @(
     'Get-FoExecutionPlan'
     'Invoke-FoPlugin'
+    'Invoke-FoGzipRecompress'
 )
 
 $fileOptimizerFunctions = @(

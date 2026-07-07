@@ -94,6 +94,44 @@ Describe 'Invoke-FoOutputMode TempMove' -Tag Unit {
     }
 }
 
+Describe 'Invoke-FoOutputMode TempMove backup paths' -Tag Unit {
+    It 'Creates distinct backups for same-named files in different directories' {
+        $dir = Join-Path $env:TEMP "FoTestCollision_$(Get-Random)"
+        $dirA = Join-Path $dir 'folderA'
+        $dirB = Join-Path $dir 'folderB'
+        $bakRoot = Join-Path $dir 'bak'
+        New-Item -ItemType Directory -Path $dirA, $dirB -Force | Out-Null
+        $origA = Join-Path $dirA 'same.txt'
+        $origB = Join-Path $dirB 'same.txt'
+        $optA = Join-Path $env:TEMP "optA_$(Get-Random).txt"
+        $optB = Join-Path $env:TEMP "optB_$(Get-Random).txt"
+        Set-Content -LiteralPath $origA -Value 'content-a' -NoNewline
+        Set-Content -LiteralPath $origB -Value 'content-b' -NoNewline
+        Set-Content -LiteralPath $optA -Value 'a' -NoNewline
+        Set-Content -LiteralPath $optB -Value 'b' -NoNewline
+
+        Push-Location $dir
+        try {
+            $s = Get-FoConfig
+            $s.OutputMode = 'TempMove'
+            $s.TempBackupPath = $bakRoot
+            $rA = Invoke-FoOutputMode -SourceFile $optA -TargetPath $origA -Settings $s
+            $rB = Invoke-FoOutputMode -SourceFile $optB -TargetPath $origB -Settings $s
+
+            $rA.BackupPath | Should -Not -Be $rB.BackupPath
+            (Test-Path -LiteralPath $rA.BackupPath) | Should -Be $true
+            (Test-Path -LiteralPath $rB.BackupPath) | Should -Be $true
+            (Get-Content -LiteralPath $rA.BackupPath -Raw) | Should -Be 'content-a'
+            (Get-Content -LiteralPath $rB.BackupPath -Raw) | Should -Be 'content-b'
+        }
+        finally {
+            Pop-Location
+            Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $optA, $optB -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 Describe 'History and rollback' -Tag Unit {
     It 'Records entry and rolls back TempMove' {
         $histDir = Join-Path $env:TEMP "FoHist_$(Get-Random)"
