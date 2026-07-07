@@ -10,11 +10,11 @@ Describe 'PNG lossless optimization (Tier A fixtures)' -Tag ImageIntegration -Sk
         New-Item -ItemType Directory -Path $script:WorkDir -Force | Out-Null
     }
 
-    It 'Optimizes png-basn2c08 (RGB) with valid output' {
+    It 'Optimizes png-basn2c08 (RGB) with pixel identity' {
         $result = Invoke-FoImageOptimizationTest -FixtureId 'png-basn2c08' -Settings $script:Settings `
-            -CompareMode Pixel -WorkDirectory $script:WorkDir -SkipCompare
+            -CompareMode Pixel -WorkDirectory $script:WorkDir
 
-        (Test-FoImageOptimizationResult -Result $result -RequireSizeReduction) | Should -Be $true
+        (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
     }
 
     It 'Optimizes png-basn6a08 (RGBA) with valid output' {
@@ -22,6 +22,13 @@ Describe 'PNG lossless optimization (Tier A fixtures)' -Tag ImageIntegration -Sk
             -CompareMode Pixel -WorkDirectory $script:WorkDir -SkipCompare
 
         (Test-FoImageOptimizationResult -Result $result -RequireSizeReduction) | Should -Be $true
+    }
+
+    It 'Optimizes png-basn0g08 (grayscale) with pixel identity' {
+        $result = Invoke-FoImageOptimizationTest -FixtureId 'png-basn0g08' -Settings $script:Settings `
+            -CompareMode Pixel -WorkDirectory $script:WorkDir
+
+        (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
     }
 }
 

@@ -10,7 +10,13 @@ Describe 'JPEG lossless optimization' -Tag ImageIntegration -Skip:(-not (Test-Fo
         New-Item -ItemType Directory -Path $script:WorkDir -Force | Out-Null
     }
 
-    It 'Optimizes <_> with pixel or SSIM compare' -ForEach @('jpg-testorig', 'jpg-prog-rst', 'jpg-exif-xmp') {
+    It 'Optimizes <_> with pixel or SSIM compare' -ForEach @(
+        'jpg-testorig',
+        'jpg-prog-rst',
+        'jpg-gray-square',
+        'jpg-extraneous',
+        'jpg-exif-xmp'
+    ) {
         $result = Invoke-FoImageOptimizationTest -FixtureId $_ -Settings $script:Settings `
             -CompareMode Pixel -WorkDirectory $script:WorkDir
 

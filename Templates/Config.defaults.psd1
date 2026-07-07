@@ -26,6 +26,8 @@
     GIFAllowLossy          = $false
     GZCopyMetadata         = $false
     ZIPCopyMetadata        = $false
+    # x86 Plugins32 bundle does not include all x64 tools (minify/optivorbis/tinydng).
+    # Related pipeline steps are skipped automatically when those executables are missing.
     EXEEnableUPX           = $false
     EXEDisablePETrim       = $false
     CSSEnableTidy          = $false

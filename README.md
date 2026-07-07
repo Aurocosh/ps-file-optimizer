@@ -44,6 +44,16 @@ Initialize-FoConfig -Scope Global
 - Plugin binaries from the [ps-file-optimizer-aux](https://github.com/Aurocosh/ps-file-optimizer-aux) release bundle (default), module `Plugins64\` / `Plugins32\`, or tools on PATH
 - `Install-FoPlugins` downloads a plain `.zip` archive (~107 MB x64, ~83 MB x86), verifies SHA256, and extracts with `Expand-Archive`. Only one architecture folder exists under the module root at a time.
 
+### 32-bit PowerShell limitations
+
+When you install/use `Plugins32\` (x86), several x64-only tools are intentionally absent from the bundle:
+
+- `minify.exe` (affects JS/CSS/HTML minification chain depth)
+- `optivorbis.exe` (affects OGG optimization depth)
+- `tinydng-cli.exe` (affects DNG optimization support)
+
+Related pipelines automatically skip missing steps when these tools are unavailable, so optimization still runs but may produce fewer size wins than `Plugins64\`.
+
 ## Layout
 
 | Path | Purpose |
