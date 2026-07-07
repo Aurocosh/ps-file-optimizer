@@ -47,7 +47,7 @@ try {
     }
 
     if (-not $Path -or $Path.Count -eq 0) {
-        Write-Error 'Specify at least one file or folder path.'
+        [Console]::Error.WriteLine('Specify at least one file or folder path.')
         exit 1
     }
 
@@ -64,6 +64,6 @@ try {
     exit 0
 }
 catch {
-    Write-Error $_
+    [Console]::Error.WriteLine($_.Exception.Message)
     exit 1
 }

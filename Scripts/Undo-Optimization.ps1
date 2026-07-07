@@ -22,7 +22,7 @@ try {
         $results = @(Undo-FoOptimization -Last $Last -HistoryPath $hist -WhatIf:$WhatIf)
     }
     else {
-        Write-Error 'Specify -Path or -Last.'
+        [Console]::Error.WriteLine('Specify -Path or -Last.')
         exit 1
     }
 
@@ -33,6 +33,6 @@ try {
     exit 0
 }
 catch {
-    Write-Error $_
+    [Console]::Error.WriteLine($_.Exception.Message)
     exit 1
 }
