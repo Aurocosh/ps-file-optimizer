@@ -1,4 +1,39 @@
 function Get-FoHistory {
+    <#
+    .SYNOPSIS
+    Displays or returns optimization history entries.
+
+    .DESCRIPTION
+    Reads history.psd1 and shows recent entries. Use -Format Object in scripts
+    to receive structured entry objects instead of formatted text.
+
+    .PARAMETER Last
+    Maximum number of entries to return (default 10).
+
+    .PARAMETER HistoryPath
+    Override path to history.psd1.
+
+    .PARAMETER Format
+    Summary — one line per entry (default, for CLI).
+    Detailed — multi-line entry details.
+    Object — return entry objects (for scripting; no host output).
+
+    .PARAMETER Status
+    Filter by ReversalStatus (Pending, Reversed, NotReversible, Error).
+
+    .PARAMETER Id
+    Return the entry with this Id only.
+
+    .EXAMPLE
+    Get-FoHistory -Last 5
+
+    .EXAMPLE
+    .\Scripts\Show-History.ps1 -Last 10
+
+    .EXAMPLE
+    $pending = Get-FoHistory -Format Object -Status Pending
+    $pending | Select-Object Id, OriginalPath, BytesSaved
+    #>
     [CmdletBinding()]
     param(
         [int]$Last = 10,

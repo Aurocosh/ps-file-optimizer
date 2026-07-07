@@ -6,18 +6,33 @@ param(
     [switch]$WhatIf
 )
 
-$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+$ErrorActionPreference = 'Stop'
 
-$settings = Get-FoConfig -ConfigPath $ConfigPath
-$hist = if ($HistoryPath) { $HistoryPath } else { $settings.HistoryPath }
+try {
+    $moduleRoot = Split-Path -Parent $PSScriptRoot
+    Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
-if ($Path) {
-    Undo-FoOptimization -Path $Path -HistoryPath $hist -WhatIf:$WhatIf
+    $settings = Get-FoConfig -ConfigPath $ConfigPath
+    $hist = if ($HistoryPath) { $HistoryPath } else { $settings.HistoryPath }
+
+    if ($Path) {
+        $results = @(Undo-FoOptimization -Path $Path -HistoryPath $hist -WhatIf:$WhatIf)
+    }
+    elseif ($Last -gt 0) {
+        $results = @(Undo-FoOptimization -Last $Last -HistoryPath $hist -WhatIf:$WhatIf)
+    }
+    else {
+        Write-Error 'Specify -Path or -Last.'
+        exit 1
+    }
+
+    if ($results | Where-Object { $_.Status -eq 'Error' }) {
+        exit 1
+    }
+
+    exit 0
 }
-elseif ($Last -gt 0) {
-    Undo-FoOptimization -Last $Last -HistoryPath $hist -WhatIf:$WhatIf
-}
-else {
-    Write-Error 'Specify -Path or -Last.'
+catch {
+    Write-Error $_
+    exit 1
 }

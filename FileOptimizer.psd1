@@ -1,13 +1,16 @@
 @{
     ModuleVersion     = '0.1.0'
-    GUID              = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+    GUID              = 'a47c8e21-5f3b-4d92-9c1a-6e8b2d4f7c90'
     Author            = 'PS-FileOptimizer'
-    Description       = 'PowerShell CLI module mirroring FileOptimizer plugin chains.'
+    CompanyName       = 'PS-FileOptimizer'
+    Copyright         = '(c) PS-FileOptimizer contributors. FileOptimizer plugins are subject to their respective licenses.'
+    Description       = 'PowerShell module mirroring FileOptimizer plugin optimization chains with a scriptable CLI.'
     PowerShellVersion = '5.1'
     RootModule        = 'FileOptimizer.psm1'
     FunctionsToExport = @(
         'Optimize-FoFile'
         'Get-FoPipeline'
+        'Get-FoExecutionPlan'
         'Invoke-FoPluginChain'
         'Resolve-FoPluginExecutable'
         'Get-FoConfig'
@@ -19,7 +22,10 @@
     )
     PrivateData       = @{
         PSData = @{
-            Tags = @('FileOptimizer', 'compression', 'optimization')
+            Tags         = @('FileOptimizer', 'compression', 'optimization', 'PNG', 'CLI')
+            LicenseUri   = 'https://www.gnu.org/licenses/agpl-3.0.html'
+            ProjectUri   = 'https://github.com/Aurocosh/ps-file-optimizer'
+            ReleaseNotes = 'PowerShell rewrite of FileOptimizer plugin chains; see repository README for setup.'
         }
     }
 }

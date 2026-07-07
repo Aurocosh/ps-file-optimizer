@@ -1,4 +1,27 @@
 function Invoke-FoPluginChain {
+    <#
+    .SYNOPSIS
+    Runs the full plugin chain for a single file.
+
+    .DESCRIPTION
+    Builds an execution plan, runs each active step in order, applies output mode
+    when the result is smaller, and returns a result object with status and sizes.
+
+    .PARAMETER Path
+    File to optimize.
+
+    .PARAMETER Settings
+    Merged settings from Get-FoConfig.
+
+    .PARAMETER WhatIf
+    Print planned steps without modifying the file.
+
+    .PARAMETER ShowProgress
+    Show per-step progress.
+
+    .EXAMPLE
+    Invoke-FoPluginChain -Path .\photo.png -Settings (Get-FoConfig) -WhatIf
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]

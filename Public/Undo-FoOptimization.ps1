@@ -1,54 +1,30 @@
-function Invoke-FoRollback {
-    param(
-        $Entry,
-        [switch]$WhatIf
-    )
-
-    $mode = $Entry.OutputMode
-    $reversible = $mode -in @('TempMove', 'BackupSuffix', 'BackupMove', 'OptimizedSuffix')
-
-    if ($mode -eq 'Replace' -or (-not $reversible -and $mode -ne 'OptimizedSuffix')) {
-        return @{ Success = $false; Status = 'NotReversible'; Message = "OutputMode $mode is not reversible." }
-    }
-
-    if ($mode -eq 'OptimizedSuffix') {
-        if ($WhatIf) {
-            return @{ Success = $true; Status = 'WhatIf'; Message = "Would delete $($Entry.OptimizedPath)" }
-        }
-        if ($Entry.OptimizedPath -and (Test-Path -LiteralPath $Entry.OptimizedPath) -and $Entry.OptimizedPath -ne $Entry.OriginalPath) {
-            Remove-Item -LiteralPath $Entry.OptimizedPath -Force
-        }
-        return @{ Success = $true; Status = 'Reversed'; Message = 'Removed optimized sibling.' }
-    }
-
-    if (-not $Entry.BackupPath) {
-        return @{ Success = $false; Status = 'NotReversible'; Message = 'No backup path recorded.' }
-    }
-    if (-not (Test-Path -LiteralPath $Entry.BackupPath)) {
-        return @{ Success = $false; Status = 'Error'; Message = "Backup missing: $($Entry.BackupPath)" }
-    }
-
-    if ($WhatIf) {
-        return @{ Success = $true; Status = 'WhatIf'; Message = "Would restore $($Entry.BackupPath) -> $($Entry.OriginalPath)" }
-    }
-
-    try {
-        if ($Entry.OptimizedPath -and (Test-Path -LiteralPath $Entry.OptimizedPath)) {
-            Remove-Item -LiteralPath $Entry.OptimizedPath -Force
-        }
-        $destDir = Split-Path -Parent $Entry.OriginalPath
-        if ($destDir -and -not (Test-Path -LiteralPath $destDir)) {
-            New-Item -ItemType Directory -Path $destDir -Force | Out-Null
-        }
-        Move-Item -LiteralPath $Entry.BackupPath -Destination $Entry.OriginalPath -Force
-        return @{ Success = $true; Status = 'Reversed'; Message = 'Restored original file.' }
-    }
-    catch {
-        return @{ Success = $false; Status = 'Error'; Message = $_.Exception.Message }
-    }
-}
-
 function Undo-FoOptimization {
+    <#
+    .SYNOPSIS
+    Rolls back previous optimizations using the history file.
+
+    .DESCRIPTION
+    Restores originals from backups recorded when OutputMode supports reversal
+    (TempMove, BackupSuffix, BackupMove, OptimizedSuffix). Updates history entry status.
+
+    .PARAMETER Path
+    Roll back entries matching these original or optimized paths.
+
+    .PARAMETER Last
+    Roll back the N most recent pending history entries.
+
+    .PARAMETER HistoryPath
+    Override path to history.psd1. Defaults to settings or global history path.
+
+    .EXAMPLE
+    Undo-FoOptimization -Last 3
+
+    .EXAMPLE
+    .\Scripts\Undo-Optimization.ps1 -Path .\images\photo.png
+
+    .EXAMPLE
+    Undo-FoOptimization -Last 1 -WhatIf
+    #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [string[]]$Path,

@@ -1,41 +1,63 @@
-function Get-FoTargetFiles {
-    param(
-        [string[]]$Path,
-        [switch]$Recurse
-    )
-
-    $files = [System.Collections.Generic.List[string]]::new()
-    foreach ($p in $Path) {
-        if (-not $p) { continue }
-        $resolved = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($p)
-        if (Test-Path -LiteralPath $resolved -PathType Container) {
-            $params = @{ LiteralPath = $resolved; File = $true; ErrorAction = 'SilentlyContinue' }
-            if ($Recurse) { $params.Recurse = $true }
-            Get-ChildItem @params | ForEach-Object { $files.Add($_.FullName) }
-        }
-        elseif (Test-Path -LiteralPath $resolved -PathType Leaf) {
-            $files.Add($resolved)
-        }
-        else {
-            Write-Warning "Path not found: $p"
-        }
-    }
-    return @($files | Select-Object -Unique)
-}
-
 function Optimize-FoFile {
+    <#
+    .SYNOPSIS
+    Optimizes one or more files using FileOptimizer plugin chains.
+
+    .DESCRIPTION
+    Resolves settings, selects pipeline groups per file extension, runs the plugin
+    chain, and optionally records history. Supports -WhatIf for dry-run output.
+
+    .PARAMETER Path
+    File or directory paths to optimize. Directories are not expanded unless -Recurse is set.
+
+    .PARAMETER ConfigPath
+    Optional PSD1 settings file merged after global config.
+
+    .PARAMETER Level
+    Optimization level (0–9). Default from config.
+
+    .PARAMETER PluginSearchMode
+    How to resolve plugin executables: PortableFirst, PathFirst, PortableOnly, or PathOnly.
+
+    .PARAMETER PluginPath
+    Portable plugin directory (Plugins64/Plugins32).
+
+    .PARAMETER OutputMode
+    TempMove, Replace, OptimizedSuffix, BackupSuffix, or BackupMove.
+
+    .PARAMETER ShowProgress
+    Show per-step progress during optimization.
+
+    .PARAMETER Recurse
+    When Path is a directory, include files in subdirectories.
+
+    .EXAMPLE
+    Optimize-FoFile -Path .\images\photo.png
+
+    .EXAMPLE
+    Optimize-FoFile -Path .\docs -Recurse -WhatIf
+
+    .EXAMPLE
+    .\Scripts\Optimize-File.ps1 .\images\*.png
+    # CLI wrapper with the same parameters.
+    #>
     [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'Optimize')]
     param(
         [Parameter(ParameterSetName = 'Optimize', ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]
         [string[]]$Path,
         [string]$ConfigPath,
+        [ValidateRange(0, 9)]
         [nullable[int]]$Level,
+        [ValidateSet('PortableFirst', 'PathFirst', 'PortableOnly', 'PathOnly')]
         [string]$PluginSearchMode,
         [string]$PluginPath,
+        [ValidateRange(0, 3)]
         [nullable[int]]$LogLevel,
+        [ValidateRange(0, 3)]
         [nullable[int]]$ReportLogLevel,
         [string]$ReportPath,
+        [ValidateSet('Replace', 'OptimizedSuffix', 'BackupSuffix', 'BackupMove', 'TempMove')]
         [string]$OutputMode,
         [string]$BackupPath,
         [string]$BackupSuffix,

@@ -1,5 +1,5 @@
 param(
-    [Parameter(ValueFromRemainingArguments)]
+    [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
     [string[]]$Path,
     [string]$ConfigPath,
     [ValidateSet('Global', 'Local')]
@@ -30,27 +30,40 @@ param(
     [string]$HistoryFormat = 'Summary'
 )
 
-$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+$ErrorActionPreference = 'Stop'
 
-if ($InitializeConfig) {
-    Initialize-FoConfig -Scope $InitializeConfig -Path $ConfigPath -Force:$Force
-    return
-}
+try {
+    $moduleRoot = Split-Path -Parent $PSScriptRoot
+    Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
-if ($ShowHistory) {
-    $settings = Get-FoConfig -ConfigPath $ConfigPath
-    Get-FoHistory -Last $Last -HistoryPath $HistoryPath -Format $HistoryFormat
-    return
-}
+    if ($InitializeConfig) {
+        Initialize-FoConfig -Scope $InitializeConfig -Path $ConfigPath -Force:$Force
+        exit 0
+    }
 
-if (-not $Path -or $Path.Count -eq 0) {
-    Write-Error 'Specify at least one file or folder path.'
-    return
-}
+    if ($ShowHistory) {
+        Get-FoHistory -Last $Last -HistoryPath $HistoryPath -Format $HistoryFormat
+        exit 0
+    }
 
-$params = @{}
-foreach ($key in @('Path','ConfigPath','Level','PluginSearchMode','PluginPath','LogLevel','ReportLogLevel','ReportPath','OutputMode','BackupPath','BackupSuffix','OptimizedSuffix','TempBackupPath','SkipMissingTools','HistoryEnabled','HistoryPath','ShowProgress','WhatIf','Recurse')) {
-    if ($PSBoundParameters.ContainsKey($key)) { $params[$key] = $PSBoundParameters[$key] }
+    if (-not $Path -or $Path.Count -eq 0) {
+        Write-Error 'Specify at least one file or folder path.'
+        exit 1
+    }
+
+    $params = @{}
+    foreach ($key in @('Path','ConfigPath','Level','PluginSearchMode','PluginPath','LogLevel','ReportLogLevel','ReportPath','OutputMode','BackupPath','BackupSuffix','OptimizedSuffix','TempBackupPath','SkipMissingTools','HistoryEnabled','HistoryPath','ShowProgress','WhatIf','Recurse')) {
+        if ($PSBoundParameters.ContainsKey($key)) { $params[$key] = $PSBoundParameters[$key] }
+    }
+
+    $results = @(Optimize-FoFile @params)
+    if ($results | Where-Object { $_.Status -eq 'Error' }) {
+        exit 1
+    }
+
+    exit 0
 }
-Optimize-FoFile @params
+catch {
+    Write-Error $_
+    exit 1
+}

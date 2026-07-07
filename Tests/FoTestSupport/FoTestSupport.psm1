@@ -26,6 +26,7 @@ foreach ($name in @(
 . (Join-Path $script:FoModuleRoot 'Private\Get-FoDssimBundleMetadata.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Install-FoDssimBundle.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Handlers\Invoke-FoNativeHandlers.ps1')
+. (Join-Path $script:FoModuleRoot 'Private\Get-FoStepRequiredExecutables.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Invoke-FoPlugin.ps1')
 . (Join-Path $script:FoModuleRoot 'Pipelines\_Helpers.ps1')
 Get-ChildItem -Path (Join-Path $script:FoModuleRoot 'Pipelines\*.ps1') -Exclude '_Helpers.ps1' | ForEach-Object { . $_.FullName }
@@ -278,6 +279,7 @@ function Test-FoPluginInstallIntegrationCore {
 $script:FoTestSupportFunctions = @(
     'Get-FoTestSupportRoot'
     'Get-FoTestModuleRoot'
+    'Get-FoModuleDefaults'
     'Get-FoImageTestDecisions'
     'Get-FoImageTestFixtureRoot'
     'Get-FoTestPluginPath'

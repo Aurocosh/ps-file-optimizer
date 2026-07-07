@@ -1,6 +1,32 @@
 $script:FoPluginResolveCache = @{}
 
 function Resolve-FoPluginExecutable {
+    <#
+    .SYNOPSIS
+    Locates a plugin executable by name.
+
+    .DESCRIPTION
+    Searches the portable plugin directory and/or PATH according to -SearchMode.
+    Results are cached for the module session.
+
+    .PARAMETER Name
+    Executable file name (for example magick.exe).
+
+    .PARAMETER SearchMode
+    PortableFirst — plugin folder then PATH (default).
+    PathFirst — PATH then plugin folder.
+    PortableOnly — plugin folder only.
+    PathOnly — PATH only.
+
+    .PARAMETER PluginPath
+    Portable plugin directory. Defaults to module Plugins64/Plugins32 or FO_PLUGIN_PATH.
+
+    .EXAMPLE
+    Resolve-FoPluginExecutable -Name 'magick.exe' -SearchMode PortableFirst
+
+    .EXAMPLE
+    Resolve-FoPluginExecutable -Name 'oxipng.exe' -SearchMode PortableOnly -PluginPath .\Plugins64
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
@@ -73,22 +99,4 @@ function Resolve-FoPluginExecutable {
     }
     $script:FoPluginResolveCache[$cacheKey] = $result
     return $result
-}
-
-$script:FoHandlerExecutables = @{
-    DefluffPipe     = @('defluff.exe')
-    GzipRecompress  = @('gzip.exe')
-    JsMinPipe       = @('jsmin.exe')
-    SqliteOptimize  = @('sqlite3.exe')
-}
-
-function Get-FoStepRequiredExecutables {
-    param($Step)
-    if ($Step.Handler) {
-        return $script:FoHandlerExecutables[$Step.Handler]
-    }
-    if ($Step.Executable) {
-        return @($Step.Executable)
-    }
-    return @()
 }

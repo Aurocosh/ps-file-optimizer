@@ -13,32 +13,43 @@ param(
     [bool]$ShowProgress = $true
 )
 
-$moduleRoot = Split-Path -Parent $PSScriptRoot
-Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+$ErrorActionPreference = 'Stop'
 
-$params = @{
-    Mode            = $Mode
-    Architecture    = $Architecture
-    DestinationPath = $PluginPath
-    ArchiveUrl               = $ArchiveUrl
-    ArchiveSha256            = $ArchiveSha256
-    TempDirectory            = $TempDirectory
-    Force                    = $Force
-    AllowUnverifiedDownload  = $AllowUnverifiedDownload
-    ShowProgress             = $ShowProgress
-}
-if ($WhatIf) {
-    $params['WhatIf'] = $true
-}
+try {
+    $moduleRoot = Split-Path -Parent $PSScriptRoot
+    Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
 
-$result = Install-FoPlugins @params
-$result | Format-List Mode, Architecture, DestinationPath, Downloaded, Extracted, Message
-if ($result.RemovedPaths) {
-    Write-Host "Removed: $($result.RemovedPaths -join ', ')"
+    $params = @{
+        Mode                    = $Mode
+        Architecture            = $Architecture
+        DestinationPath         = $PluginPath
+        ArchiveUrl              = $ArchiveUrl
+        ArchiveSha256           = $ArchiveSha256
+        TempDirectory           = $TempDirectory
+        Force                   = $Force
+        AllowUnverifiedDownload = $AllowUnverifiedDownload
+        ShowProgress            = $ShowProgress
+    }
+    if ($WhatIf) {
+        $params['WhatIf'] = $true
+    }
+
+    $result = Install-FoPlugins @params
+    $result | Format-List Mode, Architecture, DestinationPath, Downloaded, Extracted, Message
+    if ($result.RemovedPaths) {
+        Write-Host "Removed: $($result.RemovedPaths -join ', ')"
+    }
+    if ($result.FilesCopied) {
+        Write-Host "Copied $($result.FilesCopied.Count) file(s)."
+    }
+    if ($result.FilesMissing -and $result.FilesMissing.Count -gt 0) {
+        Write-Warning "Not found in bundle: $($result.FilesMissing -join ', ')"
+        exit 1
+    }
+
+    exit 0
 }
-if ($result.FilesCopied) {
-    Write-Host "Copied $($result.FilesCopied.Count) file(s)."
-}
-if ($result.FilesMissing) {
-    Write-Warning "Not found in bundle: $($result.FilesMissing -join ', ')"
+catch {
+    Write-Error $_
+    exit 1
 }

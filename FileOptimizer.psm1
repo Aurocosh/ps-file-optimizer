@@ -11,11 +11,14 @@ $script:FoExtensionMap = $null
 . (Join-Path $PSScriptRoot 'Private\Get-ExtensionByContent.ps1')
 . (Join-Path $PSScriptRoot 'Private\Test-FoFileGate.ps1')
 . (Join-Path $PSScriptRoot 'Private\Handlers\Invoke-FoNativeHandlers.ps1')
+. (Join-Path $PSScriptRoot 'Private\Get-FoStepRequiredExecutables.ps1')
 . (Join-Path $PSScriptRoot 'Private\Invoke-FoPlugin.ps1')
 . (Join-Path $PSScriptRoot 'Private\Invoke-FoOutputMode.ps1')
 . (Join-Path $PSScriptRoot 'Private\Add-FoHistoryEntry.ps1')
 . (Join-Path $PSScriptRoot 'Private\Format-FoHistoryEntry.ps1')
 . (Join-Path $PSScriptRoot 'Private\Write-FoReport.ps1')
+. (Join-Path $PSScriptRoot 'Private\Get-FoTargetFiles.ps1')
+. (Join-Path $PSScriptRoot 'Private\Invoke-FoRollback.ps1')
 
 # Pipelines
 . (Join-Path $PSScriptRoot 'Pipelines\_Helpers.ps1')
@@ -42,6 +45,7 @@ Get-ChildItem -Path (Join-Path $PSScriptRoot 'Pipelines\*.ps1') -Exclude '_Helpe
 Export-ModuleMember -Function @(
     'Optimize-FoFile'
     'Get-FoPipeline'
+    'Get-FoExecutionPlan'
     'Invoke-FoPluginChain'
     'Resolve-FoPluginExecutable'
     'Get-FoConfig'

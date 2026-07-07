@@ -1,4 +1,28 @@
 function Initialize-FoConfig {
+    <#
+    .SYNOPSIS
+    Writes a default config PSD1 from the module template.
+
+    .DESCRIPTION
+    Copies Templates\Config.defaults.psd1 to the global config path or a local path,
+    substituting default backup and plugin folder placeholders.
+
+    .PARAMETER Scope
+    Global — write to %USERPROFILE%\.config\FileOptimizer\config.psd1.
+    Local — write to -Path (required).
+
+    .PARAMETER Path
+    Target file path when Scope is Local.
+
+    .PARAMETER Force
+    Overwrite an existing config file.
+
+    .EXAMPLE
+    Initialize-FoConfig -Scope Global
+
+    .EXAMPLE
+    .\Scripts\Optimize-File.ps1 -InitializeConfig Global
+    #>
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)]
