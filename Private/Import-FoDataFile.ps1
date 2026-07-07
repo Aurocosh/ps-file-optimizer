@@ -41,12 +41,13 @@ function Import-FoDataFile {
         throw "Data file not found: $Path"
     }
 
+    $content = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
+    $null = Test-FoDataFileContentSafe -Content $content
+
     if ($PSVersionTable.PSVersion.Major -ge 6) {
         return Import-PowerShellDataFile -Path $Path
     }
 
-    $content = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
-    $null = Test-FoDataFileContentSafe -Content $content
     $sb = [scriptblock]::Create($content)
     return & $sb
 }

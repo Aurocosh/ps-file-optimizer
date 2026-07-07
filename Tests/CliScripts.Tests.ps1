@@ -13,17 +13,23 @@ Describe 'CLI script exit codes' -Tag Unit {
                 [string]$Command
             )
 
-            # Child CLI scripts write validation messages to stderr; capture output so Test
-            # Explorer does not treat native stderr as a terminating Pester error.
+            # Child CLI scripts write validation messages to stderr. Use Start-Process with
+            # stream redirection so both pwsh and Windows PowerShell can assert exit codes
+            # without surfacing native stderr as test errors.
+            $stdoutPath = Join-Path $TestDrive ("fo-cli-stdout-{0}.log" -f [guid]::NewGuid().ToString('N'))
+            $stderrPath = Join-Path $TestDrive ("fo-cli-stderr-{0}.log" -f [guid]::NewGuid().ToString('N'))
+            $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass')
             if ($Command) {
-                $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $Command 2>&1
+                $argList += @('-Command', $Command)
             }
             else {
-                $output = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ScriptPath @ArgumentList 2>&1
+                $argList += @('-File', $ScriptPath)
+                if ($ArgumentList) { $argList += $ArgumentList }
             }
-            $exitCode = $LASTEXITCODE
-            $null = $output
-            return $exitCode
+
+            $proc = Start-Process -FilePath 'powershell.exe' -ArgumentList $argList -NoNewWindow -Wait -PassThru `
+                -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+            return $proc.ExitCode
         }
     }
 
