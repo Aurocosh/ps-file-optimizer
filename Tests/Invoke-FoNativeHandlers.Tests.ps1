@@ -51,7 +51,7 @@ Describe 'Invoke-FoGzipRecompress' -Tag Unit -Skip:(-not (
         }
     }
 
-    It 'Produces valid gzip output via gzip -t' {
+    It 'Produces output that bundled gzip can decompress' {
         $workDir = Join-Path $TestDrive 'gzip-valid'
         New-Item -ItemType Directory -Path $workDir -Force | Out-Null
         $inputPath = Join-Path $workDir 'sample.gz'
@@ -70,12 +70,23 @@ Describe 'Invoke-FoGzipRecompress' -Tag Unit -Skip:(-not (
 
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = $script:GzipExe
-        $psi.Arguments = "-t `"$outputPath`""
+        $psi.Arguments = "-cd `"$outputPath`""
         $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
         $psi.CreateNoWindow = $true
         $p = [System.Diagnostics.Process]::Start($psi)
+        $roundTrip = New-Object System.IO.MemoryStream
+        $p.StandardOutput.BaseStream.CopyTo($roundTrip)
+        $null = $p.StandardError.ReadToEnd()
         $p.WaitForExit()
         $p.ExitCode | Should -Be 0
         $p.Dispose()
+
+        $bytes = $roundTrip.ToArray()
+        $bytes.Length | Should -Be $payload.Length
+        for ($i = 0; $i -lt $payload.Length; $i++) {
+            $bytes[$i] | Should -Be $payload[$i]
+        }
     }
 }
