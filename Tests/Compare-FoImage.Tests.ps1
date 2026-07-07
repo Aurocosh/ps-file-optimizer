@@ -2,7 +2,7 @@
     Import-Module (Join-Path $PSScriptRoot 'FoTestSupport\FoTestSupport.psd1') -Force
 }
 
-Describe 'Compare-FoImage' -Tag Unit -Skip:(-not (Test-FoPluginsAvailable)) {
+Describe 'Compare-FoImage' -Tag ImageIntegration -Skip:(-not (Test-FoPluginsAvailable)) {
     BeforeAll {
         $script:PluginPath = Get-FoTestPluginPath
         $script:WorkDir = Join-Path $env:TEMP "FoCompareTests_$(Get-Random)"

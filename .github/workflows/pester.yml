@@ -17,9 +17,27 @@ jobs:
         run: |
           ./Scripts/Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow
 
+  image-smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install plugin bundle
+        shell: pwsh
+        run: |
+          $pluginDir = Join-Path $env:RUNNER_TEMP 'FoPlugins64'
+          ./Scripts/Install-Plugins.ps1 -Mode FullPortable -Architecture 64 -PluginPath $pluginDir
+          ./Scripts/Install-Dssim.ps1 -PluginPath $pluginDir
+          "FO_TEST_PLUGIN_PATH=$pluginDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Image smoke tests
+        shell: pwsh
+        run: |
+          ./Scripts/Invoke-FoTests.ps1 -Tag Smoke
+
   integration-downloads:
     runs-on: windows-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
     steps:
       - uses: actions/checkout@v4
 
