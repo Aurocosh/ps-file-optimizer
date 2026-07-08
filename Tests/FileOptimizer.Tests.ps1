@@ -94,6 +94,53 @@ Describe 'Invoke-FoOutputMode TempMove' -Tag Unit {
     }
 }
 
+Describe 'Invoke-FoOutputMode failure recovery' -Tag Unit {
+    It 'Restores original when promote fails after backup move (TempMove)' {
+        $dir = Join-Path $env:TEMP "FoTestRecover_$(Get-Random)"
+        $srcDir = Join-Path $dir 'src'
+        $bakRoot = Join-Path $dir 'bak'
+        New-Item -ItemType Directory -Path $srcDir -Force | Out-Null
+        $orig = Join-Path $srcDir 'a.txt'
+        $opt = Join-Path $env:TEMP "opt_$(Get-Random).txt"
+        $originalContent = 'original content here'
+        Set-Content -LiteralPath $orig -Value $originalContent -NoNewline
+        Set-Content -LiteralPath $opt -Value 'opt' -NoNewline
+
+        Push-Location $srcDir
+        try {
+            $env:FO_TEST_ORIG = $orig
+            $env:FO_TEST_OPT = $opt
+            $env:FO_TEST_BAK = $bakRoot
+            InModuleScope FileOptimizer {
+                $realMoveItem = Get-Command Move-Item -Module Microsoft.PowerShell.Management
+                Mock Move-Item {
+                    param($LiteralPath, $Destination, $Force)
+                    if ($LiteralPath -like '*.fo-staging') {
+                        throw 'Simulated promote failure'
+                    }
+                    & $realMoveItem @PSBoundParameters
+                }
+
+                $s = Get-FoConfig
+                $s.OutputMode = 'TempMove'
+                $s.TempBackupPath = $env:FO_TEST_BAK
+                { Invoke-FoOutputMode -SourceFile $env:FO_TEST_OPT -TargetPath $env:FO_TEST_ORIG -Settings $s } |
+                    Should -Throw 'Simulated promote failure'
+            }
+
+            (Test-Path -LiteralPath $orig) | Should -Be $true
+            (Get-Content -LiteralPath $orig -Raw) | Should -Be $originalContent
+            (Test-Path -LiteralPath ($orig + '.fo-staging')) | Should -Be $false
+        }
+        finally {
+            Remove-Item Env:FO_TEST_ORIG, Env:FO_TEST_OPT, Env:FO_TEST_BAK -ErrorAction SilentlyContinue
+            Pop-Location
+            Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 Describe 'Invoke-FoOutputMode TempMove backup paths' -Tag Unit {
     It 'Creates distinct backups for same-named files in different directories' {
         $dir = Join-Path $env:TEMP "FoTestCollision_$(Get-Random)"

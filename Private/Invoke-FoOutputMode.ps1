@@ -23,6 +23,82 @@ function Get-FoBackupRelativePath {
     return Join-Path $hash ([System.IO.Path]::GetFileName($target))
 }
 
+function Invoke-FoPromoteOptimizedFile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$SourceFile,
+        [Parameter(Mandatory)]
+        [string]$TargetPath,
+        [string]$BackupDestination
+    )
+
+    $staging = $TargetPath + '.fo-staging'
+    if (Test-Path -LiteralPath $staging) {
+        Remove-Item -LiteralPath $staging -Force
+    }
+
+    $movedToBackup = $false
+    try {
+        Copy-Item -LiteralPath $SourceFile -Destination $staging -Force
+
+        if ($BackupDestination) {
+            $bakDir = Split-Path -Parent $BackupDestination
+            if ($bakDir -and -not (Test-Path -LiteralPath $bakDir)) {
+                New-Item -ItemType Directory -Path $bakDir -Force | Out-Null
+            }
+            if (Test-Path -LiteralPath $TargetPath) {
+                Move-Item -LiteralPath $TargetPath -Destination $BackupDestination -Force
+                $movedToBackup = $true
+            }
+        }
+
+        Move-Item -LiteralPath $staging -Destination $TargetPath -Force
+    }
+    catch {
+        if ($movedToBackup -and -not (Test-Path -LiteralPath $TargetPath) -and (Test-Path -LiteralPath $BackupDestination)) {
+            Move-Item -LiteralPath $BackupDestination -Destination $TargetPath -Force
+        }
+        if (Test-Path -LiteralPath $staging) {
+            Remove-Item -LiteralPath $staging -Force -ErrorAction SilentlyContinue
+        }
+        throw
+    }
+}
+
+function Invoke-FoCopyOptimizedFile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$SourceFile,
+        [Parameter(Mandatory)]
+        [string]$DestinationPath
+    )
+
+    $staging = $DestinationPath + '.fo-staging'
+    if (Test-Path -LiteralPath $staging) {
+        Remove-Item -LiteralPath $staging -Force
+    }
+
+    try {
+        Copy-Item -LiteralPath $SourceFile -Destination $staging -Force
+        Move-Item -LiteralPath $staging -Destination $DestinationPath -Force
+    }
+    catch {
+        if (Test-Path -LiteralPath $staging) {
+            Remove-Item -LiteralPath $staging -Force -ErrorAction SilentlyContinue
+        }
+        if (Test-Path -LiteralPath $DestinationPath) {
+            $destLen = (Get-Item -LiteralPath $DestinationPath).Length
+            $srcLen = (Get-Item -LiteralPath $SourceFile).Length
+            if ($destLen -ne $srcLen) {
+                Remove-Item -LiteralPath $DestinationPath -Force -ErrorAction SilentlyContinue
+            }
+        }
+        throw
+    }
+}
+
 function Invoke-FoOutputMode {
     [CmdletBinding()]
     param(
@@ -47,23 +123,20 @@ function Invoke-FoOutputMode {
 
     switch ($mode) {
         'Replace' {
-            Copy-Item -LiteralPath $SourceFile -Destination $target -Force
+            Invoke-FoPromoteOptimizedFile -SourceFile $SourceFile -TargetPath $target
         }
         'OptimizedSuffix' {
             $suffix = $Settings.OptimizedSuffix
             $base = [System.IO.Path]::GetFileNameWithoutExtension($target)
             $ext = [System.IO.Path]::GetExtension($target)
             $outPath = Join-Path $dir ($base + $suffix + $ext)
-            Copy-Item -LiteralPath $SourceFile -Destination $outPath -Force
+            Invoke-FoCopyOptimizedFile -SourceFile $SourceFile -DestinationPath $outPath
             $result.OptimizedPath = $outPath
             $result.OriginalPath = $target
         }
         'BackupSuffix' {
             $bak = $target + $Settings.BackupSuffix
-            if (Test-Path -LiteralPath $target) {
-                Move-Item -LiteralPath $target -Destination $bak -Force
-            }
-            Copy-Item -LiteralPath $SourceFile -Destination $target -Force
+            Invoke-FoPromoteOptimizedFile -SourceFile $SourceFile -TargetPath $target -BackupDestination $bak
             $result.BackupPath = $bak
             $result.OriginalPath = $bak
         }
@@ -71,14 +144,7 @@ function Invoke-FoOutputMode {
             if (-not $Settings.BackupPath) { throw 'BackupMove requires BackupPath.' }
             $rel = Get-FoBackupRelativePath -TargetPath $target
             $bakDest = Join-Path $Settings.BackupPath $rel
-            $bakDir = Split-Path -Parent $bakDest
-            if ($bakDir -and -not (Test-Path -LiteralPath $bakDir)) {
-                New-Item -ItemType Directory -Path $bakDir -Force | Out-Null
-            }
-            if (Test-Path -LiteralPath $target) {
-                Move-Item -LiteralPath $target -Destination $bakDest -Force
-            }
-            Copy-Item -LiteralPath $SourceFile -Destination $target -Force
+            Invoke-FoPromoteOptimizedFile -SourceFile $SourceFile -TargetPath $target -BackupDestination $bakDest
             $result.BackupPath = $bakDest
             $result.OriginalPath = $bakDest
         }
@@ -87,14 +153,7 @@ function Invoke-FoOutputMode {
             if (-not $root) { $root = Join-Path $env:TEMP 'FileOptimizer\backups' }
             $rel = Get-FoBackupRelativePath -TargetPath $target
             $bakDest = Join-Path $root $rel
-            $bakDir = Split-Path -Parent $bakDest
-            if ($bakDir -and -not (Test-Path -LiteralPath $bakDir)) {
-                New-Item -ItemType Directory -Path $bakDir -Force | Out-Null
-            }
-            if (Test-Path -LiteralPath $target) {
-                Move-Item -LiteralPath $target -Destination $bakDest -Force
-            }
-            Copy-Item -LiteralPath $SourceFile -Destination $target -Force
+            Invoke-FoPromoteOptimizedFile -SourceFile $SourceFile -TargetPath $target -BackupDestination $bakDest
             $result.BackupPath = $bakDest
             $result.OriginalPath = $bakDest
         }
