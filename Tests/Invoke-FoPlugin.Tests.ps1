@@ -205,6 +205,7 @@ Describe 'Invoke-FoPlugin timeouts' -Tag Unit {
         }
         $settings = Get-FoConfig
         $settings.PluginTimeoutSeconds = 30
+        $settings.MaxPluginStderrBytes = 1024
 
         $sw = [System.Diagnostics.Stopwatch]::StartNew()
         $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly

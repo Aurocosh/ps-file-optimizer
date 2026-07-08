@@ -180,6 +180,10 @@ function Invoke-FoPlugin {
                 DurationMs = $sw.ElapsedMilliseconds
             }
         }
+
+        # Capture stderr asynchronously to avoid process deadlocks.
+        # Note: we still read stderr into memory, but we will truncate it
+        # to a configurable maximum before using/logging it.
         $stderrTask = $p.StandardError.ReadToEndAsync()
 
         $timeoutSec = 0
@@ -205,6 +209,20 @@ function Invoke-FoPlugin {
             $stderr = $stderrTask.GetAwaiter().GetResult()
         }
         catch { }
+
+        # Truncate stderr for safety (especially when LogLevel is high).
+        $maxStderrBytes = 1048576
+        if ($null -ne $Settings.MaxPluginStderrBytes) {
+            $maxStderrBytes = [int64]$Settings.MaxPluginStderrBytes
+        }
+        if ($maxStderrBytes -lt 0) { $maxStderrBytes = 0 }
+        if ($stderr -and $maxStderrBytes -gt 0) {
+            $maxChars = [int64]([Math]::Floor($maxStderrBytes / 2))
+            if ($stderr.Length -gt $maxChars) {
+                $stderr = $stderr.Substring(0, [int]$maxChars) + '...(truncated)'
+            }
+        }
+
         if ($Settings.LogLevel -ge 3 -and $stderr) {
             Write-Verbose ("Plugin stderr ({0}): {1}" -f $Step.Name, $stderr.Trim())
         }

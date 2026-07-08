@@ -51,6 +51,7 @@ function Get-FoModuleDefaults {
         LeanifyIterations = -1
         PNGWolfIterations = -1
         PluginTimeoutSeconds = 1800
+        MaxPluginStderrBytes = 1048576
     }
 }
 
