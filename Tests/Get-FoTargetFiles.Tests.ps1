@@ -47,6 +47,23 @@ Describe 'Get-FoTargetFiles' -Tag Unit {
         $files.Count | Should -Be 1
         $files[0] | Should -Be ([System.IO.Path]::GetFullPath($file))
     }
+
+    It 'Expands wildcard paths recursively when -Recurse is set' {
+        $dir = Join-Path $TestDrive 'wildcard-recurse'
+        $sub = Join-Path $dir 'nested'
+        New-Item -ItemType Directory -Path $sub -Force | Out-Null
+        $rootPng = Join-Path $dir 'root.png'
+        $nestedPng = Join-Path $sub 'nested.png'
+        Set-Content -LiteralPath $rootPng -Value 'png-root' -NoNewline
+        Set-Content -LiteralPath $nestedPng -Value 'png-nested' -NoNewline
+
+        $glob = Join-Path $dir '*.png'
+        $files = @(Get-FoTargetFiles -Path $glob -Recurse)
+
+        $files.Count | Should -Be 2
+        $files | Should -Contain ([System.IO.Path]::GetFullPath($rootPng))
+        $files | Should -Contain ([System.IO.Path]::GetFullPath($nestedPng))
+    }
 }
 
 Describe 'Optimize-FoFile wildcard paths' -Tag Unit {

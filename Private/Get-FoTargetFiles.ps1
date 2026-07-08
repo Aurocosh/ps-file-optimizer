@@ -22,7 +22,9 @@ function Get-FoTargetFiles {
         $resolved = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($p)
 
         if (Test-FoPathHasWildcard -Path $resolved) {
-            $matched = @(Get-ChildItem -Path $resolved -File -ErrorAction SilentlyContinue)
+            $params = @{ Path = $resolved; File = $true; ErrorAction = 'SilentlyContinue' }
+            if ($Recurse) { $params.Recurse = $true }
+            $matched = @(Get-ChildItem @params)
             if ($matched.Count -eq 0) {
                 Write-Warning "No files matched: $p"
             }
