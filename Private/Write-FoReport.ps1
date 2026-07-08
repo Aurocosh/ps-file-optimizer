@@ -45,5 +45,7 @@ function Write-FoReport {
     $savedTotal = if ($null -ne $saved) { $saved } else { 0 }
     $lines += "Summary: $($Results.Count) files | $opt optimized | $(@($Results | Where-Object Status -eq 'Unchanged').Count) unchanged | $(@($Results | Where-Object Status -eq 'Skipped').Count) skipped | saved $(Format-FoFileSize $savedTotal)"
 
-    Set-Content -LiteralPath $ReportPath -Value ($lines -join "`n") -Encoding UTF8
+    $tmp = "$ReportPath.tmp"
+    Set-Content -LiteralPath $tmp -Value ($lines -join "`n") -Encoding UTF8
+    Move-Item -LiteralPath $tmp -Destination $ReportPath -Force
 }

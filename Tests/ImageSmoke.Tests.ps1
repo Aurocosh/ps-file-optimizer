@@ -30,4 +30,18 @@ Describe 'Image optimization smoke' -Tag ImageIntegration, Smoke -Skip:(-not (Te
 
         (Test-FoImageOptimizationResult -Result $result -RequireSizeReduction) | Should -Be $true
     }
+
+    It 'Optimizes JPEG fixture jpg-gray-square' {
+        $result = Invoke-FoImageOptimizationTest -FixtureId 'jpg-gray-square' -Settings $script:Settings `
+            -CompareMode Pixel -WorkDirectory $script:WorkDir
+
+        (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
+    }
+
+    It 'Optimizes WebP fixture webp-lossless with pixel compare' {
+        $result = Invoke-FoImageOptimizationTest -FixtureId 'webp-lossless' -Settings $script:Settings `
+            -CompareMode Pixel -WorkDirectory $script:WorkDir
+
+        (Test-FoImageOptimizationResult -Result $result -RequireCompare) | Should -Be $true
+    }
 }

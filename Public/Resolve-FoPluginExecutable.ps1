@@ -1,5 +1,9 @@
 $script:FoPluginResolveCache = @{}
 
+function Clear-FoPluginResolveCache {
+    $script:FoPluginResolveCache = @{}
+}
+
 function Resolve-FoPluginExecutable {
     <#
     .SYNOPSIS

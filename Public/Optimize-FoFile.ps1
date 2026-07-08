@@ -11,7 +11,10 @@ function Optimize-FoFile {
     File or directory paths to optimize. Directories are not expanded unless -Recurse is set.
 
     .PARAMETER ConfigPath
-    Optional PSD1 settings file merged after global config.
+    Optional local JSON config file merged after global config.
+
+    .PARAMETER ContinueOnError
+    When optimizing multiple files, record per-file errors and continue instead of stopping the batch.
 
     .PARAMETER Level
     Optimization level (0–9). Default from config.
@@ -67,7 +70,8 @@ function Optimize-FoFile {
         [nullable[bool]]$HistoryEnabled,
         [string]$HistoryPath,
         [switch]$ShowProgress,
-        [switch]$Recurse
+        [switch]$Recurse,
+        [switch]$ContinueOnError
     )
 
     begin {
@@ -119,9 +123,14 @@ function Optimize-FoFile {
                     $script:FoBatchResults.Add($result)
                 }
                 catch {
-                    Write-Error $_
+                    if ($ContinueOnError) {
+                        Write-FoLog -LogLevel $settings.LogLevel -RequiredLevel 1 -Message "Error optimizing ${file}: $($_.Exception.Message)"
+                    }
+                    else {
+                        Write-Error $_
+                    }
                     $script:FoBatchResults.Add([PSCustomObject]@{ Path = $file; Status = 'Error'; Reason = $_.Exception.Message })
-                    if (-not $settings.SkipMissingTools) { throw }
+                    if (-not $ContinueOnError -and -not $settings.SkipMissingTools) { throw }
                 }
             }
             else {

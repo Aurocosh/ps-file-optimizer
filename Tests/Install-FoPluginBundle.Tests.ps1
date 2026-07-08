@@ -220,3 +220,45 @@ Describe 'Invoke-FoPluginBundleDownload bundle cache' -Tag Unit {
         }
     }
 }
+
+Describe 'Plugin bundle extract safety' -Tag Unit {
+    BeforeAll {
+        . (Join-Path (Get-FoTestModuleRoot) 'Private\Install-FoPluginBundle.ps1')
+    }
+
+    It 'Rejects zip archives with path traversal entries' {
+        Add-Type -AssemblyName System.IO.Compression
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $zipPath = Join-Path $TestDrive 'evil.zip'
+        $extractRoot = Join-Path $TestDrive 'extract-safe'
+        New-Item -ItemType Directory -Path $extractRoot -Force | Out-Null
+
+        $zip = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+        try {
+            $entry = $zip.CreateEntry('..\evil.txt')
+            $writer = New-Object System.IO.StreamWriter($entry.Open())
+            $writer.Write('pwnd')
+            $writer.Dispose()
+        }
+        finally {
+            $zip.Dispose()
+        }
+
+        { Assert-FoPluginBundleArchiveSafe -ArchivePath $zipPath -ExtractRoot $extractRoot } |
+            Should -Throw '*Unsafe zip entry path*'
+    }
+}
+
+Describe 'Clear-FoPluginResolveCache' -Tag Unit {
+    BeforeAll {
+        Import-Module (Join-Path (Get-FoTestModuleRoot) 'FileOptimizer.psd1') -Force
+    }
+
+    It 'Clears cached plugin resolution entries' {
+        InModuleScope FileOptimizer {
+            $script:FoPluginResolveCache['unit-test-key'] = @{ Found = $true }
+            Clear-FoPluginResolveCache
+            $script:FoPluginResolveCache.ContainsKey('unit-test-key') | Should -Be $false
+        }
+    }
+}

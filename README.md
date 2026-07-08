@@ -81,6 +81,8 @@ Precedence: module defaults → `%USERPROFILE%\.config\FileOptimizer\config.json
 
 See `Templates\Config.defaults.json` for available keys.
 
+Use `-ContinueOnError` on `Optimize-FoFile` (or `Optimize-File.ps1`) to finish a multi-file batch after individual file failures.
+
 ## Tests
 
 ```powershell

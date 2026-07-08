@@ -166,6 +166,61 @@ function Copy-FoPluginFilesFromBundle {
     }
 }
 
+function Assert-FoPluginBundleArchiveSafe {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ArchivePath,
+        [Parameter(Mandatory)]
+        [string]$ExtractRoot
+    )
+
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $destFull = [System.IO.Path]::GetFullPath($ExtractRoot)
+    if (-not $destFull.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $destFull += [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    $zip = [System.IO.Compression.ZipFile]::OpenRead($ArchivePath)
+    try {
+        foreach ($entry in $zip.Entries) {
+            if ([string]::IsNullOrWhiteSpace($entry.FullName)) { continue }
+            $normalized = $entry.FullName -replace '/', '\'
+            if ($normalized -match '(^|[\\/])\.\.([\\/]|$)') {
+                throw "Unsafe zip entry path: $($entry.FullName)"
+            }
+            $candidate = [System.IO.Path]::GetFullPath((Join-Path $ExtractRoot $entry.FullName))
+            if (-not $candidate.StartsWith($destFull, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Unsafe zip entry path: $($entry.FullName)"
+            }
+        }
+    }
+    finally {
+        $zip.Dispose()
+    }
+}
+
+function Assert-FoPluginBundleExtractSafe {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$ExtractRoot
+    )
+
+    $rootFull = [System.IO.Path]::GetFullPath($ExtractRoot)
+    if (-not $rootFull.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $rootFull += [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    foreach ($item in (Get-ChildItem -LiteralPath $ExtractRoot -Recurse -Force -ErrorAction SilentlyContinue)) {
+        $full = [System.IO.Path]::GetFullPath($item.FullName)
+        if (-not $full.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "Unsafe plugin bundle extract path escapes destination: $($item.FullName)"
+        }
+    }
+}
+
 function Install-FoPluginBundleCore {
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -289,7 +344,9 @@ function Install-FoPluginBundleCore {
             if (-not (Test-Path -LiteralPath $extractRoot)) {
                 New-Item -ItemType Directory -Path $extractRoot -Force | Out-Null
             }
+            Assert-FoPluginBundleArchiveSafe -ArchivePath $archivePath -ExtractRoot $extractRoot
             Expand-Archive -LiteralPath $archivePath -DestinationPath $extractRoot -Force
+            Assert-FoPluginBundleExtractSafe -ExtractRoot $extractRoot
             $extracted = $true
         }
 
@@ -301,6 +358,10 @@ function Install-FoPluginBundleCore {
             -DestinationPluginDir $dest `
             -FileNames $filesToCopy `
             -Force:$Force
+
+        if ($copyResult.Copied.Count -gt 0) {
+            Clear-FoPluginResolveCache
+        }
 
         return [PSCustomObject]@{
             Mode              = $Mode
