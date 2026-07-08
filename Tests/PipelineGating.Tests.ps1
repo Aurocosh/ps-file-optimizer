@@ -137,6 +137,43 @@ Describe 'Invoke-FoPluginChain multi-group routing' -Tag Unit {
     }
 }
 
+Describe 'MiscDisable gating' -Tag Unit {
+    It 'MISC pipeline has no active steps when MiscDisable is true' {
+        $path = Join-Path $TestDrive 'sample.avs'
+        Set-Content -LiteralPath $path -Value 'placeholder' -NoNewline
+        $settings = Get-FoConfig
+        $settings.MiscDisable = $true
+        $ctx = New-FoFileContext -InputFile $path -Settings $settings
+
+        @(Get-FoActiveSteps -Steps (Get-FoPipeline -GroupName MISC -Context $ctx) -Context $ctx).Count |
+            Should -Be 0
+    }
+
+    It 'MISC pipeline has active steps when MiscDisable is false' {
+        $path = Join-Path $TestDrive 'sample.avs'
+        Set-Content -LiteralPath $path -Value 'placeholder' -NoNewline
+        $settings = Get-FoConfig
+        $settings.MiscDisable = $false
+        $ctx = New-FoFileContext -InputFile $path -Settings $settings
+
+        @(Get-FoActiveSteps -Steps (Get-FoPipeline -GroupName MISC -Context $ctx) -Context $ctx).Count |
+            Should -BeGreaterThan 0
+    }
+
+    It 'Multi-group routing still includes non-MISC groups when MiscDisable is true' {
+        $path = Join-Path $TestDrive 'sample.epdf'
+        Set-Content -LiteralPath $path -Value 'placeholder' -NoNewline
+        $settings = Get-FoConfig
+        $settings.MiscDisable = $true
+
+        $plan = Get-FoExecutionPlan -Path $path -Settings $settings
+        @($plan.Plans | Where-Object { $_.GroupName -eq 'MISC' } | ForEach-Object { $_.Steps.Count }) |
+            Should -Be 0
+        @($plan.Plans | Where-Object { $_.GroupName -eq 'PDF' } | ForEach-Object { $_.Steps.Count }) |
+            Should -BeGreaterThan 0
+    }
+}
+
 Describe 'Media metadata and lossy config toggles' -Tag Unit {
     It 'MP4 pipeline strips metadata by default' {
         $path = Join-Path $TestDrive 'sample.mp4'

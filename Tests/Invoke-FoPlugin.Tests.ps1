@@ -187,6 +187,105 @@ Describe 'Invoke-FoPlugin timeouts' -Tag Unit {
     }
 }
 
+Describe 'Invoke-FoPlugin DisablePluginMask' -Tag Unit {
+    It 'Does not skip exe steps when mask matches step name only' {
+        $workDir = Join-Path $TestDrive 'mask-name-only'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $workFile = Join-Path $workDir 'test.dat'
+        Set-Content -LiteralPath $workFile -Value ('A' * 64) -NoNewline
+
+        $step = [PSCustomObject]@{
+            Name = 'PNG Optimizer'
+            Executable = 'cmd.exe'
+            Arguments = '/c exit 0'
+            Handler = $null
+            Mode = 'TempOutput'
+            Gate = $null
+        }
+        $settings = Get-FoConfig
+        $settings.DisablePluginMask = 'PNG'
+
+        $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly
+
+        $result.Skipped | Should -Be $false
+    }
+
+    It 'Skips exe steps when mask matches command line' {
+        $workDir = Join-Path $TestDrive 'mask-command-line'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $workFile = Join-Path $workDir 'test.dat'
+        Set-Content -LiteralPath $workFile -Value ('A' * 64) -NoNewline
+
+        $step = [PSCustomObject]@{
+            Name = 'noop'
+            Executable = 'cmd.exe'
+            Arguments = '/c exit 0'
+            Handler = $null
+            Mode = 'TempOutput'
+            Gate = $null
+        }
+        $settings = Get-FoConfig
+        $settings.DisablePluginMask = 'CMD.EXE'
+
+        $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly
+
+        $result.Skipped | Should -Be $true
+    }
+
+    It 'Skips handler steps when mask matches handler name' {
+        $workDir = Join-Path $TestDrive 'mask-handler'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $workFile = Join-Path $workDir 'test.js'
+        Set-Content -LiteralPath $workFile -Value 'var x = 1;' -NoNewline
+
+        $step = [PSCustomObject]@{
+            Name = 'jsmin step'
+            Handler = 'JsMinPipe'
+            Arguments = $null
+            Mode = 'TempOutput'
+            Gate = $null
+        }
+        $settings = Get-FoConfig
+        $settings.DisablePluginMask = 'JsMinPipe'
+
+        $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly
+
+        $result.Skipped | Should -Be $true
+    }
+}
+
+Describe 'Invoke-FoPlugin custom TempDirectory' -Tag Unit {
+    It 'Creates TempDirectory when missing and completes TempOutput steps' {
+        $workDir = Join-Path $TestDrive 'temp-custom-work'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $workFile = Join-Path $workDir 'test.dat'
+        $original = 'A' * 100
+        Set-Content -LiteralPath $workFile -Value $original -NoNewline
+
+        $customTemp = Join-Path $TestDrive 'new-temp-dir'
+        if (Test-Path -LiteralPath $customTemp) {
+            Remove-Item -LiteralPath $customTemp -Recurse -Force
+        }
+
+        $step = [PSCustomObject]@{
+            Name = 'shrink-custom-temp'
+            Executable = 'powershell.exe'
+            Arguments = '-NoProfile -ExecutionPolicy Bypass -Command "Set-Content -LiteralPath ''%TMPOUTPUTFILE%'' -Value (''X''*10) -NoNewline"'
+            Handler = $null
+            Mode = 'TempOutput'
+            Gate = $null
+        }
+        $settings = Get-FoConfig
+        $settings.TempDirectory = $customTemp
+
+        $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly
+
+        Test-Path -LiteralPath $customTemp | Should -Be $true
+        $result.Accepted | Should -Be $true
+        (Get-Item -LiteralPath $workFile).Length | Should -Be 10
+    }
+}
+
 Describe 'Invoke-FoPlugin spaced paths' -Tag Unit {
     It 'Runs TempOutput steps when paths contain spaces' {
         $workDir = Join-Path $TestDrive 'my images'

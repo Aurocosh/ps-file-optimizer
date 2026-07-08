@@ -1,3 +1,19 @@
+function Test-FoDisablePluginMaskMatch {
+    param(
+        [string]$Mask,
+        [string]$Haystack
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Mask)) { return $false }
+    if ([string]::IsNullOrWhiteSpace($Haystack)) { return $false }
+
+    $hay = $Haystack.ToUpperInvariant()
+    foreach ($token in ($Mask.Split(',') | ForEach-Object { $_.Trim().ToUpperInvariant() } | Where-Object { $_ })) {
+        if ($hay.Contains($token)) { return $true }
+    }
+    return $false
+}
+
 function Invoke-FoPlugin {
     [CmdletBinding()]
     param(
@@ -10,16 +26,11 @@ function Invoke-FoPlugin {
         [string]$SearchMode
     )
 
-    $mask = $Settings.DisablePluginMask
-    if ($mask) {
-        $hay = ($Step.Name + ' ' + $Step.Executable + ' ' + $Step.Handler + ' ' + $Step.Arguments).ToUpperInvariant()
-        foreach ($token in ($mask.Split(',') | ForEach-Object { $_.Trim().ToUpperInvariant() } | Where-Object { $_ })) {
-            if ($hay.Contains($token)) { return @{ ExitCode = 0; Skipped = $true; SizeBefore = 0; SizeAfter = 0 } }
-        }
-    }
-
     $tempDir = if ($Settings.TempDirectory) { $Settings.TempDirectory } else { [System.IO.Path]::GetTempPath() }
-    $rand = Get-Random -Minimum 0 -Maximum 9999
+    if ($Settings.TempDirectory -and -not (Test-Path -LiteralPath $tempDir)) {
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+    }
+    $rand = [guid]::NewGuid().ToString('N').Substring(0, 8)
     $baseName = [System.IO.Path]::GetFileName($InputFile)
     $tmpIn = Join-Path $tempDir "FileOptimizer_Input_${rand}_$baseName"
     $tmpOut = Join-Path $tempDir "FileOptimizer_Output_${rand}_$baseName"
@@ -73,6 +84,10 @@ function Invoke-FoPlugin {
     }
 
     if ($Step.Handler) {
+        if (Test-FoDisablePluginMaskMatch -Mask $Settings.DisablePluginMask -Haystack $Step.Handler) {
+            return @{ ExitCode = 0; Skipped = $true; SizeBefore = 0; SizeAfter = 0 }
+        }
+
         $handlerTimeout = 0
         if ($null -ne $Settings.PluginTimeoutSeconds) {
             $handlerTimeout = [Math]::Max(0, [int]$Settings.PluginTimeoutSeconds)
@@ -114,6 +129,11 @@ function Invoke-FoPlugin {
         $argTemplate = $argTemplate.Replace('%TMPINPUTFILE%', (Format-FoProcessArgument $tmpIn))
         $argTemplate = $argTemplate.Replace('%TMPOUTPUTFILE%', (Format-FoProcessArgument $tmpOut))
         $argTemplate = $argTemplate.Replace('%OUTPUTFILE%', '""')
+
+        $maskHaystack = ($Step.Executable + ' ' + $argTemplate).Trim()
+        if (Test-FoDisablePluginMaskMatch -Mask $Settings.DisablePluginMask -Haystack $maskHaystack) {
+            return @{ ExitCode = 0; Skipped = $true; SizeBefore = 0; SizeAfter = 0 }
+        }
 
         $resolved = Resolve-FoPluginExecutable -Name $Step.Executable -SearchMode $SearchMode -PluginPath $PluginPath
         $exePath = $resolved.Path

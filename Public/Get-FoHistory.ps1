@@ -58,7 +58,9 @@ function Get-FoHistory {
         return
     }
 
-    $data = Get-FoHistoryData -HistoryPath $path
+    $data = Invoke-FoHistoryFileLock -HistoryPath $path -Action {
+        Get-FoHistoryData -HistoryPath $path
+    }
     $entries = @($data.Entries)
 
     if ($Id) {

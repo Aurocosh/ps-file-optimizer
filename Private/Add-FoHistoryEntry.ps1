@@ -59,7 +59,7 @@ function Add-FoHistoryEntry {
 
     Invoke-FoHistoryFileLock -HistoryPath $Settings.HistoryPath -Action {
         $data = Get-FoHistoryData -HistoryPath $Settings.HistoryPath
-        $id = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + ('{0:D3}' -f ($data.Entries.Count + 1))
+        $id = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + ([guid]::NewGuid().ToString('N').Substring(0, 8))
         # History entry fields:
         # - TargetPath / OriginalPath: user-visible path where the optimized file was written (undo restore destination)
         # - OptimizedPath: same as TargetPath for in-place modes; sibling path for OptimizedSuffix

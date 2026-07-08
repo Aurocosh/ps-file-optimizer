@@ -251,6 +251,36 @@ Describe 'History and rollback' -Tag Unit {
         }
     }
 
+    It 'Assigns unique history IDs for rapid consecutive entries' {
+        $histDir = Join-Path $env:TEMP "FoHistIds_$(Get-Random)"
+        $histFile = Join-Path $histDir 'history.json'
+        New-Item -ItemType Directory -Path $histDir -Force | Out-Null
+
+        try {
+            $s = Get-FoConfig
+            $s.HistoryPath = $histFile
+            $s.HistoryEnabled = $true
+
+            $base = [PSCustomObject]@{
+                Path         = (Join-Path $histDir 'a.txt')
+                OriginalSize = 10
+                FinalSize    = 5
+                OutputPath   = (Join-Path $histDir 'a.txt')
+                BackupPath   = $null
+                OutputMode   = 'Replace'
+            }
+            Add-FoHistoryEntry -Result $base -Settings $s
+            Add-FoHistoryEntry -Result $base -Settings $s
+
+            $ids = @((Get-FoHistory -HistoryPath $histFile -Format Object -Last 2) | ForEach-Object { $_.Id })
+            $ids.Count | Should -Be 2
+            $ids[0] | Should -Not -Be $ids[1]
+        }
+        finally {
+            Remove-Item -LiteralPath $histDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
     It 'Allows only one parallel undo to reverse a single pending entry' {
         $histDir = Join-Path $env:TEMP "FoHistParallel_$(Get-Random)"
         $histFile = Join-Path $histDir 'history.json'

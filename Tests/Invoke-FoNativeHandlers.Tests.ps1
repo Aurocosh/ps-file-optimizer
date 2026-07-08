@@ -110,6 +110,21 @@ Describe 'Invoke-FoGzipRecompress' -Tag Unit -Skip:(-not (
     }
 }
 
+Describe 'Invoke-FoSqliteOptimize argument quoting' -Tag Unit {
+    It 'Quotes sqlite paths with spaces for dump and read phases' {
+        $inputPath = 'C:\my data\db.sqlite'
+        $outputPath = 'C:\my data\out.sqlite'
+        $sqlFile = 'C:\my temp\script.sql'
+
+        $dumpArgs = '{0} .dump' -f (Format-FoProcessArgument $inputPath)
+        $dumpArgs | Should -Be '"C:\my data\db.sqlite" .dump'
+
+        $readCmd = '.read {0}' -f (Format-FoProcessArgument $sqlFile)
+        $readArgs = '{0} {1}' -f (Format-FoProcessArgument $outputPath), (Format-FoProcessArgument $readCmd)
+        $readArgs | Should -Be '"C:\my data\out.sqlite" ".read \"C:\my temp\script.sql\""'
+    }
+}
+
 Describe 'Invoke-FoGzipRecompress timeout' -Tag Unit {
     It 'Fails quickly when gzip recompress exceeds TimeoutSeconds' {
         $workDir = Join-Path $TestDrive 'gzip-timeout'
