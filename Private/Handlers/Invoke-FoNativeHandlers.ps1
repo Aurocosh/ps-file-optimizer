@@ -101,14 +101,22 @@ function Invoke-FoDefluffPipe {
     param(
         [string]$InputPath,
         [string]$OutputPath,
-        [string]$DefluffExe
+        [string]$DefluffExe,
+        [int]$TimeoutSeconds = 0
     )
 
     if (-not $DefluffExe -or -not (Test-Path -LiteralPath $DefluffExe)) { return 1 }
 
-    $workDir = Split-Path -Parent $DefluffExe
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $DefluffExe
+    if ($DefluffExe -match '\.(cmd|bat)$') {
+        $psi.FileName = $env:ComSpec
+        $psi.Arguments = '/c ' + (Format-FoProcessArgument $DefluffExe)
+        $workDir = $env:SystemRoot
+    }
+    else {
+        $psi.FileName = $DefluffExe
+        $workDir = Split-Path -Parent $DefluffExe
+    }
     $psi.WorkingDirectory = $workDir
     $psi.UseShellExecute = $false
     $psi.RedirectStandardInput = $true
@@ -129,14 +137,33 @@ function Invoke-FoDefluffPipe {
 
         $outputStream = [System.IO.File]::Create($OutputPath)
         try {
-            $p.StandardOutput.BaseStream.CopyTo($outputStream)
+            if ($TimeoutSeconds -gt 0) {
+                $stdoutCopy = Start-FoAsyncStreamCopy -From $p.StandardOutput.BaseStream -To $outputStream
+                if (-not (Wait-FoGzipHandlerPipeline -Processes @($p) -TimeoutSeconds $TimeoutSeconds)) {
+                    if (Test-Path -LiteralPath $OutputPath) {
+                        Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+                    }
+                    return -1
+                }
+                if (-not (Wait-FoAsyncStreamCopy -AsyncCopy $stdoutCopy -TimeoutSeconds 5)) {
+                    if (Test-Path -LiteralPath $OutputPath) {
+                        Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+                    }
+                    return -1
+                }
+            }
+            else {
+                $p.StandardOutput.BaseStream.CopyTo($outputStream)
+                if (-not (Wait-FoHandlerProcessExit -Process $p -TimeoutSeconds 0)) {
+                    return -1
+                }
+            }
         }
         finally {
             $outputStream.Dispose()
         }
         $p.StandardOutput.Close()
         $null = $p.StandardError.ReadToEnd()
-        $p.WaitForExit()
 
         if ($p.ExitCode -ne 0) { return $p.ExitCode }
         if (-not (Test-Path -LiteralPath $OutputPath)) { return 1 }
@@ -255,11 +282,18 @@ function Invoke-FoJsMinPipe {
     param(
         [string]$InputPath,
         [string]$OutputPath,
-        [string]$JsMinExe
+        [string]$JsMinExe,
+        [int]$TimeoutSeconds = 0
     )
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $JsMinExe
+    if ($JsMinExe -match '\.(cmd|bat)$') {
+        $psi.FileName = $env:ComSpec
+        $psi.Arguments = '/c ' + (Format-FoProcessArgument $JsMinExe)
+    }
+    else {
+        $psi.FileName = $JsMinExe
+    }
     $psi.UseShellExecute = $false
     $psi.RedirectStandardInput = $true
     $psi.RedirectStandardOutput = $true
@@ -269,8 +303,13 @@ function Invoke-FoJsMinPipe {
         $text = [System.IO.File]::ReadAllText($InputPath)
         $p.StandardInput.Write($text)
         $p.StandardInput.Close()
+        if (-not (Wait-FoHandlerProcessExit -Process $p -TimeoutSeconds $TimeoutSeconds)) {
+            if (Test-Path -LiteralPath $OutputPath) {
+                Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+            }
+            return -1
+        }
         $out = $p.StandardOutput.ReadToEnd()
-        $p.WaitForExit()
         if ($p.ExitCode -ne 0) { return $p.ExitCode }
         [System.IO.File]::WriteAllText($OutputPath, $out)
         return 0
@@ -281,11 +320,48 @@ function Invoke-FoJsMinPipe {
     }
 }
 
+function Invoke-FoSqliteProcess {
+    param(
+        [string]$SqliteExe,
+        [string]$Arguments,
+        [int]$TimeoutSeconds = 0,
+        [switch]$CaptureStdout
+    )
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $SqliteExe
+    $psi.Arguments = $Arguments
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardError = $true
+    $psi.CreateNoWindow = $true
+    if ($CaptureStdout) {
+        $psi.RedirectStandardOutput = $true
+    }
+
+    $p = [System.Diagnostics.Process]::Start($psi)
+    try {
+        $stdout = $null
+        if ($CaptureStdout) {
+            $stdout = $p.StandardOutput.ReadToEnd()
+        }
+        $null = $p.StandardError.ReadToEnd()
+        if (-not (Wait-FoHandlerProcessExit -Process $p -TimeoutSeconds $TimeoutSeconds)) {
+            return @{ ExitCode = -1; Output = $null }
+        }
+        return @{ ExitCode = $p.ExitCode; Output = $stdout }
+    }
+    finally {
+        if ($p -and -not $p.HasExited) { $p.Kill() }
+        if ($p) { $p.Dispose() }
+    }
+}
+
 function Invoke-FoSqliteOptimize {
     param(
         [string]$InputPath,
         [string]$OutputPath,
-        [string]$SqliteExe
+        [string]$SqliteExe,
+        [int]$TimeoutSeconds = 0
     )
 
     $tempDir = [System.IO.Path]::GetTempPath()
@@ -294,13 +370,21 @@ function Invoke-FoSqliteOptimize {
 
     try {
         Set-Content -LiteralPath $sqlFile -Value 'PRAGMA optimize(0xfffe);' -Encoding UTF8
-        $dump = & $SqliteExe $InputPath '.dump' 2>&1
-        if ($LASTEXITCODE -ne 0) { return $LASTEXITCODE }
-        Add-Content -LiteralPath $sqlFile -Value ($dump -join "`n") -Encoding UTF8
-        & $SqliteExe $OutputPath (".read `"$sqlFile`"") 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
+        $dumpArgs = '{0} .dump' -f (Format-FoProcessArgument $InputPath)
+        $dump = Invoke-FoSqliteProcess -SqliteExe $SqliteExe -Arguments $dumpArgs -TimeoutSeconds $TimeoutSeconds -CaptureStdout
+        if ($dump.ExitCode -eq -1) { return -1 }
+        if ($dump.ExitCode -ne 0) { return $dump.ExitCode }
+        Add-Content -LiteralPath $sqlFile -Value $dump.Output -Encoding UTF8
+        $readCmd = '.read {0}' -f (Format-FoProcessArgument $sqlFile)
+        $readArgs = '{0} {1}' -f (Format-FoProcessArgument $OutputPath), (Format-FoProcessArgument $readCmd)
+        $read = Invoke-FoSqliteProcess -SqliteExe $SqliteExe -Arguments $readArgs -TimeoutSeconds $TimeoutSeconds
+        if ($read.ExitCode -eq -1) {
             if (Test-Path -LiteralPath $OutputPath) { Remove-Item -LiteralPath $OutputPath -Force }
-            return $LASTEXITCODE
+            return -1
+        }
+        if ($read.ExitCode -ne 0) {
+            if (Test-Path -LiteralPath $OutputPath) { Remove-Item -LiteralPath $OutputPath -Force }
+            return $read.ExitCode
         }
         return 0
     }

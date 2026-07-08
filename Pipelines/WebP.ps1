@@ -16,8 +16,8 @@ function Get-FoWebPPipeline {
     }
     $steps = @()
 
-    $steps += New-FoStep -Name 'pingo (1/2)' -Executable 'pingo.exe' -Arguments "$pingo`"%TMPINPUTFILE%`"" -Mode TempInput
-    $steps += New-FoStep -Name 'cwebp (2/2)' -Executable 'cwebp.exe' -Arguments "$cwebp`"%INPUTFILE%`" -o `"%TMPOUTPUTFILE%`"" -Mode TempOutput
+    $steps += New-FoStep -Name 'pingo (1/2)' -Executable 'pingo.exe' -Arguments "$pingo%TMPINPUTFILE%" -Mode TempInput
+    $steps += New-FoStep -Name 'cwebp (2/2)' -Executable 'cwebp.exe' -Arguments "$cwebp%INPUTFILE% -o %TMPOUTPUTFILE%" -Mode TempOutput
 
     return $steps
 }

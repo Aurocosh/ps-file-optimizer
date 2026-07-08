@@ -7,7 +7,7 @@ function Get-FoTARPipeline {
     $keep = if ($s.GZCopyMetadata) { '--keep-exif ' } else { '' }
     $steps = @()
 
-    $steps += New-FoStep -Name 'Leanify (1/1)' -Executable 'leanify.exe' -Arguments "-q -p -i $leanify $keep`"%TMPINPUTFILE%`"" -Mode TempInput
+    $steps += New-FoStep -Name 'Leanify (1/1)' -Executable 'leanify.exe' -Arguments "-q -p -i $leanify $keep%TMPINPUTFILE%" -Mode TempInput
 
     return $steps
 }

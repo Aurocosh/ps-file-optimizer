@@ -338,6 +338,8 @@ $script:FoTestSupportEngineFunctions = @(
     'Get-FoExecutionPlan'
     'Invoke-FoPlugin'
     'Invoke-FoGzipRecompress'
+    'Invoke-FoJsMinPipe'
+    'Invoke-FoDefluffPipe'
 )
 
 $fileOptimizerFunctions = @(

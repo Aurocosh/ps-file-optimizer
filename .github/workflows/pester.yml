@@ -38,7 +38,7 @@ jobs:
         run: |
           $pluginDir = Join-Path $env:RUNNER_TEMP 'FoPlugins64'
           $magick = Join-Path $pluginDir 'magick.exe'
-          $dssim = Join-Path $pluginDir 'win\dssim.exe'
+          $dssim = Join-Path $pluginDir 'dssim\dssim.exe'
           if (-not ((Test-Path -LiteralPath $magick) -and (Test-Path -LiteralPath $dssim))) {
             if (-not (Test-Path -LiteralPath $pluginDir)) {
               New-Item -ItemType Directory -Path $pluginDir -Force | Out-Null

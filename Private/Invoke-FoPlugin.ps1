@@ -73,19 +73,19 @@ function Invoke-FoPlugin {
     }
 
     if ($Step.Handler) {
+        $handlerTimeout = 0
+        if ($null -ne $Settings.PluginTimeoutSeconds) {
+            $handlerTimeout = [Math]::Max(0, [int]$Settings.PluginTimeoutSeconds)
+        }
         $handlerMap = @{
-            DefluffPipe    = { Invoke-FoDefluffPipe -InputPath $InputFile -OutputPath $tmpOut -DefluffExe (Resolve-FoPluginExecutable -Name 'defluff.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path }
+            DefluffPipe    = { Invoke-FoDefluffPipe -InputPath $InputFile -OutputPath $tmpOut -DefluffExe (Resolve-FoPluginExecutable -Name 'defluff.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path -TimeoutSeconds $handlerTimeout }
             GzipRecompress = {
-                $gzipTimeout = 0
-                if ($null -ne $Settings.PluginTimeoutSeconds) {
-                    $gzipTimeout = [Math]::Max(0, [int]$Settings.PluginTimeoutSeconds)
-                }
                 Invoke-FoGzipRecompress -InputPath $InputFile -OutputPath $tmpOut `
                     -GzipExe (Resolve-FoPluginExecutable -Name 'gzip.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path `
-                    -TimeoutSeconds $gzipTimeout
+                    -TimeoutSeconds $handlerTimeout
             }
-            JsMinPipe      = { Invoke-FoJsMinPipe -InputPath $InputFile -OutputPath $tmpOut -JsMinExe (Resolve-FoPluginExecutable -Name 'jsmin.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path }
-            SqliteOptimize = { Invoke-FoSqliteOptimize -InputPath $InputFile -OutputPath $tmpOut -SqliteExe (Resolve-FoPluginExecutable -Name 'sqlite3.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path }
+            JsMinPipe      = { Invoke-FoJsMinPipe -InputPath $InputFile -OutputPath $tmpOut -JsMinExe (Resolve-FoPluginExecutable -Name 'jsmin.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path -TimeoutSeconds $handlerTimeout }
+            SqliteOptimize = { Invoke-FoSqliteOptimize -InputPath $InputFile -OutputPath $tmpOut -SqliteExe (Resolve-FoPluginExecutable -Name 'sqlite3.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path -TimeoutSeconds $handlerTimeout }
         }
         if ($handlerMap.ContainsKey($Step.Handler)) {
             $exitCode = & $handlerMap[$Step.Handler]
@@ -93,6 +93,19 @@ function Invoke-FoPlugin {
         else {
             Write-Warning "Unknown handler '$($Step.Handler)' in step '$($Step.Name)'; treating as failure."
             $exitCode = 1
+        }
+
+        if ($exitCode -eq -1) {
+            $sw.Stop()
+            return @{
+                ExitCode   = $exitCode
+                Skipped    = $false
+                Accepted   = $false
+                Reason     = 'Timeout'
+                SizeBefore = $sizeBefore
+                SizeAfter  = $sizeBefore
+                DurationMs = $sw.ElapsedMilliseconds
+            }
         }
     }
     else {

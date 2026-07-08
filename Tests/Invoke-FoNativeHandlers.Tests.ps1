@@ -136,3 +136,23 @@ Describe 'Invoke-FoGzipRecompress timeout' -Tag Unit {
         $sw.Elapsed.TotalSeconds | Should -BeLessThan 5
     }
 }
+
+Describe 'Invoke-FoDefluffPipe timeout' -Tag Unit {
+    It 'Fails quickly when defluff exceeds TimeoutSeconds' {
+        $workDir = Join-Path $TestDrive 'defluff-timeout'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $inputPath = Join-Path $workDir 'input.png'
+        $outputPath = Join-Path $workDir 'output.png'
+        [System.IO.File]::WriteAllBytes($inputPath, [byte[]](0x89, 0x50, 0x4E, 0x47))
+
+        $slowDefluff = Join-Path $workDir 'slow-defluff.cmd'
+        '@echo off' + "`r`n" + 'set /p _junk=' + "`r`n" + 'ping 127.0.0.1 -n 60 >nul' + "`r`n" + 'exit /b 0' | Set-Content -LiteralPath $slowDefluff -Encoding Ascii
+
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        $exitCode = Invoke-FoDefluffPipe -InputPath $inputPath -OutputPath $outputPath -DefluffExe $slowDefluff -TimeoutSeconds 1
+        $sw.Stop()
+
+        $exitCode | Should -Be -1
+        $sw.Elapsed.TotalSeconds | Should -BeLessThan 10
+    }
+}

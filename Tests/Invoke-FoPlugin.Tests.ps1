@@ -186,3 +186,26 @@ Describe 'Invoke-FoPlugin timeouts' -Tag Unit {
         $sw.Elapsed.TotalSeconds | Should -BeLessThan 15
     }
 }
+
+Describe 'Invoke-FoPlugin spaced paths' -Tag Unit {
+    It 'Runs TempOutput steps when paths contain spaces' {
+        $workDir = Join-Path $TestDrive 'my images'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $workFile = Join-Path $workDir 'test file.dat'
+        $original = 'A' * 100
+        Set-Content -LiteralPath $workFile -Value $original -NoNewline
+
+        $step = [PSCustomObject]@{
+            Name = 'shrink-spaced'
+            Executable = 'powershell.exe'
+            Arguments = '-NoProfile -ExecutionPolicy Bypass -Command "Set-Content -LiteralPath ''%TMPOUTPUTFILE%'' -Value (''X''*10) -NoNewline"'
+            Handler = $null; Mode = 'TempOutput'; Gate = $null
+        }
+        $settings = Get-FoConfig
+
+        $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly
+
+        $result.Accepted | Should -Be $true
+        (Get-Item -LiteralPath $workFile).Length | Should -Be 10
+    }
+}
