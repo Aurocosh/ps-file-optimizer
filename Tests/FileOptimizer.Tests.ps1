@@ -77,7 +77,6 @@ Describe 'Invoke-FoOutputMode TempMove' -Tag Unit {
         Set-Content -LiteralPath $orig -Value 'original content here' -NoNewline
         Set-Content -LiteralPath $opt -Value 'opt' -NoNewline
 
-        Push-Location $srcDir
         try {
             $s = Get-FoConfig
             $s.OutputMode = 'TempMove'
@@ -87,7 +86,6 @@ Describe 'Invoke-FoOutputMode TempMove' -Tag Unit {
             (Test-Path -LiteralPath $orig) | Should -Be $true
         }
         finally {
-            Pop-Location
             Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
             Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
         }
@@ -106,7 +104,6 @@ Describe 'Invoke-FoOutputMode failure recovery' -Tag Unit {
         Set-Content -LiteralPath $orig -Value $originalContent -NoNewline
         Set-Content -LiteralPath $opt -Value 'opt' -NoNewline
 
-        Push-Location $srcDir
         try {
             $env:FO_TEST_ORIG = $orig
             $env:FO_TEST_OPT = $opt
@@ -134,7 +131,6 @@ Describe 'Invoke-FoOutputMode failure recovery' -Tag Unit {
         }
         finally {
             Remove-Item Env:FO_TEST_ORIG, Env:FO_TEST_OPT, Env:FO_TEST_BAK -ErrorAction SilentlyContinue
-            Pop-Location
             Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
             Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
         }
@@ -157,7 +153,6 @@ Describe 'Invoke-FoOutputMode TempMove backup paths' -Tag Unit {
         Set-Content -LiteralPath $optA -Value 'a' -NoNewline
         Set-Content -LiteralPath $optB -Value 'b' -NoNewline
 
-        Push-Location $dir
         try {
             $s = Get-FoConfig
             $s.OutputMode = 'TempMove'
@@ -172,9 +167,35 @@ Describe 'Invoke-FoOutputMode TempMove backup paths' -Tag Unit {
             (Get-Content -LiteralPath $rB.BackupPath -Raw) | Should -Be 'content-b'
         }
         finally {
-            Pop-Location
             Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
             Remove-Item -LiteralPath $optA, $optB -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'Uses target-relative backup paths independent of current working directory' {
+        $dir = Join-Path $env:TEMP "FoTestCwd_$(Get-Random)"
+        $srcDir = Join-Path $dir 'src'
+        $otherDir = Join-Path $dir 'other-cwd'
+        $bakRoot = Join-Path $dir 'bak'
+        New-Item -ItemType Directory -Path $srcDir, $otherDir -Force | Out-Null
+        $orig = Join-Path $srcDir 'same.txt'
+        $opt = Join-Path $env:TEMP "opt_cwd_$(Get-Random).txt"
+        Set-Content -LiteralPath $orig -Value 'before' -NoNewline
+        Set-Content -LiteralPath $opt -Value 'after' -NoNewline
+
+        Push-Location $otherDir
+        try {
+            $s = Get-FoConfig
+            $s.OutputMode = 'TempMove'
+            $s.TempBackupPath = $bakRoot
+            $r = Invoke-FoOutputMode -SourceFile $opt -TargetPath $orig -Settings $s
+            $r.BackupPath | Should -BeLike ((Join-Path ([System.IO.Path]::GetFullPath($bakRoot)) '*\src\same.txt'))
+            (Test-Path -LiteralPath $r.BackupPath) | Should -Be $true
+        }
+        finally {
+            Pop-Location
+            Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
         }
     }
 }

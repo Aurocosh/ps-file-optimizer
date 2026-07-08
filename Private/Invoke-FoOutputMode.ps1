@@ -1,12 +1,15 @@
 function Get-FoBackupRelativePath {
     param(
         [Parameter(Mandatory)]
-        [string]$TargetPath
+        [string]$TargetPath,
+        [string]$BaseDirectory
     )
 
     $target = [System.IO.Path]::GetFullPath($TargetPath)
-    $cwd = [System.IO.Path]::GetFullPath((Get-Location).Path)
-    $prefix = $cwd
+    if (-not $BaseDirectory) {
+        $BaseDirectory = [System.IO.Path]::GetPathRoot($target)
+    }
+    $prefix = [System.IO.Path]::GetFullPath($BaseDirectory)
     if (-not $prefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
         $prefix += [System.IO.Path]::DirectorySeparatorChar
     }
