@@ -124,3 +124,15 @@ Describe 'Default-off text pipelines' -Tag Unit {
             Should -BeGreaterThan 0
     }
 }
+
+Describe 'Invoke-FoPluginChain multi-group routing' -Tag Unit {
+    It 'Includes all mapped pipeline groups on WhatIf results' {
+        $db = Join-Path $TestDrive 'multi.db'
+        Set-Content -LiteralPath $db -Value 'placeholder' -NoNewline
+
+        $result = Invoke-FoPluginChain -Path $db -Settings (Get-FoConfig) -WhatIf
+
+        $result.Status | Should -Be 'WhatIf'
+        @($result.Groups) | Should -Be @('OLE', 'SQLite')
+    }
+}

@@ -119,7 +119,8 @@ function Get-FoExtensionMap {
 function Get-FoPipelineGroupsForFile {
     param([string]$Path)
 
-    $ext = Get-ExtensionByContent -Path $Path
+    $pathExt = [System.IO.Path]::GetExtension($Path)
+    $ext = Get-ExtensionByContent -Path $Path -Extension $pathExt
     if (-not $ext) { return @() }
     $map = Get-FoExtensionMap
     if ($map -and $map.ContainsKey($ext)) {

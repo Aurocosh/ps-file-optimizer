@@ -33,6 +33,7 @@ function Invoke-FoPluginChain {
     )
 
     $plan = Get-FoExecutionPlan -Path $Path -Settings $Settings
+    $groupNames = @($plan.Plans | ForEach-Object { $_.GroupName })
     $allMissing = @($plan.Plans | ForEach-Object { $_.Missing } | Select-Object -Unique)
     $allSteps = @($plan.Plans | ForEach-Object { $_.Steps })
 
@@ -47,9 +48,10 @@ function Invoke-FoPluginChain {
             Write-Host ('WHATIF:   missing tools: {0}' -f ($allMissing -join ', '))
         }
         return [PSCustomObject]@{
-            Path   = $Path
-            Status = 'WhatIf'
-            Steps  = $allSteps
+            Path    = $Path
+            Status  = 'WhatIf'
+            Groups  = $groupNames
+            Steps   = $allSteps
             Missing = $allMissing
         }
     }
@@ -61,6 +63,7 @@ function Invoke-FoPluginChain {
                 Path       = $Path
                 Status     = 'Skipped'
                 Reason     = 'MissingTools'
+                Groups     = $groupNames
                 Missing    = $allMissing
                 BytesSaved = 0
                 Steps      = @()
@@ -70,6 +73,10 @@ function Invoke-FoPluginChain {
         if ($Settings.LogLevel -ge 2) {
             Write-Host "Missing tools for '$Path' (continuing like FileOptimizer): $($allMissing -join ', ')"
         }
+    }
+
+    if ($Settings.LogLevel -ge 2) {
+        Write-Host ('Optimizing {0} via {1}' -f $Path, ($groupNames -join ', '))
     }
 
     $workFile = Join-Path ([System.IO.Path]::GetTempPath()) ('FileOptimizer_work_{0}_{1}' -f (Get-Random -Max 99999), [System.IO.Path]::GetFileName($Path))
@@ -110,6 +117,7 @@ function Invoke-FoPluginChain {
                 Path         = $Path
                 Status       = 'Unchanged'
                 Reason       = $null
+                Groups       = $groupNames
                 OriginalSize = $originalSize
                 FinalSize    = $originalSize
                 BytesSaved   = 0
@@ -127,6 +135,7 @@ function Invoke-FoPluginChain {
             Path         = $Path
             Status       = 'Optimized'
             Reason       = $null
+            Groups       = $groupNames
             OriginalSize = $originalSize
             FinalSize    = $finalSize
             BytesSaved   = ($originalSize - $finalSize)

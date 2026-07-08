@@ -13,6 +13,9 @@ Initialize-FoConfig -Scope Global
 # Optimize files (default: TempMove — original backed up under %TEMP%\FileOptimizer\backups)
 .\Scripts\Optimize-File.ps1 .\images\*.png
 
+# Quoted wildcards also work when calling the cmdlet directly
+Optimize-FoFile -Path '.\images\*.png'
+
 # Preview only
 .\Scripts\Optimize-File.ps1 .\images\*.png -WhatIf
 

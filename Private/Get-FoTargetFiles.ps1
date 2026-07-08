@@ -1,3 +1,15 @@
+function Test-FoPathHasWildcard {
+    param(
+        [string]$Path
+    )
+
+    if ([string]::IsNullOrEmpty($Path)) { return $false }
+    foreach ($ch in $Path.ToCharArray()) {
+        if ($ch -eq '*' -or $ch -eq '?' -or $ch -eq '[') { return $true }
+    }
+    return $false
+}
+
 function Get-FoTargetFiles {
     param(
         [string[]]$Path,
@@ -8,6 +20,18 @@ function Get-FoTargetFiles {
     foreach ($p in $Path) {
         if (-not $p) { continue }
         $resolved = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($p)
+
+        if (Test-FoPathHasWildcard -Path $resolved) {
+            $matched = @(Get-ChildItem -Path $resolved -File -ErrorAction SilentlyContinue)
+            if ($matched.Count -eq 0) {
+                Write-Warning "No files matched: $p"
+            }
+            else {
+                foreach ($item in $matched) { $files.Add($item.FullName) }
+            }
+            continue
+        }
+
         if (Test-Path -LiteralPath $resolved -PathType Container) {
             $params = @{ LiteralPath = $resolved; File = $true; ErrorAction = 'SilentlyContinue' }
             if ($Recurse) { $params.Recurse = $true }

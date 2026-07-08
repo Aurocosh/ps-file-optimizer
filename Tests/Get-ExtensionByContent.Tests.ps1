@@ -51,6 +51,12 @@ Describe 'Get-ExtensionByContent' -Tag Unit {
         Get-ExtensionByContent -Path $path -Extension '.bin' | Should -Be '.sqlite'
         Get-FoPipelineGroupsForFile -Path $path | Should -Contain 'SQLite'
     }
+
+    It 'Uses filename extension for multi-group routing when content is inconclusive' {
+        $path = Join-Path $TestDrive 'multi.db'
+        Set-Content -LiteralPath $path -Value 'placeholder' -NoNewline
+        Get-FoPipelineGroupsForFile -Path $path | Should -Be @('OLE', 'SQLite')
+    }
 }
 
 Describe 'Format-FoProcessArgument' -Tag Unit {
