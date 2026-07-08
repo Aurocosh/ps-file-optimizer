@@ -6,7 +6,8 @@ Describe 'Image optimization smoke' -Tag ImageIntegration, Smoke -Skip:(-not (Te
     BeforeAll {
         $script:PluginPath = Get-FoTestPluginPath
         $script:Settings = Get-FoImageTestProfile -Name 'LosslessDefault' -PluginPath $script:PluginPath
-        $script:WorkDir = Join-Path $TestDrive 'image-smoke'
+        $workRoot = if ($env:FO_TEST_ARTIFACT_DIR) { $env:FO_TEST_ARTIFACT_DIR } else { $TestDrive }
+        $script:WorkDir = Join-Path $workRoot 'image-smoke'
         New-Item -ItemType Directory -Path $script:WorkDir -Force | Out-Null
     }
 

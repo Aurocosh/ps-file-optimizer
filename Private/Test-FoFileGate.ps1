@@ -65,7 +65,37 @@ function Test-FoIsAPNG {
 
 function Test-FoIsPNG9Patch {
     param([string]$Path)
-    return $Path -like '*.9.png'
+
+    if ($Path -like '*.9.png') { return $true }
+
+    try {
+        $fs = [System.IO.File]::OpenRead($Path)
+        try {
+            $br = New-Object System.IO.BinaryReader($fs)
+            $sig = $br.ReadBytes(8)
+            if ($sig.Length -lt 8) { return $false }
+            $pngSig = [byte[]](0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+            for ($i = 0; $i -lt 8; $i++) {
+                if ($sig[$i] -ne $pngSig[$i]) { return $false }
+            }
+
+            while ($fs.Position -lt $fs.Length) {
+                if (($fs.Length - $fs.Position) -lt 8) { return $false }
+                $lenBytes = $br.ReadBytes(4)
+                $length = ([uint32]$lenBytes[0] -shl 24) -bor ([uint32]$lenBytes[1] -shl 16) -bor ([uint32]$lenBytes[2] -shl 8) -bor [uint32]$lenBytes[3]
+                $type = [System.Text.Encoding]::ASCII.GetString($br.ReadBytes(4))
+                if ($type -eq 'npTc' -or $type -eq 'npLb') {
+                    return $true
+                }
+                $skip = [int64]$length + 4
+                if ($skip -lt 0 -or ($fs.Position + $skip) -gt $fs.Length) { return $false }
+                if ($skip -gt 0) { $fs.Position += $skip }
+            }
+            return $false
+        }
+        finally { $fs.Dispose() }
+    }
+    catch { return $false }
 }
 
 function Get-FoFileHeaderBytes {

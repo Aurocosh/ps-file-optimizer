@@ -31,6 +31,7 @@ Each `*.Tests.ps1` imports the **FoTestSupport** module in a `BeforeDiscovery` b
 | `FO_DSSIM_BUNDLE_URL` | Override default DSSIM zip download URL (compare tool for PNG tests). |
 | `FO_DSSIM_BUNDLE_SHA256` | Expected SHA256 when using `FO_DSSIM_BUNDLE_URL`. |
 | `FO_COMPARE_ALLOW_MISSING_DSSIM` | Set to `1` to allow PNG pixel compare without dssim (ImageMagick AE fallback). |
+| `FO_TEST_ARTIFACT_DIR` | When set (CI image-smoke), image tests write compare failure artifacts here for upload. |
 
 Example with plugins:
 
@@ -76,7 +77,7 @@ Recommended invocations:
 | `image-smoke` | `windows-latest` | push / PR to `main` or `master` | Restore plugin cache (`actions/cache` on `FoPlugins64` + dssim); install bundle on miss; `FO_TEST_PLUGIN_PATH` → `Invoke-FoTests.ps1 -Tag Smoke` |
 | `integration-downloads` | `windows-latest` | push to `main` or `master` only | `FO_RUN_INSTALL_INTEGRATION=1`, `FO_RUN_CORPUS_INTEGRATION=1`, `FO_PLUGIN_BUNDLE_CACHE_DIR` → `Invoke-FoTests.ps1 -Tag Integration` (x64 + x86 plugin install) |
 
-All jobs use `shell: pwsh` (PowerShell 7). The `image-smoke` and `integration-downloads` jobs cache downloaded bundle archives under `FO_PLUGIN_BUNDLE_CACHE_DIR` (see workflow SHA256 comment keys in `.github/workflows/pester.yml`).
+All jobs use `shell: pwsh` (PowerShell 7). The `image-smoke` and `integration-downloads` jobs cache downloaded bundle archives under `FO_PLUGIN_BUNDLE_CACHE_DIR` (see workflow SHA256 comment keys in `.github/workflows/pester.yml`). On `image-smoke` failure, compare artifacts under `FO_TEST_ARTIFACT_DIR` are uploaded via `actions/upload-artifact`.
 
 ## Layout
 

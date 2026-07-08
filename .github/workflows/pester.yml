@@ -53,8 +53,18 @@ jobs:
 
       - name: Image smoke tests
         shell: pwsh
+        env:
+          FO_TEST_ARTIFACT_DIR: ${{ runner.temp }}/FoTestArtifacts
         run: |
           ./Scripts/Invoke-FoTests.ps1 -Tag Smoke
+
+      - name: Upload smoke failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-smoke-failures-${{ github.run_id }}
+          path: ${{ runner.temp }}/FoTestArtifacts
+          if-no-files-found: ignore
 
   integration-downloads:
     runs-on: windows-latest
