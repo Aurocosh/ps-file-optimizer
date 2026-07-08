@@ -730,6 +730,46 @@ Describe 'Get-FoRequiredPluginExecutables' -Tag Unit {
             @($declared | Sort-Object) | Should -Be @($x64 | Sort-Object)
         }
     }
+
+    It 'Warns when pipeline inventory enumeration fails' {
+        InModuleScope FileOptimizer {
+            $script:inventoryWarn = $null
+            Mock Write-Warning { param($Message) $script:inventoryWarn = $Message }
+
+            function script:Get-FoInventoryTestThrowPipeline {
+                param([hashtable]$Context)
+                throw 'inventory-test-failure'
+            }
+
+            try {
+                Get-FoPipelineDeclaredExecutables | Out-Null
+                $script:inventoryWarn | Should -Match 'Get-FoInventoryTestThrowPipeline'
+                $script:inventoryWarn | Should -Match 'inventory-test-failure'
+            }
+            finally {
+                Remove-Item -Path Function:\Get-FoInventoryTestThrowPipeline -ErrorAction SilentlyContinue
+            }
+        }
+    }
+}
+
+Describe 'Get-FoNativeHandlerRegistry' -Tag Unit {
+    It 'Maps handler steps to registry executables' {
+        InModuleScope FileOptimizer {
+            $registry = Get-FoNativeHandlerRegistry
+            foreach ($name in $registry.Keys) {
+                $step = [PSCustomObject]@{ Handler = $name }
+                @(Get-FoStepRequiredExecutables -Step $step) | Should -Be @($registry[$name])
+            }
+        }
+    }
+
+    It 'Returns null for unknown handlers' {
+        InModuleScope FileOptimizer {
+            Invoke-FoNativeHandler -HandlerName 'Nonexistent' -InputPath 'C:\in' -OutputPath 'C:\out' |
+                Should -Be $null
+        }
+    }
 }
 
 Describe 'Install-FoPlugins planning' -Tag Unit {

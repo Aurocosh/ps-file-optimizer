@@ -112,22 +112,14 @@ function Invoke-FoPlugin {
         if ($null -ne $Settings.PluginTimeoutSeconds) {
             $handlerTimeout = [Math]::Max(0, [int]$Settings.PluginTimeoutSeconds)
         }
-        $handlerMap = @{
-            DefluffPipe    = { Invoke-FoDefluffPipe -InputPath $InputFile -OutputPath $tmpOut -DefluffExe (Resolve-FoPluginExecutable -Name 'defluff.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path -TimeoutSeconds $handlerTimeout }
-            GzipRecompress = {
-                Invoke-FoGzipRecompress -InputPath $InputFile -OutputPath $tmpOut `
-                    -GzipExe (Resolve-FoPluginExecutable -Name 'gzip.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path `
-                    -TimeoutSeconds $handlerTimeout
-            }
-            JsMinPipe      = { Invoke-FoJsMinPipe -InputPath $InputFile -OutputPath $tmpOut -JsMinExe (Resolve-FoPluginExecutable -Name 'jsmin.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path -TimeoutSeconds $handlerTimeout }
-            SqliteOptimize = { Invoke-FoSqliteOptimize -InputPath $InputFile -OutputPath $tmpOut -SqliteExe (Resolve-FoPluginExecutable -Name 'sqlite3.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path -TimeoutSeconds $handlerTimeout }
-        }
-        if ($handlerMap.ContainsKey($Step.Handler)) {
-            $exitCode = & $handlerMap[$Step.Handler]
-        }
-        else {
+        $handlerExit = Invoke-FoNativeHandler -HandlerName $Step.Handler -InputPath $InputFile -OutputPath $tmpOut `
+            -SearchMode $SearchMode -PluginPath $PluginPath -TimeoutSeconds $handlerTimeout
+        if ($null -eq $handlerExit) {
             Write-Warning "Unknown handler '$($Step.Handler)' in step '$($Step.Name)'; treating as failure."
             $exitCode = 1
+        }
+        else {
+            $exitCode = $handlerExit
         }
 
         if ($exitCode -eq -1) {

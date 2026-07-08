@@ -128,6 +128,7 @@ function Get-FoPipelineDeclaredExecutables {
                 $steps = @(& $cmd.Name $ctx)
             }
             catch {
+                Write-Warning "Pipeline inventory skipped $($cmd.Name): $($_.Exception.Message)"
                 Write-Verbose "Pipeline inventory skipped $($cmd.Name) for variant: $($_.Exception.Message)"
                 continue
             }

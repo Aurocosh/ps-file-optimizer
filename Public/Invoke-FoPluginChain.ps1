@@ -7,6 +7,11 @@ function Invoke-FoPluginChain {
     Builds an execution plan, runs each active step in order, applies output mode
     when the result is smaller, and returns a result object with status and sizes.
 
+    When Settings.SkipMissingTools is true, the entire file is skipped if the
+    execution plan reports any missing plugin executable, even though per-step
+    execution would skip individual missing tools when SkipMissingTools is false
+    (FileOptimizer parity).
+
     .PARAMETER Path
     File to optimize.
 

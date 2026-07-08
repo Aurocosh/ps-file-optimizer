@@ -30,6 +30,13 @@ LONG DESCRIPTION
       Use -ContinueOnError on Optimize-FoFile to finish a multi-file batch when
       individual files fail. Without it, the first error stops the batch.
 
+    MISSING TOOLS
+
+      SkipMissingTools (default false) controls whole-file behavior when the
+      execution plan lists missing plugin executables. When true, the file is
+      skipped entirely. When false, optimization continues and each step skips
+      individually when its tool is missing (FileOptimizer parity).
+
     OUTPUT MODES
 
       TempMove       Default. Optimized file at original path; original moved to TempBackupPath.
