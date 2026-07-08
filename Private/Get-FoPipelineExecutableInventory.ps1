@@ -94,6 +94,14 @@ function Get-FoPipelineInventoryFlagVariants {
     [CmdletBinding()]
     param()
 
+    # Inventory must exercise every context flag path that conditionally adds
+    # plugin steps. Keep this list in sync when adding pipelines with new
+    # `if ($Context.Flag)` step additions:
+    # - default: normal/lossy-enabled settings for most pipelines
+    # - IsAPNG: PNG APNG-only `apngopt.exe`
+    # - IsPNG9Patch: PNG 9-patch-safe branch coverage
+    # - IsPDFLayered: layered-PDF gates and warning-safe enumeration
+    # - IsJPEGCMYK: JPEG CMYK branch coverage
     return @(
         @{}
         @{ IsAPNG = $true }

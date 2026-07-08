@@ -759,7 +759,24 @@ Describe 'Get-FoNativeHandlerRegistry' -Tag Unit {
             $registry = Get-FoNativeHandlerRegistry
             foreach ($name in $registry.Keys) {
                 $step = [PSCustomObject]@{ Handler = $name }
-                @(Get-FoStepRequiredExecutables -Step $step) | Should -Be @($registry[$name])
+                @(Get-FoStepRequiredExecutables -Step $step) | Should -Be @($registry[$name].Executables)
+            }
+        }
+    }
+
+    It 'Dispatches every registered handler' {
+        InModuleScope FileOptimizer {
+            $registry = Get-FoNativeHandlerRegistry
+
+            Mock Resolve-FoPluginExecutable { [PSCustomObject]@{ Found = $true; Path = 'C:\tools\mock.exe' } }
+            Mock Invoke-FoDefluffPipe { 0 }
+            Mock Invoke-FoGzipRecompress { 0 }
+            Mock Invoke-FoJsMinPipe { 0 }
+            Mock Invoke-FoSqliteOptimize { 0 }
+
+            foreach ($name in $registry.Keys) {
+                Invoke-FoNativeHandler -HandlerName $name -InputPath 'C:\in' -OutputPath 'C:\out' -SearchMode PortableOnly -PluginPath 'C:\tools' |
+                    Should -Be 0
             }
         }
     }
