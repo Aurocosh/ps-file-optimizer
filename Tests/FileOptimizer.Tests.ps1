@@ -243,6 +243,34 @@ Describe 'Optimize-FoFile -ContinueOnError' -Tag Unit {
         }
     }
 
+    It 'Continues batch when -ContinueOnError is set even if SkipMissingTools is false' {
+        $good = Join-Path $TestDrive 'continue-skip-good.png'
+        $bad = Join-Path $TestDrive 'continue-skip-bad.png'
+        New-FoTestPng -Path $good
+        New-FoTestPng -Path $bad
+
+        InModuleScope -ArgumentList $good, $bad FileOptimizer {
+            param($GoodPath, $BadPath)
+
+            Mock Invoke-FoPluginChain {
+                if ($Path -eq $BadPath) { throw 'simulated optimize failure' }
+                return [PSCustomObject]@{
+                    Path         = $Path
+                    Status       = 'Optimized'
+                    OriginalSize = 100
+                    FinalSize    = 50
+                    PercentSaved = 50
+                    OutputPath   = $Path
+                }
+            }
+
+            $results = @(Optimize-FoFile -Path @($BadPath, $GoodPath) -ContinueOnError -SkipMissingTools:$false -Confirm:$false)
+            $results.Count | Should -Be 2
+            @($results | Where-Object { $_.Status -eq 'Error' }).Count | Should -Be 1
+            @($results | Where-Object { $_.Status -eq 'Optimized' }).Count | Should -Be 1
+        }
+    }
+
     It 'Stops batch on error by default' {
         $good = Join-Path $TestDrive 'stop-good.png'
         $bad = Join-Path $TestDrive 'stop-bad.png'

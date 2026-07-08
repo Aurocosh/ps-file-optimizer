@@ -130,7 +130,7 @@ function Optimize-FoFile {
                         Write-Error $_
                     }
                     $script:FoBatchResults.Add([PSCustomObject]@{ Path = $file; Status = 'Error'; Reason = $_.Exception.Message })
-                    if (-not $ContinueOnError -and -not $settings.SkipMissingTools) { throw }
+                    if (-not $ContinueOnError) { throw }
                 }
             }
             else {

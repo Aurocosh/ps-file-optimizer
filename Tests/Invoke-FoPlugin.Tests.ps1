@@ -113,6 +113,31 @@ Describe 'Invoke-FoPlugin exit-code ranges' -Tag Unit {
     }
 }
 
+Describe 'Invoke-FoPlugin handler map' -Tag Unit {
+    It 'Warns and fails when handler name is unknown' {
+        $workDir = Join-Path $TestDrive 'unknown-handler'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $workFile = Join-Path $workDir 'test.dat'
+        Set-Content -LiteralPath $workFile -Value ('A' * 64) -NoNewline
+
+        $step = [PSCustomObject]@{
+            Name = 'bad-handler'
+            Handler = 'NonexistentHandler'
+            Arguments = $null
+            Mode = 'TempOutput'
+            Gate = $null
+        }
+        $settings = Get-FoConfig
+        $warnings = @()
+
+        $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly -WarningVariable warnings -WarningAction Continue
+
+        ($warnings | Out-String) | Should -Match "Unknown handler 'NonexistentHandler'"
+        $result.ExitCode | Should -Be 1
+        $result.Accepted | Should -Be $false
+    }
+}
+
 Describe 'Invoke-FoPlugin timeouts' -Tag Unit {
     It 'Fails quickly when a plugin step exceeds PluginTimeoutSeconds' {
         $workDir = Join-Path $TestDrive 'plugin-timeout'

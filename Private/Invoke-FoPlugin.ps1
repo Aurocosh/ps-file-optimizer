@@ -83,6 +83,7 @@ function Invoke-FoPlugin {
             $exitCode = & $handlerMap[$Step.Handler]
         }
         else {
+            Write-Warning "Unknown handler '$($Step.Handler)' in step '$($Step.Name)'; treating as failure."
             $exitCode = 1
         }
     }
