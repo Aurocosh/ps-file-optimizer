@@ -189,7 +189,8 @@ Describe 'Invoke-FoOutputMode TempMove backup paths' -Tag Unit {
             $s.OutputMode = 'TempMove'
             $s.TempBackupPath = $bakRoot
             $r = Invoke-FoOutputMode -SourceFile $opt -TargetPath $orig -Settings $s
-            $r.BackupPath | Should -BeLike ((Join-Path ([System.IO.Path]::GetFullPath($bakRoot)) '*\src\same.txt'))
+            $expectedRoot = (Get-Item -LiteralPath $bakRoot).FullName
+            $r.BackupPath | Should -BeLike ((Join-Path $expectedRoot '*\src\same.txt'))
             (Test-Path -LiteralPath $r.BackupPath) | Should -Be $true
         }
         finally {

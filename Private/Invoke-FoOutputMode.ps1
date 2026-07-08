@@ -1,3 +1,23 @@
+function Get-FoCanonicalPath {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $Path }
+
+    try {
+        if (Test-Path -LiteralPath $Path -ErrorAction Stop) {
+            return (Get-Item -LiteralPath $Path -ErrorAction Stop).FullName
+        }
+    }
+    catch { }
+
+    $parent = Split-Path -Parent $Path
+    if ($parent -and (Test-Path -LiteralPath $parent)) {
+        return Join-Path (Get-Item -LiteralPath $parent).FullName (Split-Path -Leaf $Path)
+    }
+
+    return [System.IO.Path]::GetFullPath($Path)
+}
+
 function Get-FoBackupRelativePath {
     param(
         [Parameter(Mandatory)]
@@ -5,11 +25,11 @@ function Get-FoBackupRelativePath {
         [string]$BaseDirectory
     )
 
-    $target = [System.IO.Path]::GetFullPath($TargetPath)
+    $target = Get-FoCanonicalPath $TargetPath
     if (-not $BaseDirectory) {
         $BaseDirectory = [System.IO.Path]::GetPathRoot($target)
     }
-    $prefix = [System.IO.Path]::GetFullPath($BaseDirectory)
+    $prefix = Get-FoCanonicalPath $BaseDirectory
     if (-not $prefix.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
         $prefix += [System.IO.Path]::DirectorySeparatorChar
     }
@@ -114,7 +134,7 @@ function Invoke-FoOutputMode {
     )
 
     $mode = $Settings.OutputMode
-    $target = [System.IO.Path]::GetFullPath($TargetPath)
+    $target = Get-FoCanonicalPath $TargetPath
     $dir = Split-Path -Parent $target
     $name = [System.IO.Path]::GetFileName($target)
 
@@ -145,8 +165,9 @@ function Invoke-FoOutputMode {
         }
         'BackupMove' {
             if (-not $Settings.BackupPath) { throw 'BackupMove requires BackupPath.' }
+            $root = Get-FoCanonicalPath $Settings.BackupPath
             $rel = Get-FoBackupRelativePath -TargetPath $target
-            $bakDest = Join-Path $Settings.BackupPath $rel
+            $bakDest = Join-Path $root $rel
             Invoke-FoPromoteOptimizedFile -SourceFile $SourceFile -TargetPath $target -BackupDestination $bakDest
             $result.BackupPath = $bakDest
             $result.OriginalPath = $bakDest
@@ -154,6 +175,7 @@ function Invoke-FoOutputMode {
         'TempMove' {
             $root = $Settings.TempBackupPath
             if (-not $root) { $root = Join-Path $env:TEMP 'FileOptimizer\backups' }
+            $root = Get-FoCanonicalPath $root
             $rel = Get-FoBackupRelativePath -TargetPath $target
             $bakDest = Join-Path $root $rel
             Invoke-FoPromoteOptimizedFile -SourceFile $SourceFile -TargetPath $target -BackupDestination $bakDest
