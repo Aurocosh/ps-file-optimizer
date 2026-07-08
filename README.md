@@ -58,7 +58,7 @@ Related pipelines automatically skip missing steps when these tools are unavaila
 
 The module defines **39 format groups** under `Pipelines/`. Most map 1:1 from file extension via `Data/ExtensionMap.psd1`.
 
-**MISC catch-all:** Unrecognized image-like extensions route to the `MISC` pipeline, which runs ImageMagick `convert` optimization. This can alter pixels or metadata in ways that are hard to predict. Leave `MiscDisable = false` only when you explicitly want that behavior; set `MiscDisable = true` in config (or pass `-MiscDisable`) to skip the MISC group entirely.
+**MISC catch-all:** Unrecognized image-like extensions route to the `MISC` pipeline, which runs ImageMagick `convert` optimization. This can alter pixels or metadata in ways that are hard to predict. Leave `MiscDisable = false` only when you explicitly want that behavior; set `MiscDisable = true` in `config.json` (or pass via a local config file with `-ConfigPath`) to skip the MISC group entirely.
 
 ## Layout
 

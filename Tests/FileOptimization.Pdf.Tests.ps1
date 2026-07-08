@@ -56,4 +56,17 @@ Describe 'PDF pipeline behavior' -Tag Unit {
 
         @(Get-FoActiveSteps -Steps (Get-FoPipeline -GroupName PDF -Context $ctx) -Context $ctx).Count | Should -BeGreaterThan 0
     }
+
+    It 'Allows layered PDF steps when PDFSkipLayered is enabled and PDFProfile uses module default' {
+        $settings = Get-FoModuleDefaults
+        $settings.PDFSkipLayered = $true
+        $ctx = @{
+            Settings     = $settings
+            IsPDFLayered = $true
+            Extension    = '.pdf'
+        }
+
+        $settings.PDFProfile | Should -Be 'none'
+        @(Get-FoActiveSteps -Steps (Get-FoPipeline -GroupName PDF -Context $ctx) -Context $ctx).Count | Should -BeGreaterThan 0
+    }
 }

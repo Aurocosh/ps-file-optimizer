@@ -13,6 +13,10 @@ Describe 'Config template' -Tag Unit {
 
         $templateKeys | Should -Be $defaultKeys
     }
+
+    It 'Defaults PDFProfile to none for FileOptimizer parity' {
+        (Get-FoModuleDefaults).PDFProfile | Should -Be 'none'
+    }
 }
 
 Describe 'Module public API' -Tag Unit {

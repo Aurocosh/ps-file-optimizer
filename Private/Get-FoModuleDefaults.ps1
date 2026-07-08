@@ -38,7 +38,13 @@ function Get-FoModuleDefaults {
         XMLEnableLeanify  = $false
         LUAEnableLeanify  = $false
         MiscDisable       = $false
+        MiscCopyMetadata  = $false
         PDFSkipLayered    = $false
+        PDFProfile        = 'none'
+        TIFFCopyMetadata  = $false
+        WAVCopyMetadata   = $false
+        WAVStripSilence   = $false
+        ZIPRecurse        = $false
         LeanifyIterations = -1
         PNGWolfIterations = -1
         PluginTimeoutSeconds = 1800
