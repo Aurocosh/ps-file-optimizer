@@ -136,3 +136,49 @@ Describe 'Invoke-FoPluginChain multi-group routing' -Tag Unit {
         @($result.Groups) | Should -Be @('OLE', 'SQLite')
     }
 }
+
+Describe 'Media metadata and lossy config toggles' -Tag Unit {
+    It 'MP4 pipeline strips metadata by default' {
+        $path = Join-Path $TestDrive 'sample.mp4'
+        Set-Content -LiteralPath $path -Value 'placeholder' -NoNewline
+        $settings = Get-FoConfig
+        $ctx = New-FoFileContext -InputFile $path -Settings $settings
+        $steps = @(Get-FoPipeline -GroupName MP4 -Context $ctx)
+
+        $steps[0].Arguments | Should -Match '-map_metadata -1'
+    }
+
+    It 'MP4 pipeline keeps metadata when MP4CopyMetadata is true' {
+        $path = Join-Path $TestDrive 'sample.mp4'
+        Set-Content -LiteralPath $path -Value 'placeholder' -NoNewline
+        $settings = Get-FoConfig
+        $settings.MP4CopyMetadata = $true
+        $ctx = New-FoFileContext -InputFile $path -Settings $settings
+        $steps = @(Get-FoPipeline -GroupName MP4 -Context $ctx)
+
+        $steps[0].Arguments | Should -Not -Match '-map_metadata -1'
+    }
+
+    It 'WebP pipeline defaults to lossless mode' {
+        $path = Join-Path $TestDrive 'sample.webp'
+        Set-Content -LiteralPath $path -Value 'placeholder' -NoNewline
+        $settings = Get-FoConfig
+        $ctx = New-FoFileContext -InputFile $path -Settings $settings
+        $steps = @(Get-FoPipeline -GroupName WebP -Context $ctx)
+
+        $steps[0].Arguments | Should -Match '-lossless'
+        $steps[1].Arguments | Should -Match '-lossless'
+    }
+
+    It 'WebP pipeline enables lossy mode when WEBPAllowLossy is true' {
+        $path = Join-Path $TestDrive 'sample.webp'
+        Set-Content -LiteralPath $path -Value 'placeholder' -NoNewline
+        $settings = Get-FoConfig
+        $settings.WEBPAllowLossy = $true
+        $ctx = New-FoFileContext -InputFile $path -Settings $settings
+        $steps = @(Get-FoPipeline -GroupName WebP -Context $ctx)
+
+        $steps[0].Arguments | Should -Match '-quality=95'
+        $steps[1].Arguments | Should -Not -Match '-lossless'
+    }
+}

@@ -28,6 +28,7 @@ function Get-FoModuleDefaults {
         JPEGAllowLossy    = $false
         GIFCopyMetadata   = $false
         GIFAllowLossy     = $false
+        WEBPAllowLossy    = $false
         GZCopyMetadata    = $false
         ZIPCopyMetadata   = $false
         EXEEnableUPX      = $false
@@ -42,6 +43,7 @@ function Get-FoModuleDefaults {
         PDFSkipLayered    = $false
         PDFProfile        = 'none'
         TIFFCopyMetadata  = $false
+        MP4CopyMetadata   = $false
         WAVCopyMetadata   = $false
         WAVStripSilence   = $false
         ZIPRecurse        = $false
