@@ -17,6 +17,17 @@ Describe 'Config template' -Tag Unit {
     It 'Defaults PDFProfile to none for FileOptimizer parity' {
         (Get-FoModuleDefaults).PDFProfile | Should -Be 'none'
     }
+
+    It 'Accepts default output suffix settings' {
+        $defaults = Get-FoModuleDefaults
+        { Test-FoSafeSuffix -Value $defaults.BackupSuffix -SettingName 'BackupSuffix' } | Should -Not -Throw
+        { Test-FoSafeSuffix -Value $defaults.OptimizedSuffix -SettingName 'OptimizedSuffix' } | Should -Not -Throw
+    }
+
+    It 'Rejects unsafe OptimizedSuffix values during settings merge' {
+        { Merge-FoSettings -BoundParameters @{ OptimizedSuffix = '\..\escape' } } |
+            Should -Throw "*OptimizedSuffix*"
+    }
 }
 
 Describe 'Module public API' -Tag Unit {

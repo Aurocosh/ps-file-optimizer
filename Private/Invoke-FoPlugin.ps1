@@ -75,7 +75,15 @@ function Invoke-FoPlugin {
     if ($Step.Handler) {
         $handlerMap = @{
             DefluffPipe    = { Invoke-FoDefluffPipe -InputPath $InputFile -OutputPath $tmpOut -DefluffExe (Resolve-FoPluginExecutable -Name 'defluff.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path }
-            GzipRecompress = { Invoke-FoGzipRecompress -InputPath $InputFile -OutputPath $tmpOut -GzipExe (Resolve-FoPluginExecutable -Name 'gzip.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path }
+            GzipRecompress = {
+                $gzipTimeout = 0
+                if ($null -ne $Settings.PluginTimeoutSeconds) {
+                    $gzipTimeout = [Math]::Max(0, [int]$Settings.PluginTimeoutSeconds)
+                }
+                Invoke-FoGzipRecompress -InputPath $InputFile -OutputPath $tmpOut `
+                    -GzipExe (Resolve-FoPluginExecutable -Name 'gzip.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path `
+                    -TimeoutSeconds $gzipTimeout
+            }
             JsMinPipe      = { Invoke-FoJsMinPipe -InputPath $InputFile -OutputPath $tmpOut -JsMinExe (Resolve-FoPluginExecutable -Name 'jsmin.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path }
             SqliteOptimize = { Invoke-FoSqliteOptimize -InputPath $InputFile -OutputPath $tmpOut -SqliteExe (Resolve-FoPluginExecutable -Name 'sqlite3.exe' -SearchMode $SearchMode -PluginPath $PluginPath).Path }
         }

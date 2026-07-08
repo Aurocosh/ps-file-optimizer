@@ -109,3 +109,30 @@ Describe 'Invoke-FoGzipRecompress' -Tag Unit -Skip:(-not (
         (Test-Path -LiteralPath $outputPath) | Should -Be $true
     }
 }
+
+Describe 'Invoke-FoGzipRecompress timeout' -Tag Unit {
+    It 'Fails quickly when gzip recompress exceeds TimeoutSeconds' {
+        $workDir = Join-Path $TestDrive 'gzip-timeout'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $inputPath = Join-Path $workDir 'payload.gz'
+        $outputPath = Join-Path $workDir 'payload.out.gz'
+        $payload = [byte[]](0x10, 0x20, 0x30)
+
+        $ms = New-Object System.IO.MemoryStream
+        $gz = New-Object System.IO.Compression.GZipStream($ms, [System.IO.Compression.CompressionMode]::Compress)
+        $gz.Write($payload, 0, $payload.Length)
+        $gz.Dispose()
+        [System.IO.File]::WriteAllBytes($inputPath, $ms.ToArray())
+        $ms.Dispose()
+
+        $slowGzip = Join-Path $workDir 'slow-gzip.cmd'
+        '@echo off' + "`r`n" + 'ping 127.0.0.1 -n 60 >nul' + "`r`n" + 'exit /b 0' | Set-Content -LiteralPath $slowGzip -Encoding Ascii
+
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        $exitCode = Invoke-FoGzipRecompress -InputPath $inputPath -OutputPath $outputPath -GzipExe $slowGzip -TimeoutSeconds 1
+        $sw.Stop()
+
+        $exitCode | Should -Be -1
+        $sw.Elapsed.TotalSeconds | Should -BeLessThan 5
+    }
+}

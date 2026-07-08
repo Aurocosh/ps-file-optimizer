@@ -280,6 +280,7 @@ $script:FoTestSupportFunctions = @(
     'Format-FoFileSize'
     'Format-FoProcessArgument'
     'Merge-FoSettings'
+    'Test-FoSafeSuffix'
     'Invoke-FoOutputMode'
     'Add-FoHistoryEntry'
     'New-FoFileContext'

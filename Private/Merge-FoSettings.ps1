@@ -1,3 +1,21 @@
+function Test-FoSafeSuffix {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [string]$Value,
+        [Parameter(Mandatory)]
+        [string]$SettingName
+    )
+
+    if ([string]::IsNullOrEmpty($Value)) { return }
+    if ($Value -match '[\\/:]') {
+        throw [ArgumentException]::new("Setting '$SettingName' must not contain path separators.")
+    }
+    if ($Value -match '\.\.') {
+        throw [ArgumentException]::new("Setting '$SettingName' must not contain '..' segments.")
+    }
+}
+
 function Merge-FoSettings {
     [CmdletBinding()]
     param(
@@ -48,6 +66,9 @@ function Merge-FoSettings {
     if ($null -eq $settings.ReportLogLevel) {
         $settings.ReportLogLevel = $settings.LogLevel
     }
+
+    Test-FoSafeSuffix -Value $settings.BackupSuffix -SettingName 'BackupSuffix'
+    Test-FoSafeSuffix -Value $settings.OptimizedSuffix -SettingName 'OptimizedSuffix'
 
     return $settings
 }

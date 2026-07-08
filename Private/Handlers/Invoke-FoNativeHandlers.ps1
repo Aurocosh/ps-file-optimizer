@@ -1,3 +1,102 @@
+function Wait-FoHandlerProcessExit {
+    param(
+        [System.Diagnostics.Process]$Process,
+        [int]$TimeoutSeconds
+    )
+
+    if ($TimeoutSeconds -gt 0) {
+        $timeoutMs = $TimeoutSeconds * 1000
+        if (-not $Process.WaitForExit($timeoutMs)) {
+            try { $Process.Kill() } catch { }
+            try { $Process.WaitForExit(5000) } catch { }
+            return $false
+        }
+        return $true
+    }
+
+    $Process.WaitForExit()
+    return $true
+}
+
+function Start-FoAsyncStreamCopy {
+    param(
+        [System.IO.Stream]$From,
+        [System.IO.Stream]$To
+    )
+
+    $ps = [powershell]::Create()
+    [void]$ps.AddScript({
+        param([System.IO.Stream]$FromStream, [System.IO.Stream]$ToStream)
+        $FromStream.CopyTo($ToStream)
+    }).AddArgument($From).AddArgument($To)
+    $handle = $ps.BeginInvoke()
+    return [PSCustomObject]@{
+        PowerShell = $ps
+        Handle     = $handle
+    }
+}
+
+function Wait-FoAsyncStreamCopy {
+    param(
+        $AsyncCopy,
+        [int]$TimeoutSeconds
+    )
+
+    if (-not $AsyncCopy) { return $true }
+
+    if ($TimeoutSeconds -le 0) {
+        $AsyncCopy.PowerShell.EndInvoke($AsyncCopy.Handle)
+        $AsyncCopy.PowerShell.Dispose()
+        return $true
+    }
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    while (-not $AsyncCopy.Handle.IsCompleted) {
+        if ($sw.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
+            try { $AsyncCopy.PowerShell.Stop() } catch { }
+            try { $AsyncCopy.PowerShell.Dispose() } catch { }
+            return $false
+        }
+        Start-Sleep -Milliseconds 50
+    }
+
+    $AsyncCopy.PowerShell.EndInvoke($AsyncCopy.Handle)
+    $AsyncCopy.PowerShell.Dispose()
+    return $true
+}
+
+function Wait-FoGzipHandlerPipeline {
+    param(
+        [System.Diagnostics.Process[]]$Processes,
+        [int]$TimeoutSeconds
+    )
+
+    if ($TimeoutSeconds -le 0) {
+        foreach ($proc in $Processes) {
+            if ($proc -and -not $proc.HasExited) { $proc.WaitForExit() }
+        }
+        return $true
+    }
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ($true) {
+        $pending = $false
+        foreach ($proc in $Processes) {
+            if ($proc -and -not $proc.HasExited) { $pending = $true; break }
+        }
+        if (-not $pending) { return $true }
+        if ((Get-Date) -ge $deadline) {
+            foreach ($proc in $Processes) {
+                if ($proc -and -not $proc.HasExited) {
+                    try { $proc.Kill() } catch { }
+                }
+            }
+            return $false
+        }
+        Start-Sleep -Milliseconds 50
+    }
+}
+
 function Invoke-FoDefluffPipe {
     param(
         [string]$InputPath,
@@ -53,51 +152,101 @@ function Invoke-FoGzipRecompress {
     param(
         [string]$InputPath,
         [string]$OutputPath,
-        [string]$GzipExe
+        [string]$GzipExe,
+        [int]$TimeoutSeconds = 0
     )
 
-    $decomp = New-Object System.Diagnostics.ProcessStartInfo
-    $decomp.FileName = $GzipExe
-    $decomp.Arguments = '-cd ' + (Format-FoProcessArgument $InputPath)
-    $decomp.UseShellExecute = $false
-    $decomp.RedirectStandardOutput = $true
-    $decomp.RedirectStandardError = $true
-    $decomp.CreateNoWindow = $true
-    $dp = [System.Diagnostics.Process]::Start($decomp)
-
-    $comp = New-Object System.Diagnostics.ProcessStartInfo
-    $comp.FileName = $GzipExe
-    $comp.Arguments = "-12 -f"
-    $comp.UseShellExecute = $false
-    $comp.RedirectStandardInput = $true
-    $comp.RedirectStandardOutput = $true
-    $comp.RedirectStandardError = $true
-    $comp.CreateNoWindow = $true
-    $cp = [System.Diagnostics.Process]::Start($comp)
+    $tempRaw = Join-Path ([System.IO.Path]::GetTempPath()) ('fo_gzip_{0}.bin' -f ([guid]::NewGuid().ToString('N')))
+    $dp = $null
+    $cp = $null
 
     try {
-        $dp.StandardOutput.BaseStream.CopyTo($cp.StandardInput.BaseStream)
-        $dp.StandardOutput.Close()
-        $cp.StandardInput.Close()
-        $dp.WaitForExit()
-        $null = $dp.StandardError.ReadToEnd()
-        $outStream = [System.IO.File]::Create($OutputPath)
+        $decomp = New-Object System.Diagnostics.ProcessStartInfo
+        $decomp.FileName = $GzipExe
+        $decomp.Arguments = '-cd ' + (Format-FoProcessArgument $InputPath)
+        $decomp.UseShellExecute = $false
+        $decomp.RedirectStandardOutput = $true
+        $decomp.RedirectStandardError = $true
+        $decomp.CreateNoWindow = $true
+        $dp = [System.Diagnostics.Process]::Start($decomp)
+
+        $rawStream = [System.IO.File]::Create($tempRaw)
         try {
-            $cp.StandardOutput.BaseStream.CopyTo($outStream)
+            if ($TimeoutSeconds -gt 0) {
+                $decompCopy = Start-FoAsyncStreamCopy -From $dp.StandardOutput.BaseStream -To $rawStream
+                if (-not (Wait-FoGzipHandlerPipeline -Processes @($dp) -TimeoutSeconds $TimeoutSeconds)) {
+                    return -1
+                }
+                if (-not (Wait-FoAsyncStreamCopy -AsyncCopy $decompCopy -TimeoutSeconds 5)) {
+                    return -1
+                }
+            }
+            else {
+                $dp.StandardOutput.BaseStream.CopyTo($rawStream)
+                $dp.WaitForExit()
+            }
         }
         finally {
-            $outStream.Dispose()
+            $rawStream.Dispose()
+            $dp.StandardOutput.Close()
         }
-        $null = $cp.StandardError.ReadToEnd()
-        $cp.WaitForExit()
+
+        $null = $dp.StandardError.ReadToEnd()
         if ($dp.ExitCode -ne 0) { return $dp.ExitCode }
+
+        $comp = New-Object System.Diagnostics.ProcessStartInfo
+        $comp.FileName = $GzipExe
+        $comp.Arguments = '-12 -f'
+        $comp.UseShellExecute = $false
+        $comp.RedirectStandardInput = $true
+        $comp.RedirectStandardOutput = $true
+        $comp.RedirectStandardError = $true
+        $comp.CreateNoWindow = $true
+        $cp = [System.Diagnostics.Process]::Start($comp)
+
+        $inStream = [System.IO.File]::OpenRead($tempRaw)
+        $outStream = [System.IO.File]::Create($OutputPath)
+        try {
+            if ($TimeoutSeconds -gt 0) {
+                $stdinCopy = Start-FoAsyncStreamCopy -From $inStream -To $cp.StandardInput.BaseStream
+                if (-not (Wait-FoAsyncStreamCopy -AsyncCopy $stdinCopy -TimeoutSeconds $TimeoutSeconds)) {
+                    return -1
+                }
+                $cp.StandardInput.Close()
+                $stdoutCopy = Start-FoAsyncStreamCopy -From $cp.StandardOutput.BaseStream -To $outStream
+                if (-not (Wait-FoGzipHandlerPipeline -Processes @($cp) -TimeoutSeconds $TimeoutSeconds)) {
+                    return -1
+                }
+                if (-not (Wait-FoAsyncStreamCopy -AsyncCopy $stdoutCopy -TimeoutSeconds 5)) {
+                    return -1
+                }
+            }
+            else {
+                $inStream.CopyTo($cp.StandardInput.BaseStream)
+                $cp.StandardInput.Close()
+                $cp.StandardOutput.BaseStream.CopyTo($outStream)
+                $cp.WaitForExit()
+            }
+        }
+        finally {
+            $inStream.Dispose()
+            $outStream.Dispose()
+            $cp.StandardOutput.Close()
+        }
+
+        $null = $cp.StandardError.ReadToEnd()
         if ($cp.ExitCode -ne 0) { return $cp.ExitCode }
         return 0
     }
     finally {
         foreach ($proc in @($dp, $cp)) {
-            if ($proc -and -not $proc.HasExited) { $proc.Kill() }
+            if ($proc -and -not $proc.HasExited) {
+                try { $proc.Kill() } catch { }
+            }
             if ($proc) { $proc.Dispose() }
+        }
+        if (Test-Path -LiteralPath $tempRaw) {
+            Remove-Item -LiteralPath $tempRaw -Force -ErrorAction SilentlyContinue
         }
     }
 }
