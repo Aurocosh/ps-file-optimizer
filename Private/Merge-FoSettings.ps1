@@ -70,5 +70,9 @@ function Merge-FoSettings {
     Test-FoSafeSuffix -Value $settings.BackupSuffix -SettingName 'BackupSuffix'
     Test-FoSafeSuffix -Value $settings.OptimizedSuffix -SettingName 'OptimizedSuffix'
 
+    if ($null -ne $settings.Level) {
+        $settings.Level = [Math]::Max(0, [Math]::Min(9, [int]$settings.Level))
+    }
+
     return $settings
 }

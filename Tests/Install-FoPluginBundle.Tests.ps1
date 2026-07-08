@@ -40,6 +40,25 @@ Describe 'Get-FoPluginBundleSettings' -Tag Unit {
         $settings.Url | Should -Be 'https://example.test/bundle.zip'
         $settings.Sha256 | Should -BeNullOrEmpty
     }
+
+    It 'Defaults env bundle folder from architecture when folder override is missing' {
+        $prevUrl = $env:FO_PLUGIN_BUNDLE_URL
+        $prevSha = $env:FO_PLUGIN_BUNDLE_SHA256
+        $prevFolder = $env:FO_PLUGIN_BUNDLE_FOLDER
+        try {
+            $env:FO_PLUGIN_BUNDLE_URL = 'https://example.test/bundle.zip'
+            Remove-Item Env:FO_PLUGIN_BUNDLE_SHA256 -ErrorAction SilentlyContinue
+            Remove-Item Env:FO_PLUGIN_BUNDLE_FOLDER -ErrorAction SilentlyContinue
+
+            $settings = Get-FoPluginBundleSettings -Architecture 32 -AllowUnverifiedDownload
+            $settings.Folder | Should -Be 'Plugins32'
+        }
+        finally {
+            if ($prevUrl) { $env:FO_PLUGIN_BUNDLE_URL = $prevUrl } else { Remove-Item Env:FO_PLUGIN_BUNDLE_URL -ErrorAction SilentlyContinue }
+            if ($prevSha) { $env:FO_PLUGIN_BUNDLE_SHA256 = $prevSha } else { Remove-Item Env:FO_PLUGIN_BUNDLE_SHA256 -ErrorAction SilentlyContinue }
+            if ($prevFolder) { $env:FO_PLUGIN_BUNDLE_FOLDER = $prevFolder } else { Remove-Item Env:FO_PLUGIN_BUNDLE_FOLDER -ErrorAction SilentlyContinue }
+        }
+    }
 }
 
 Describe 'Resolve-FoPluginBundleArchitecture' -Tag Unit {

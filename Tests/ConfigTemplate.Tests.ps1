@@ -28,6 +28,11 @@ Describe 'Config template' -Tag Unit {
         { Merge-FoSettings -BoundParameters @{ OptimizedSuffix = '\..\escape' } } |
             Should -Throw "*OptimizedSuffix*"
     }
+
+    It 'Clamps Level to 0-9 during settings merge' {
+        (Merge-FoSettings -BoundParameters @{ Level = 15 }).Level | Should -Be 9
+        (Merge-FoSettings -BoundParameters @{ Level = -3 }).Level | Should -Be 0
+    }
 }
 
 Describe 'Module public API' -Tag Unit {

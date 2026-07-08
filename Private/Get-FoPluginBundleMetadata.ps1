@@ -173,13 +173,14 @@ function Get-FoPluginBundleSettings {
         Assert-FoBundleSha256Policy -Url $env:FO_PLUGIN_BUNDLE_URL -Sha256 $sha256 `
             -AllowUnverifiedDownload:$AllowUnverifiedDownload -BundleLabel 'plugin bundle'
 
+        $arch = Resolve-FoPluginBundleArchitecture -Architecture $(if ($env:FO_PLUGIN_BUNDLE_ARCH) { $env:FO_PLUGIN_BUNDLE_ARCH } else { $Architecture })
         return [PSCustomObject]@{
-            Architecture = Resolve-FoPluginBundleArchitecture -Architecture $(if ($env:FO_PLUGIN_BUNDLE_ARCH) { $env:FO_PLUGIN_BUNDLE_ARCH } else { $Architecture })
+            Architecture = $arch
             Url          = $env:FO_PLUGIN_BUNDLE_URL
             FileName     = $fileName
             Sha256       = $sha256
             Format       = if ($env:FO_PLUGIN_BUNDLE_FORMAT) { $env:FO_PLUGIN_BUNDLE_FORMAT } else { 'zip' }
-            Folder       = if ($env:FO_PLUGIN_BUNDLE_FOLDER) { $env:FO_PLUGIN_BUNDLE_FOLDER } else { 'Plugins64' }
+            Folder       = if ($env:FO_PLUGIN_BUNDLE_FOLDER) { $env:FO_PLUGIN_BUNDLE_FOLDER } else { Get-FoPluginBundleFolderName -Architecture $arch }
         }
     }
 

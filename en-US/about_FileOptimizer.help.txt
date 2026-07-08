@@ -25,6 +25,11 @@ LONG DESCRIPTION
         -> -ConfigPath (local JSON file)
         -> explicit cmdlet parameters
 
+    BATCH ERRORS
+
+      Use -ContinueOnError on Optimize-FoFile to finish a multi-file batch when
+      individual files fail. Without it, the first error stops the batch.
+
     OUTPUT MODES
 
       TempMove       Default. Optimized file at original path; original moved to TempBackupPath.
@@ -48,7 +53,25 @@ LONG DESCRIPTION
       BackupPath     Pre-optimization bytes for reversible modes.
       ReversalStatus Pending, Reversed, NotReversible, or Error.
 
+      Example entry:
+
+        {
+          "Id": "20260708-143000-a1b2c3d4",
+          "TargetPath": "C:\\data\\photo.png",
+          "OriginalPath": "C:\\data\\photo.png",
+          "OptimizedPath": "C:\\data\\photo.png",
+          "BackupPath": "C:\\Users\\you\\AppData\\Local\\Temp\\backups\\photo.png",
+          "OutputMode": "TempMove",
+          "ReversalStatus": "Pending"
+        }
+
       Reversible modes: TempMove, BackupSuffix, BackupMove, OptimizedSuffix.
+
+    TEST TOOLING
+
+      Install-FoDssim downloads DSSIM for image compare tests only (not optimization).
+      FO_TEST_PLUGIN_PATH overrides the plugin directory during tests.
+      FO_RUN_INSTALL_INTEGRATION and FO_RUN_CORPUS_INTEGRATION gate integration tests.
 
     IMAGE TESTS (ON-DEMAND)
 

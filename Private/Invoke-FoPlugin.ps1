@@ -35,6 +35,21 @@ function Invoke-FoPlugin {
     $tmpIn = Join-Path $tempDir "FileOptimizer_Input_${rand}_$baseName"
     $tmpOut = Join-Path $tempDir "FileOptimizer_Output_${rand}_$baseName"
 
+    $sizeBefore = (Get-Item -LiteralPath $InputFile).Length
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    if ($sizeBefore -eq 0) {
+        $sw.Stop()
+        return @{
+            ExitCode   = 0
+            Skipped    = $true
+            Reason     = 'ZeroByte'
+            Accepted   = $false
+            SizeBefore = 0
+            SizeAfter  = 0
+            DurationMs = $sw.ElapsedMilliseconds
+        }
+    }
+
     if (-not $Settings.Debug) {
         foreach ($t in @($tmpIn, $tmpOut)) {
             if (Test-Path -LiteralPath $t) { Remove-Item -LiteralPath $t -Force }
@@ -53,21 +68,20 @@ function Invoke-FoPlugin {
     }
 
     $inplaceBackup = $null
-    if ($usesInPlace) {
-        $inplaceBackup = Join-Path $tempDir "FileOptimizer_inplacebak_${rand}_$baseName"
-        Copy-Item -LiteralPath $InputFile -Destination $inplaceBackup -Force
-    }
-
-    if ($usesTmpInOnly -or ($Step.Handler -and $Step.Mode -eq 'TempInput')) {
-        Copy-Item -LiteralPath $InputFile -Destination $tmpIn -Force
-    }
-
-    $sizeBefore = (Get-Item -LiteralPath $InputFile).Length
     $sizeAfter = $sizeBefore
     $exitCode = 0
-    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $exitOk = $false
+    try {
+        if ($usesInPlace) {
+            $inplaceBackup = Join-Path $tempDir "FileOptimizer_inplacebak_${rand}_$baseName"
+            Copy-Item -LiteralPath $InputFile -Destination $inplaceBackup -Force
+        }
 
-    foreach ($requiredExe in (Get-FoStepRequiredExecutables -Step $Step)) {
+        if ($usesTmpInOnly -or ($Step.Handler -and $Step.Mode -eq 'TempInput')) {
+            Copy-Item -LiteralPath $InputFile -Destination $tmpIn -Force
+        }
+
+        foreach ($requiredExe in (Get-FoStepRequiredExecutables -Step $Step)) {
         $toolCheck = Resolve-FoPluginExecutable -Name $requiredExe -SearchMode $SearchMode -PluginPath $PluginPath
         if (-not $toolCheck.Found) {
             return @{
@@ -147,7 +161,22 @@ function Invoke-FoPlugin {
         $psi.RedirectStandardError = $true
         $psi.CreateNoWindow = $true
 
-        $p = [System.Diagnostics.Process]::Start($psi)
+        $p = $null
+        try {
+            $p = [System.Diagnostics.Process]::Start($psi)
+        }
+        catch {
+            $sw.Stop()
+            return @{
+                ExitCode   = 1
+                Skipped    = $false
+                Accepted   = $false
+                Reason     = 'ProcessStartFailed'
+                SizeBefore = $sizeBefore
+                SizeAfter  = $sizeBefore
+                DurationMs = $sw.ElapsedMilliseconds
+            }
+        }
         $stderrTask = $p.StandardError.ReadToEndAsync()
 
         $timeoutSec = 0
@@ -194,9 +223,26 @@ function Invoke-FoPlugin {
         }
     }
 
+        $exitOk = Test-FoStepExitCodeAccepted -Step $Step -ExitCode $exitCode
+    }
+    catch {
+        $sw.Stop()
+        if ($usesInPlace -and $inplaceBackup -and (Test-Path -LiteralPath $inplaceBackup)) {
+            Copy-Item -LiteralPath $inplaceBackup -Destination $InputFile -Force
+        }
+        return @{
+            ExitCode   = 1
+            Skipped    = $false
+            Accepted   = $false
+            Reason     = 'IOError'
+            SizeBefore = $sizeBefore
+            SizeAfter  = $sizeBefore
+            DurationMs = $sw.ElapsedMilliseconds
+        }
+    }
+
     $sw.Stop()
     $accepted = $false
-    $exitOk = Test-FoStepExitCodeAccepted -Step $Step -ExitCode $exitCode
 
     if ($exitOk) {
         if ($usesInPlace) {

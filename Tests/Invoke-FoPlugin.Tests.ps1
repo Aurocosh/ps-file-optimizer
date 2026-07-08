@@ -286,6 +286,31 @@ Describe 'Invoke-FoPlugin custom TempDirectory' -Tag Unit {
     }
 }
 
+Describe 'Invoke-FoPlugin zero-byte input' -Tag Unit {
+    It 'Skips zero-byte files with ZeroByte reason' {
+        $workDir = Join-Path $TestDrive 'zero-byte'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $workFile = Join-Path $workDir 'empty.dat'
+        Set-Content -LiteralPath $workFile -Value '' -NoNewline
+
+        $step = [PSCustomObject]@{
+            Name = 'noop'
+            Executable = 'cmd.exe'
+            Arguments = '/c exit 0'
+            Handler = $null
+            Mode = 'TempOutput'
+            Gate = $null
+        }
+        $settings = Get-FoConfig
+
+        $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly
+
+        $result.Skipped | Should -Be $true
+        $result.Reason | Should -Be 'ZeroByte'
+        $result.Accepted | Should -Be $false
+    }
+}
+
 Describe 'Invoke-FoPlugin spaced paths' -Tag Unit {
     It 'Runs TempOutput steps when paths contain spaces' {
         $workDir = Join-Path $TestDrive 'my images'

@@ -12,7 +12,7 @@ function Install-FoDssim {
     part of optimization pipelines and is not required to optimize files.
 
     .PARAMETER DestinationPath
-    Plugin directory root (same folder as pipeline executables). Defaults to {ModuleRoot}\plugins.
+    Plugin directory root (same folder as pipeline executables). Defaults to Plugins64 or Plugins32 under the module root.
 
     .PARAMETER ArchiveUrl
     Override the default dssim zip download URL. Custom URLs require -ArchiveSha256 unless

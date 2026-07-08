@@ -86,6 +86,8 @@ See `Templates\Config.defaults.json` for available keys.
 
 Notable media options: `MP4CopyMetadata` keeps container metadata for MP4/MKV/OGV pipelines when set to `true`; `WEBPAllowLossy` enables lossy WebP optimization steps.
 
+When `SkipMissingTools` is `true` and a file maps to multiple pipeline groups, the entire file is skipped if any group lacks required tools (even when other groups could run).
+
 Use `-ContinueOnError` on `Optimize-FoFile` (or `Optimize-File.ps1`) to finish a multi-file batch after individual file failures.
 
 ## History and undo

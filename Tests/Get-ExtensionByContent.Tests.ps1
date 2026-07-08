@@ -57,6 +57,15 @@ Describe 'Get-ExtensionByContent' -Tag Unit {
         Set-Content -LiteralPath $path -Value 'placeholder' -NoNewline
         Get-FoPipelineGroupsForFile -Path $path | Should -Be @('OLE', 'SQLite')
     }
+
+    It 'Treats JSAdditionalExtensions as known extensions without content sniffing' {
+        $path = Join-Path $TestDrive 'app.mjs'
+        Set-Content -LiteralPath $path -Value 'not-javascript' -NoNewline
+        $settings = @{ JSAdditionalExtensions = 'mjs' }
+
+        Get-ExtensionByContent -Path $path -Extension '.mjs' -Settings $settings | Should -Be '.mjs'
+        Get-FoPipelineGroupsForFile -Path $path -Settings $settings | Should -Contain 'JS'
+    }
 }
 
 Describe 'Format-FoProcessArgument' -Tag Unit {

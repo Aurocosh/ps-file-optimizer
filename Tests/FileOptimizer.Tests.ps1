@@ -341,6 +341,226 @@ Describe 'History and rollback' -Tag Unit {
     }
 }
 
+Describe 'History and rollback output modes' -Tag Unit {
+    It 'Records entry and rolls back BackupSuffix' {
+        $histDir = Join-Path $env:TEMP "FoHistBkSfx_$(Get-Random)"
+        $histFile = Join-Path $histDir 'history.json'
+        $workDir = Join-Path $histDir 'work'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $orig = Join-Path $workDir 'doc.txt'
+        $opt = Join-Path $env:TEMP "fo_opt_bksfx_$(Get-Random).txt"
+        Set-Content -LiteralPath $orig -Value 'original-long-content' -NoNewline
+        Set-Content -LiteralPath $opt -Value 'x' -NoNewline
+
+        try {
+            $s = Get-FoConfig
+            $s.OutputMode = 'BackupSuffix'
+            $s.BackupSuffix = '.bak'
+            $s.HistoryPath = $histFile
+            $s.HistoryEnabled = $true
+
+            $out = Invoke-FoOutputMode -SourceFile $opt -TargetPath $orig -Settings $s
+            $result = [PSCustomObject]@{
+                Path         = $orig
+                OriginalSize = 21
+                FinalSize    = 1
+                OutputPath   = $orig
+                BackupPath   = $out.BackupPath
+                OutputMode   = 'BackupSuffix'
+            }
+            Add-FoHistoryEntry -Result $result -Settings $s
+
+            Undo-FoOptimization -Last 1 -HistoryPath $histFile | Out-Null
+            (Get-Content -LiteralPath $orig -Raw) | Should -Be 'original-long-content'
+            (Test-Path -LiteralPath ($orig + '.bak')) | Should -Be $false
+        }
+        finally {
+            Remove-Item -LiteralPath $histDir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'Records entry and rolls back BackupMove' {
+        $histDir = Join-Path $env:TEMP "FoHistBkMove_$(Get-Random)"
+        $histFile = Join-Path $histDir 'history.json'
+        $workDir = Join-Path $histDir 'work'
+        $bakRoot = Join-Path $histDir 'backups'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $orig = Join-Path $workDir 'doc.txt'
+        $opt = Join-Path $env:TEMP "fo_opt_bkmove_$(Get-Random).txt"
+        Set-Content -LiteralPath $orig -Value 'original-long-content' -NoNewline
+        Set-Content -LiteralPath $opt -Value 'x' -NoNewline
+
+        try {
+            $s = Get-FoConfig
+            $s.OutputMode = 'BackupMove'
+            $s.BackupPath = $bakRoot
+            $s.HistoryPath = $histFile
+            $s.HistoryEnabled = $true
+
+            $out = Invoke-FoOutputMode -SourceFile $opt -TargetPath $orig -Settings $s
+            $result = [PSCustomObject]@{
+                Path         = $orig
+                OriginalSize = 21
+                FinalSize    = 1
+                OutputPath   = $orig
+                BackupPath   = $out.BackupPath
+                OutputMode   = 'BackupMove'
+            }
+            Add-FoHistoryEntry -Result $result -Settings $s
+
+            Undo-FoOptimization -Last 1 -HistoryPath $histFile | Out-Null
+            (Get-Content -LiteralPath $orig -Raw) | Should -Be 'original-long-content'
+            (Test-Path -LiteralPath $out.BackupPath) | Should -Be $false
+        }
+        finally {
+            Remove-Item -LiteralPath $histDir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'Records entry and rolls back OptimizedSuffix' {
+        $histDir = Join-Path $env:TEMP "FoHistOptSfx_$(Get-Random)"
+        $histFile = Join-Path $histDir 'history.json'
+        $workDir = Join-Path $histDir 'work'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $orig = Join-Path $workDir 'doc.txt'
+        $opt = Join-Path $env:TEMP "fo_opt_optsfx_$(Get-Random).txt"
+        Set-Content -LiteralPath $orig -Value 'original-long-content' -NoNewline
+        Set-Content -LiteralPath $opt -Value 'x' -NoNewline
+
+        try {
+            $s = Get-FoConfig
+            $s.OutputMode = 'OptimizedSuffix'
+            $s.OptimizedSuffix = '.optimized'
+            $s.HistoryPath = $histFile
+            $s.HistoryEnabled = $true
+
+            $out = Invoke-FoOutputMode -SourceFile $opt -TargetPath $orig -Settings $s
+            $result = [PSCustomObject]@{
+                Path         = $orig
+                OriginalSize = 21
+                FinalSize    = 1
+                OutputPath   = $out.OptimizedPath
+                BackupPath   = $null
+                OutputMode   = 'OptimizedSuffix'
+            }
+            Add-FoHistoryEntry -Result $result -Settings $s
+
+            (Test-Path -LiteralPath $out.OptimizedPath) | Should -Be $true
+            (Get-Content -LiteralPath $orig -Raw) | Should -Be 'original-long-content'
+
+            Undo-FoOptimization -Last 1 -HistoryPath $histFile | Out-Null
+            (Test-Path -LiteralPath $out.OptimizedPath) | Should -Be $false
+            (Get-Content -LiteralPath $orig -Raw) | Should -Be 'original-long-content'
+        }
+        finally {
+            Remove-Item -LiteralPath $histDir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'Marks Replace mode entries as not reversible' {
+        $histDir = Join-Path $env:TEMP "FoHistReplace_$(Get-Random)"
+        $histFile = Join-Path $histDir 'history.json'
+        $workDir = Join-Path $histDir 'work'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $orig = Join-Path $workDir 'doc.txt'
+        $opt = Join-Path $env:TEMP "fo_opt_replace_$(Get-Random).txt"
+        Set-Content -LiteralPath $orig -Value 'original-long-content' -NoNewline
+        Set-Content -LiteralPath $opt -Value 'x' -NoNewline
+
+        try {
+            $s = Get-FoConfig
+            $s.OutputMode = 'Replace'
+            $s.HistoryPath = $histFile
+            $s.HistoryEnabled = $true
+
+            Invoke-FoOutputMode -SourceFile $opt -TargetPath $orig -Settings $s | Out-Null
+            $result = [PSCustomObject]@{
+                Path         = $orig
+                OriginalSize = 21
+                FinalSize    = 1
+                OutputPath   = $orig
+                BackupPath   = $null
+                OutputMode   = 'Replace'
+            }
+            Add-FoHistoryEntry -Result $result -Settings $s
+
+            $undo = @(Undo-FoOptimization -Last 1 -HistoryPath $histFile)
+            $undo.Count | Should -Be 1
+            $undo[0].Status | Should -Be 'NotReversible'
+        }
+        finally {
+            Remove-Item -LiteralPath $histDir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+Describe 'Optimize-FoFile history E2E' -Tag Unit {
+    BeforeAll {
+        if (-not (Get-Module -Name FileOptimizer)) {
+            Import-Module (Join-Path (Get-FoTestModuleRoot) 'FileOptimizer.psd1') -Force
+        }
+    }
+
+    It 'Records history through Optimize-FoFile and restores via undo' {
+        $workDir = Join-Path $TestDrive 'e2e-history'
+        $bakRoot = Join-Path $workDir 'backups'
+        $histFile = Join-Path $workDir 'history.json'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $png = Join-Path $workDir 'sample.png'
+        $opt = Join-Path $env:TEMP "fo_e2e_opt_$(Get-Random).png"
+        New-FoTestPng -Path $png
+        Set-Content -LiteralPath $opt -Value 'x' -NoNewline
+
+        try {
+            $env:FO_TEST_OPT = $opt
+            $env:FO_TEST_BAK = $bakRoot
+            $env:FO_TEST_HIST = $histFile
+            $env:FO_TEST_PNG = $png
+
+            InModuleScope FileOptimizer {
+                Mock Invoke-FoPluginChain {
+                    param($Path, $Settings)
+
+                    $origSize = (Get-Item -LiteralPath $Path).Length
+                    $out = Invoke-FoOutputMode -SourceFile $env:FO_TEST_OPT -TargetPath $Path -Settings $Settings
+                    return [PSCustomObject]@{
+                        Path         = $Path
+                        Status       = 'Optimized'
+                        OriginalSize = $origSize
+                        FinalSize    = (Get-Item -LiteralPath $Path).Length
+                        PercentSaved = 50
+                        OutputPath   = $out.OptimizedPath
+                        BackupPath   = $out.BackupPath
+                        OutputMode   = $Settings.OutputMode
+                    }
+                }
+
+                $results = @(Optimize-FoFile -Path $env:FO_TEST_PNG -OutputMode TempMove -TempBackupPath $env:FO_TEST_BAK `
+                    -HistoryPath $env:FO_TEST_HIST -HistoryEnabled:$true -Confirm:$false)
+                $results[0].Status | Should -Be 'Optimized'
+
+                $hist = @(Get-FoHistory -HistoryPath $env:FO_TEST_HIST -Format Object -Last 1)
+                $hist.Count | Should -Be 1
+                $hist[0].TargetPath | Should -Be $env:FO_TEST_PNG
+                $hist[0].ReversalStatus | Should -Be 'Pending'
+
+                $undo = @(Undo-FoOptimization -Last 1 -HistoryPath $env:FO_TEST_HIST)
+                $undo[0].Status | Should -Be 'Reversed'
+                (Get-Item -LiteralPath $env:FO_TEST_PNG).Length | Should -BeGreaterThan (Get-Item -LiteralPath $env:FO_TEST_OPT).Length
+            }
+        }
+        finally {
+            Remove-Item Env:FO_TEST_OPT, Env:FO_TEST_BAK, Env:FO_TEST_HIST, Env:FO_TEST_PNG -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $workDir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 Describe 'Missing tools policy' -Tag Unit {
     It 'Continues per-step when tools missing (FileOptimizer parity)' {
         $png = Join-Path $env:TEMP "fo_miss_$(Get-Random).png"

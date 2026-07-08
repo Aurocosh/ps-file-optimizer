@@ -36,6 +36,7 @@ function Get-FoModuleDefaults {
         CSSEnableTidy     = $false
         HTMLEnableTidy    = $false
         JSEnableJSMin     = $false
+        JSAdditionalExtensions = ''
         XMLEnableLeanify  = $false
         LUAEnableLeanify  = $false
         MiscDisable       = $false

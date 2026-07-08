@@ -99,7 +99,7 @@ function Optimize-FoFile {
                 continue
             }
 
-            $groups = Get-FoPipelineGroupsForFile -Path $file
+            $groups = Get-FoPipelineGroupsForFile -Path $file -Settings $settings
             if ($groups.Count -eq 0) {
                 Write-FoLog -LogLevel $settings.LogLevel -RequiredLevel 1 -Message "Skipped $file (unsupported extension)"
                 $script:FoBatchResults.Add([PSCustomObject]@{ Path = $file; Status = 'Skipped'; Reason = 'Unsupported' })

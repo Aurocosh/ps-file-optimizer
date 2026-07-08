@@ -32,14 +32,21 @@ function Get-ExtensionByContent {
         [Parameter(Mandatory)]
         [string]$Path,
         [string]$Extension,
-        [switch]$Force
+        [switch]$Force,
+        [hashtable]$Settings
     )
 
     $ext = if ($Extension) { $Extension.ToLowerInvariant() } else { '' }
     $mapPath = if ($script:FoModuleRoot) { Join-Path $script:FoModuleRoot 'Data\ExtensionMap.psd1' } else { $null }
     $allExts = @()
     if ($mapPath -and (Test-Path -LiteralPath $mapPath)) {
-        $allExts = (Import-FoPsd1File -Path $mapPath).Keys
+        $allExts = @((Import-FoPsd1File -Path $mapPath).Keys)
+    }
+    if ($Settings -and $Settings.JSAdditionalExtensions) {
+        foreach ($token in ($Settings.JSAdditionalExtensions.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })) {
+            $normalized = if ($token.StartsWith('.')) { $token.ToLowerInvariant() } else { ('.' + $token).ToLowerInvariant() }
+            if ($normalized -notin $allExts) { $allExts += $normalized }
+        }
     }
 
     $needsDetect = $Force -or -not $ext -or ($ext -notin $allExts)
@@ -117,14 +124,23 @@ function Get-FoExtensionMap {
 }
 
 function Get-FoPipelineGroupsForFile {
-    param([string]$Path)
+    param(
+        [string]$Path,
+        [hashtable]$Settings
+    )
 
     $pathExt = [System.IO.Path]::GetExtension($Path)
-    $ext = Get-ExtensionByContent -Path $Path -Extension $pathExt
+    $ext = Get-ExtensionByContent -Path $Path -Extension $pathExt -Settings $Settings
     if (-not $ext) { return @() }
     $map = Get-FoExtensionMap
     if ($map -and $map.ContainsKey($ext)) {
         return @($map[$ext])
+    }
+    if ($Settings -and $Settings.JSAdditionalExtensions) {
+        foreach ($token in ($Settings.JSAdditionalExtensions.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })) {
+            $normalized = if ($token.StartsWith('.')) { $token.ToLowerInvariant() } else { ('.' + $token).ToLowerInvariant() }
+            if ($ext -eq $normalized) { return @('JS') }
+        }
     }
     return @()
 }

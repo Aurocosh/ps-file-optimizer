@@ -239,7 +239,7 @@ function New-FoFileContext {
     )
 
     $ext = [System.IO.Path]::GetExtension($InputFile).ToLowerInvariant()
-    $detected = Get-ExtensionByContent -Path $InputFile -Extension $ext
+    $detected = Get-ExtensionByContent -Path $InputFile -Extension $ext -Settings $Settings
 
     @{
         InputFile     = $InputFile
