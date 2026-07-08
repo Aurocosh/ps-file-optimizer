@@ -219,3 +219,18 @@ Describe 'Media metadata and lossy config toggles' -Tag Unit {
         $steps[1].Arguments | Should -Not -Match '-lossless'
     }
 }
+
+Describe 'Pipeline placeholder quoting' -Tag Unit {
+    It 'PNG pngrewrite step uses bare placeholders in source template' {
+        $png = Join-Path $PSScriptRoot 'Fixtures\Images\pngsuite\basn0g08.png'
+        $ctx = New-FoFileContext -InputFile $png -Settings (Get-FoConfig)
+        $step = @(Get-FoPipeline -GroupName PNG -Context $ctx) |
+            Where-Object { $_.Name -like 'pngrewrite*' } |
+            Select-Object -First 1
+
+        $step | Should -Not -BeNullOrEmpty
+        $step.Arguments | Should -Not -Match '"%(INPUT|TMPINPUT|TMPOUTPUT)FILE%"'
+        $step.Arguments | Should -Match '%INPUTFILE%'
+        $step.Arguments | Should -Match '%TMPOUTPUTFILE%'
+    }
+}

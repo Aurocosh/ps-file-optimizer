@@ -5,7 +5,7 @@ function Get-FoJSPipeline {
     $steps = @()
 
     $steps += New-FoStep -Name 'jsmin (1/2)' -Handler 'JsMinPipe' -Mode TempOutput -Gate $gate
-    $steps += New-FoStep -Name 'Minify (2/2)' -Executable 'minify.exe' -Arguments '"%INPUTFILE%" --output "%TMPOUTPUTFILE%"' -Mode TempOutput -Gate $gate
+    $steps += New-FoStep -Name 'Minify (2/2)' -Executable 'minify.exe' -Arguments '%INPUTFILE% --output %TMPOUTPUTFILE%' -Mode TempOutput -Gate $gate
 
     return $steps
 }

@@ -15,10 +15,10 @@ function Get-FoZIPPipeline {
     if (-not $s.ZIPRecurse) { $ectZip += '--disable-png --disable-jpg ' }
     $steps += New-FoStep -Name 'ECT (2/6)' -Executable 'ECT.exe' -Arguments "$ectZip%TMPINPUTFILE%" -Mode TempInput
 
-    $steps += New-FoStep -Name 'advzip (3/6)' -Executable 'advzip.exe' -Arguments '-z -q -4 "%TMPINPUTFILE%"' -Mode TempInput -Gate { -not $args[0].IsZipSFX }
-    $steps += New-FoStep -Name 'DeflOpt (4/6)' -Executable 'deflopt.exe' -Arguments '/a /b /s "%TMPINPUTFILE%"' -Mode TempInput
+    $steps += New-FoStep -Name 'advzip (3/6)' -Executable 'advzip.exe' -Arguments '-z -q -4 %TMPINPUTFILE%' -Mode TempInput -Gate { -not $args[0].IsZipSFX }
+    $steps += New-FoStep -Name 'DeflOpt (4/6)' -Executable 'deflopt.exe' -Arguments '/a /b /s %TMPINPUTFILE%' -Mode TempInput
     $steps += New-FoStep -Name 'defluff (5/6)' -Handler 'DefluffPipe' -Mode TempOutput
-    $steps += New-FoStep -Name 'DeflOpt (6/6)' -Executable 'deflopt.exe' -Arguments '/a /b /s "%TMPINPUTFILE%"' -Mode TempInput
+    $steps += New-FoStep -Name 'DeflOpt (6/6)' -Executable 'deflopt.exe' -Arguments '/a /b /s %TMPINPUTFILE%' -Mode TempInput
 
     return $steps
 }

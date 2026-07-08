@@ -9,7 +9,7 @@ function Get-FoPNGPipeline {
     $steps = @()
 
     if ($Context.IsAPNG) {
-        $steps += New-FoStep -Name 'apngopt (1/16)' -Executable 'apngopt.exe' -Arguments '"%INPUTFILE%" "%TMPOUTPUTFILE%"' -Mode TempOutput
+        $steps += New-FoStep -Name 'apngopt (1/16)' -Executable 'apngopt.exe' -Arguments '%INPUTFILE% %TMPOUTPUTFILE%' -Mode TempOutput
     }
 
     if ($s.PNGAllowLossy -and -not $Context.IsAPNG) {
@@ -42,7 +42,7 @@ function Get-FoPNGPipeline {
     }
 
     if (-not $Context.IsAPNG -and -not $Context.IsPNG9Patch) {
-        $steps += New-FoStep -Name 'pngrewrite (10/16)' -Executable 'pngrewrite.exe' -Arguments '"%INPUTFILE%" "%TMPOUTPUTFILE%"' -Mode TempOutput
+        $steps += New-FoStep -Name 'pngrewrite (10/16)' -Executable 'pngrewrite.exe' -Arguments '%INPUTFILE% %TMPOUTPUTFILE%' -Mode TempOutput
         if (-not $s.PNGCopyMetadata) {
             $steps += New-FoStep -Name 'advpng (11/16)' -Executable 'advpng.exe' -Arguments "-z -q -4 -i $leanify %TMPINPUTFILE%" -Mode TempInput
         }
@@ -51,16 +51,16 @@ function Get-FoPNGPipeline {
     $ect = Get-FoECTPreset -Level $level
     $reuse = if ($Context.IsAPNG) { '--reuse ' } else { '' }
     $steps += New-FoStep -Name 'ECT (12/16)' -Executable 'ECT.exe' -Arguments "-quiet --mt-deflate --mt-file --allfilters -png $reuse$ect %TMPINPUTFILE%" -Mode TempInput
-    $steps += New-FoStep -Name 'pingo (13/16)' -Executable 'pingo.exe' -Arguments '-s9 -png "%TMPINPUTFILE%"' -Mode TempInput
+    $steps += New-FoStep -Name 'pingo (13/16)' -Executable 'pingo.exe' -Arguments '-s9 -png %TMPINPUTFILE%' -Mode TempInput
 
     if (-not $Context.IsAPNG -and -not $Context.IsPNG9Patch) {
-        $steps += New-FoStep -Name 'DeflOpt (14/16)' -Executable 'deflopt.exe' -Arguments '/a /b /s "%TMPINPUTFILE%"' -Mode TempInput
+        $steps += New-FoStep -Name 'DeflOpt (14/16)' -Executable 'deflopt.exe' -Arguments '/a /b /s %TMPINPUTFILE%' -Mode TempInput
     }
 
     $steps += New-FoStep -Name 'defluff (15/16)' -Handler 'DefluffPipe' -Mode TempOutput
 
     if (-not $Context.IsAPNG -and -not $Context.IsPNG9Patch) {
-        $steps += New-FoStep -Name 'DeflOpt (16/16)' -Executable 'deflopt.exe' -Arguments '/a /b /s "%TMPINPUTFILE%"' -Mode TempInput
+        $steps += New-FoStep -Name 'DeflOpt (16/16)' -Executable 'deflopt.exe' -Arguments '/a /b /s %TMPINPUTFILE%' -Mode TempInput
     }
 
     return $steps

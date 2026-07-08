@@ -311,6 +311,27 @@ Describe 'Invoke-FoPlugin zero-byte input' -Tag Unit {
     }
 }
 
+Describe 'Pipeline argument quoting' -Tag Unit {
+    It 'Substitutes pngrewrite placeholders without double-quoting spaced paths' {
+        $png = Join-Path $PSScriptRoot 'Fixtures\Images\pngsuite\basn0g08.png'
+        $ctx = New-FoFileContext -InputFile $png -Settings (Get-FoConfig)
+        $step = @(Get-FoPipeline -GroupName PNG -Context $ctx) |
+            Where-Object { $_.Name -like 'pngrewrite*' } |
+            Select-Object -First 1
+        $step | Should -Not -BeNullOrEmpty
+
+        $inputPath = Join-Path $TestDrive 'my images\test file.png'
+        $outPath = Join-Path $TestDrive 'my images\test file.out.png'
+        $args = $step.Arguments
+        $args = $args.Replace('%INPUTFILE%', (Format-FoProcessArgument $inputPath))
+        $args = $args.Replace('%TMPOUTPUTFILE%', (Format-FoProcessArgument $outPath))
+
+        $args | Should -Not -Match '""'
+        $args | Should -Match ([regex]::Escape((Format-FoProcessArgument $inputPath)))
+        $args | Should -Match ([regex]::Escape((Format-FoProcessArgument $outPath)))
+    }
+}
+
 Describe 'Invoke-FoPlugin spaced paths' -Tag Unit {
     It 'Runs TempOutput steps when paths contain spaces' {
         $workDir = Join-Path $TestDrive 'my images'

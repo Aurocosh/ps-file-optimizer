@@ -2,10 +2,10 @@ function Get-FoSevenZipPipeline {
     param([hashtable]$Context)
 
     $m7zArgs = if ([Environment]::Is64BitProcess) {
-        '-m1 -d1024 -mem2048 "%TMPINPUTFILE%"'
+        '-m1 -d1024 -mem2048 %TMPINPUTFILE%'
     }
     else {
-        '-m1 -d128 -mem512 "%TMPINPUTFILE%"'
+        '-m1 -d128 -mem512 %TMPINPUTFILE%'
     }
     $steps = @()
 
