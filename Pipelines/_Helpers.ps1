@@ -9,7 +9,8 @@ function New-FoStep {
         [scriptblock]$Gate,
         [int]$ErrorMin = 0,
         [int]$ErrorMax = 0
-        # ErrorMin/ErrorMax let pipeline authors accept non-zero plugin exit codes (see Test-FoStepExitCodeAccepted).
+        # ErrorMin/ErrorMax let pipeline authors accept non-zero plugin exit codes for a step
+        # (for example, some tools return 1 on “success with warnings” or 2 for “already optimized”).
     )
 
     [PSCustomObject]@{

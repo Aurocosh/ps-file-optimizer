@@ -48,6 +48,15 @@ Describe 'CLI script exit codes' -Tag Unit {
         $exitCode | Should -Be 0
     }
 
+    It 'Optimize-File.ps1 accepts -ContinueOnError without failing' {
+        $file = Join-Path $TestDrive 'cli-continue.png'
+        [System.IO.File]::WriteAllBytes($file, [byte[]](0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0))
+        $scriptPath = Join-Path $script:FoCliModuleRoot 'Scripts\Optimize-File.ps1'
+        $command = "& '$scriptPath' '$($file.Replace("'", "''"))' -WhatIf -ContinueOnError"
+        $exitCode = Invoke-FoCliScriptExitCode -Command $command
+        $exitCode | Should -Be 0
+    }
+
     It 'Undo-Optimization.ps1 exits 1 when neither -Path nor -Last is given' {
         $scriptPath = Join-Path $script:FoCliModuleRoot 'Scripts\Undo-Optimization.ps1'
         $exitCode = Invoke-FoCliScriptExitCode -ScriptPath $scriptPath

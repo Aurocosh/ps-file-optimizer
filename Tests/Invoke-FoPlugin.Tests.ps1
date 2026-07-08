@@ -232,6 +232,31 @@ Describe 'Invoke-FoPlugin DisablePluginMask' -Tag Unit {
         $result.Skipped | Should -Be $true
     }
 
+    It 'Reports real sizes when steps are skipped by mask' {
+        $workDir = Join-Path $TestDrive 'mask-sizes'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $workFile = Join-Path $workDir 'test.bin'
+        $data = 'A' * 100
+        Set-Content -LiteralPath $workFile -Value $data -NoNewline
+
+        $step = [PSCustomObject]@{
+            Name = 'noop-mask'
+            Executable = 'cmd.exe'
+            Arguments = '/c rem %TMPINPUTFILE%'
+            Handler = $null
+            Mode = 'TempInput'
+            Gate = $null
+        }
+        $settings = Get-FoConfig
+        $settings.DisablePluginMask = 'cmd.exe'
+
+        $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly
+
+        $result.Skipped | Should -Be $true
+        $result.SizeBefore | Should -Be 100
+        $result.SizeAfter | Should -Be 100
+    }
+
     It 'Skips handler steps when mask matches handler name' {
         $workDir = Join-Path $TestDrive 'mask-handler'
         New-Item -ItemType Directory -Path $workDir -Force | Out-Null

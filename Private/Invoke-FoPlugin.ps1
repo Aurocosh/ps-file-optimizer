@@ -99,7 +99,12 @@ function Invoke-FoPlugin {
 
     if ($Step.Handler) {
         if (Test-FoDisablePluginMaskMatch -Mask $Settings.DisablePluginMask -Haystack $Step.Handler) {
-            return @{ ExitCode = 0; Skipped = $true; SizeBefore = 0; SizeAfter = 0 }
+            return @{
+                ExitCode   = 0
+                Skipped    = $true
+                SizeBefore = $sizeBefore
+                SizeAfter  = $sizeBefore
+            }
         }
 
         $handlerTimeout = 0
@@ -146,7 +151,12 @@ function Invoke-FoPlugin {
 
         $maskHaystack = ($Step.Executable + ' ' + $argTemplate).Trim()
         if (Test-FoDisablePluginMaskMatch -Mask $Settings.DisablePluginMask -Haystack $maskHaystack) {
-            return @{ ExitCode = 0; Skipped = $true; SizeBefore = 0; SizeAfter = 0 }
+            return @{
+                ExitCode   = 0
+                Skipped    = $true
+                SizeBefore = $sizeBefore
+                SizeAfter  = $sizeBefore
+            }
         }
 
         $resolved = Resolve-FoPluginExecutable -Name $Step.Executable -SearchMode $SearchMode -PluginPath $PluginPath
