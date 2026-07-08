@@ -15,6 +15,7 @@ function Format-FoHistoryEntry {
             "Timestamp:      $($Entry.Timestamp)"
             "Status:         $($Entry.ReversalStatus)"
             "OutputMode:     $($Entry.OutputMode)"
+            "TargetPath:     $(if ($Entry.TargetPath) { $Entry.TargetPath } else { $Entry.OriginalPath })"
             "OriginalPath:   $($Entry.OriginalPath)"
             "OriginalSize:   $(Format-FoFileSize $Entry.OriginalSize -IncludeBytes)"
             "FinalSize:      $(Format-FoFileSize $Entry.FinalSize -IncludeBytes) (-$pct%)"
@@ -29,6 +30,7 @@ function Format-FoHistoryEntry {
     }
     else { 0 }
     return ('[{0}] {1}  {2,-14} {3,-10} {4}  {5} -> {6} (-{7}%)' -f `
-        $Entry.Id, $Entry.Timestamp, $Entry.ReversalStatus, $Entry.OutputMode, $Entry.OriginalPath, `
+        $Entry.Id, $Entry.Timestamp, $Entry.ReversalStatus, $Entry.OutputMode, `
+        $(if ($Entry.TargetPath) { $Entry.TargetPath } else { $Entry.OriginalPath }), `
         (Format-FoFileSize $Entry.OriginalSize), (Format-FoFileSize $Entry.FinalSize), $pct)
 }

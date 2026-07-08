@@ -1,0 +1,59 @@
+TOPIC
+    about_FileOptimizer
+
+SHORT DESCRIPTION
+    PowerShell module that mirrors FileOptimizer plugin optimization chains.
+
+LONG DESCRIPTION
+    PS-FileOptimizer (module name FileOptimizer) runs the same external plugin
+    chains as Javier Gutiérrez Chamorro's FileOptimizer application, with a
+    scriptable CLI and JSON configuration.
+
+    QUICK START
+
+      Import-Module .\FileOptimizer.psd1
+      Initialize-FoConfig -Scope Global
+      .\Scripts\Install-Plugins.ps1 -Mode FullPortable
+      Optimize-FoFile -Path .\images\*.png
+      Get-FoHistory -Last 10
+      Undo-FoOptimization -Last 3
+
+    CONFIGURATION PRECEDENCE
+
+      Module defaults
+        -> %USERPROFILE%\.config\FileOptimizer\config.json
+        -> -ConfigPath (local JSON file)
+        -> explicit cmdlet parameters
+
+    OUTPUT MODES
+
+      TempMove       Default. Optimized file at original path; original moved to TempBackupPath.
+      Replace        Overwrite original in place (not reversible).
+      BackupSuffix   Original renamed with BackupSuffix beside optimized file.
+      BackupMove     Original moved under BackupPath preserving relative layout.
+      OptimizedSuffix  Original kept; smaller optimized copy written with OptimizedSuffix.
+
+    MISC PIPELINE
+
+      Unrecognized image-like extensions may route to the MISC pipeline (ImageMagick).
+      Set MiscDisable = true in config unless you intend that behavior.
+
+    HISTORY AND UNDO
+
+      When HistoryEnabled is true, history.json records each optimization.
+
+      TargetPath     Where the optimized file was written (undo restore destination).
+      OriginalPath   Same value as TargetPath on each entry.
+      OptimizedPath  Optimized output path.
+      BackupPath     Pre-optimization bytes for reversible modes.
+      ReversalStatus Pending, Reversed, NotReversible, or Error.
+
+      Reversible modes: TempMove, BackupSuffix, BackupMove, OptimizedSuffix.
+
+    IMAGE TESTS (ON-DEMAND)
+
+      Image integration, lossy compare, and corpus sweeps are for local verification.
+      See Tests\README.md for Pester tags (ImageIntegration, Lossy, Smoke).
+
+SEE ALSO
+    Optimize-FoFile, Get-FoConfig, Get-FoHistory, Undo-FoOptimization, Install-FoPlugins

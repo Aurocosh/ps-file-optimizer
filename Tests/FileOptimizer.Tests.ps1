@@ -213,6 +213,8 @@ Describe 'History and rollback' -Tag Unit {
             $hist = @(Get-FoHistory -Last 1 -HistoryPath $histFile -Format Object)
             $hist.Count | Should -Be 1
             $hist[0].ReversalStatus | Should -Be 'Pending'
+            $hist[0].TargetPath | Should -Be $orig
+            $hist[0].OriginalPath | Should -Be $orig
 
             $undo = @(Undo-FoOptimization -Last 1 -HistoryPath $histFile)
             ($undo.Count -gt 0) | Should -Be $true

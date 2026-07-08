@@ -60,10 +60,17 @@ function Add-FoHistoryEntry {
     Invoke-FoHistoryFileLock -HistoryPath $Settings.HistoryPath -Action {
         $data = Get-FoHistoryData -HistoryPath $Settings.HistoryPath
         $id = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + ('{0:D3}' -f ($data.Entries.Count + 1))
+        # History entry fields:
+        # - TargetPath / OriginalPath: user-visible path where the optimized file was written (undo restore destination)
+        # - OptimizedPath: same as TargetPath for in-place modes; sibling path for OptimizedSuffix
+        # - BackupPath: location of pre-optimization bytes for reversible modes (TempMove, BackupSuffix, BackupMove)
+        # - OriginalSize / FinalSize: byte sizes before and after optimization
+        $targetPath = $Result.Path
         $entry = @{
             Id             = $id
             Timestamp      = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss')
-            OriginalPath   = $Result.Path
+            TargetPath     = $targetPath
+            OriginalPath   = $targetPath
             OriginalSize   = $Result.OriginalSize
             FinalSize      = $Result.FinalSize
             OptimizedPath  = $Result.OutputPath

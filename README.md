@@ -86,6 +86,47 @@ See `Templates\Config.defaults.json` for available keys.
 
 Use `-ContinueOnError` on `Optimize-FoFile` (or `Optimize-File.ps1`) to finish a multi-file batch after individual file failures.
 
+## History and undo
+
+When `HistoryEnabled` is true (default), each successful optimization appends an entry to `history.json` (beside your config, or `HistoryPath`).
+
+| Field | Meaning |
+|-------|---------|
+| `TargetPath` | User-visible path where the optimized file was written (undo restore destination) |
+| `OriginalPath` | Same value as `TargetPath` on each entry |
+| `OptimizedPath` | Optimized output path (same as `TargetPath` for in-place modes; sibling file for `OptimizedSuffix`) |
+| `BackupPath` | Pre-optimization bytes for reversible modes (`TempMove`, `BackupSuffix`, `BackupMove`) |
+| `ReversalStatus` | `Pending`, `Reversed`, `NotReversible`, or `Error` |
+
+Reversible output modes: `TempMove`, `BackupSuffix`, `BackupMove`, `OptimizedSuffix`. `Replace` is not reversible.
+
+```json
+{
+  "Version": 1,
+  "Entries": [
+    {
+      "Id": "20260708-143000-001",
+      "Timestamp": "2026-07-08T14:30:00",
+      "TargetPath": "C:\\data\\photo.png",
+      "OriginalPath": "C:\\data\\photo.png",
+      "OptimizedPath": "C:\\data\\photo.png",
+      "BackupPath": "C:\\Users\\you\\AppData\\Local\\Temp\\FileOptimizer\\backups\\photo.png",
+      "OutputMode": "TempMove",
+      "OriginalSize": 120000,
+      "FinalSize": 95000,
+      "ReversalStatus": "Pending"
+    }
+  ]
+}
+```
+
+```powershell
+Get-FoHistory -Last 10
+Undo-FoOptimization -Last 3
+```
+
+Module overview: `Get-Help about_FileOptimizer -Full`
+
 ## Tests
 
 ```powershell

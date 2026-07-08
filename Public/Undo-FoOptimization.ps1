@@ -7,6 +7,17 @@ function Undo-FoOptimization {
     Restores originals from backups recorded when OutputMode supports reversal
     (TempMove, BackupSuffix, BackupMove, OptimizedSuffix). Updates history entry status.
 
+    History file format (history.json):
+    Each entry records one optimization. Key fields:
+    - TargetPath — user-visible path where the optimized file was written (undo restore destination)
+    - OriginalPath — same value as TargetPath on each entry
+    - OptimizedPath — optimized file path (equals TargetPath for in-place modes; sibling for OptimizedSuffix)
+    - BackupPath — pre-optimization bytes for reversible modes
+    - OutputMode — TempMove, BackupSuffix, BackupMove, OptimizedSuffix, or Replace
+    - ReversalStatus — Pending, Reversed, NotReversible, or Error
+
+    Replace mode is not reversible. See also Get-FoHistory and about_FileOptimizer.
+
     .PARAMETER Path
     Roll back entries matching these original or optimized paths.
 
@@ -56,9 +67,11 @@ function Undo-FoOptimization {
 
         if ($Path) {
             $entries = @($entries | Where-Object {
+                $restore = Get-FoHistoryRestorePath -Entry $_
+                $rp = [System.IO.Path]::GetFullPath($restore)
                 $op = [System.IO.Path]::GetFullPath($_.OriginalPath)
                 $opt = if ($_.OptimizedPath) { [System.IO.Path]::GetFullPath($_.OptimizedPath) } else { '' }
-                ($normalized -contains $op) -or ($opt -and ($normalized -contains $opt))
+                ($normalized -contains $rp) -or ($normalized -contains $op) -or ($opt -and ($normalized -contains $opt))
             })
         }
         elseif ($Last -gt 0) {
@@ -71,7 +84,7 @@ function Undo-FoOptimization {
                 Write-Host "WHATIF: $($r.Message)"
                 continue
             }
-            if ($PSCmdlet.ShouldProcess($entry.OriginalPath, 'Rollback optimization')) {
+            if ($PSCmdlet.ShouldProcess((Get-FoHistoryRestorePath -Entry $entry), 'Rollback optimization')) {
                 $r = Invoke-FoRollback -Entry $entry
                 foreach ($e in $data.Entries) {
                     if ($e.Id -eq $entry.Id) {

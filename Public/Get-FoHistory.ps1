@@ -7,6 +7,12 @@ function Get-FoHistory {
     Reads history.json and shows recent entries. Use -Format Object in scripts
     to receive structured entry objects instead of formatted text.
 
+    History entry fields (see also Undo-FoOptimization, about_FileOptimizer):
+    TargetPath — where the optimized file was written (restore destination for undo).
+    OriginalPath — same value as TargetPath on each entry.
+    OptimizedPath — optimized output path. BackupPath — pre-optimize backup when reversible.
+    ReversalStatus — Pending, Reversed, NotReversible, or Error.
+
     .PARAMETER Last
     Maximum number of entries to return (default 10).
 
