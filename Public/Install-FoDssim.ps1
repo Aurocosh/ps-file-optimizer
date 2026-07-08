@@ -1,7 +1,7 @@
 function Install-FoDssim {
     <#
     .SYNOPSIS
-    Downloads and installs the DSSIM compare tool for PS-FileOptimizer image tests.
+    Downloads DSSIM for image test compare workflows (not used by optimization).
 
     .DESCRIPTION
     Downloads the pinned [dssim](https://github.com/kornelski/dssim) 3.4.0 zip from GitHub
@@ -9,7 +9,7 @@ function Install-FoDssim {
     `{plugins}/dssim/dssim.exe`. Skipped on 32-bit PowerShell (64-bit compare tool only).
 
     DSSIM is used by `Compare-FoImage` for PNG lossless verification in the test suite. It is not
-    part of optimization pipelines.
+    part of optimization pipelines and is not required to optimize files.
 
     .PARAMETER DestinationPath
     Plugin directory root (same folder as pipeline executables). Defaults to {ModuleRoot}\plugins.
@@ -34,6 +34,7 @@ function Install-FoDssim {
     Display download progress. Default: true.
 
     .NOTES
+    Exported for convenience when running image tests locally; optimization does not depend on this cmdlet.
     Environment overrides: FO_DSSIM_BUNDLE_URL, FO_DSSIM_BUNDLE_SHA256, FO_DSSIM_BUNDLE_FILENAME.
 
     .EXAMPLE

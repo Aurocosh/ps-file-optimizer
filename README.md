@@ -108,6 +108,17 @@ $env:FO_TEST_PLUGIN_PATH = Join-Path $PWD 'Plugins64'
 
 If plugins are missing, integration describes are **Skipped** rather than failed.
 
+### DSSIM compare tool (test only)
+
+`Install-FoDssim` (exported cmdlet) and `Scripts/Install-Dssim.ps1` download pinned [dssim](https://github.com/kornelski/dssim) 3.4.0 for **PNG pixel comparison in image tests** (`Compare-FoImage`, corpus sweeps, CI smoke). **Not required for file optimization** — no optimization pipeline invokes dssim.
+
+```powershell
+./Scripts/Install-Dssim.ps1 -PluginPath .\Plugins64
+# or: Install-FoDssim -DestinationPath .\Plugins64
+```
+
+See [`Tests/README.md`](Tests/README.md) for compare thresholds and `FO_COMPARE_ALLOW_MISSING_DSSIM`.
+
 | Variable | Purpose |
 |----------|---------|
 | `FO_PLUGIN_PATH` | Default plugin directory when set (overrides module `Plugins64\` / `Plugins32\` for normal runs) |
