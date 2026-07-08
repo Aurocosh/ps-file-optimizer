@@ -162,6 +162,35 @@ Describe 'Invoke-FoPlugin timeouts' -Tag Unit {
         $sw.Elapsed.TotalSeconds | Should -BeLessThan 10
     }
 
+    It 'Rolls back in-place changes when a plugin step times out' {
+        $workDir = Join-Path $TestDrive 'inplace-timeout'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $workFile = Join-Path $workDir 'test.dat'
+        $original = 'A' * 100
+        Set-Content -LiteralPath $workFile -Value $original -NoNewline
+
+        $step = [PSCustomObject]@{
+            Name = 'timeout-inplace'
+            Executable = 'powershell.exe'
+            Arguments = '-NoProfile -ExecutionPolicy Bypass -Command "Set-Content -LiteralPath ''%INPUTFILE%'' -Value (''X''*10) -NoNewline; Start-Sleep -Seconds 30"'
+            Handler = $null
+            Mode = 'InPlace'
+            Gate = $null
+        }
+
+        $settings = Get-FoConfig
+        $settings.PluginTimeoutSeconds = 1
+
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        $result = Invoke-FoPlugin -Step $step -InputFile $workFile -Settings $settings -SearchMode PathOnly
+        $sw.Stop()
+
+        $result.Reason | Should -Be 'Timeout'
+        $result.Accepted | Should -Be $false
+        (Get-Content -LiteralPath $workFile -Raw) | Should -Be $original
+        $sw.Elapsed.TotalSeconds | Should -BeLessThan 10
+    }
+
     It 'Completes when a plugin writes large stderr volume' {
         $workDir = Join-Path $TestDrive 'plugin-stderr'
         New-Item -ItemType Directory -Path $workDir -Force | Out-Null

@@ -53,7 +53,13 @@ function Get-FoActiveSteps {
 
     foreach ($step in $Steps) {
         if ($step.Gate) {
-            if (-not (& $step.Gate $Context)) { continue }
+            try {
+                if (-not (& $step.Gate $Context)) { continue }
+            }
+            catch {
+                # Gate exceptions must not crash planning/execution; treat as gate-false.
+                continue
+            }
         }
         $step
     }

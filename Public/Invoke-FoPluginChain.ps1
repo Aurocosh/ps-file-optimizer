@@ -96,6 +96,8 @@ function Invoke-FoPluginChain {
                     $stepLog += [PSCustomObject]@{
                         Step       = $step.Name
                         Group      = $p.GroupName
+                        ExitCode   = $result.ExitCode
+                        Reason     = $result.Reason
                         SizeBefore = $result.SizeBefore
                         SizeAfter  = $result.SizeAfter
                         Accepted   = $result.Accepted

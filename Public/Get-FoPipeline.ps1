@@ -60,7 +60,7 @@ function Get-FoExecutionPlan {
     )
 
     $context = New-FoFileContext -InputFile $Path -Settings $Settings
-    $groups = Get-FoPipelineGroupsForFile -Path $Path
+    $groups = Get-FoPipelineGroupsForFile -Path $Path -Settings $Settings
     $plans = @()
 
     foreach ($group in $groups) {

@@ -125,6 +125,21 @@ Describe 'Default-off text pipelines' -Tag Unit {
     }
 }
 
+Describe 'Get-FoActiveSteps gate safety' -Tag Unit {
+    It 'Skips steps when a gate scriptblock throws' {
+        $step = [PSCustomObject]@{
+            Gate = { throw 'boom' }
+        }
+        $ctx = @{
+            Settings = @{ LogLevel = 0 }
+        }
+
+        $results = $null
+        { $results = @(Get-FoActiveSteps -Steps @($step) -Context $ctx) } | Should -Not -Throw
+        $results.Count | Should -Be 0
+    }
+}
+
 Describe 'Invoke-FoPluginChain multi-group routing' -Tag Unit {
     It 'Includes all mapped pipeline groups on WhatIf results' {
         $db = Join-Path $TestDrive 'multi.db'

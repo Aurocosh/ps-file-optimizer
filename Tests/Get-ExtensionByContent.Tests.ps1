@@ -66,6 +66,15 @@ Describe 'Get-ExtensionByContent' -Tag Unit {
         Get-ExtensionByContent -Path $path -Extension '.mjs' -Settings $settings | Should -Be '.mjs'
         Get-FoPipelineGroupsForFile -Path $path -Settings $settings | Should -Contain 'JS'
     }
+
+    It 'Get-FoExecutionPlan honors JSAdditionalExtensions' {
+        $path = Join-Path $TestDrive 'app.mjs'
+        Set-Content -LiteralPath $path -Value 'not-javascript' -NoNewline
+        $settings = @{ JSAdditionalExtensions = 'mjs' }
+
+        $plan = Get-FoExecutionPlan -Path $path -Settings $settings
+        @($plan.Plans | ForEach-Object { $_.GroupName }) | Should -Contain 'JS'
+    }
 }
 
 Describe 'Format-FoProcessArgument' -Tag Unit {

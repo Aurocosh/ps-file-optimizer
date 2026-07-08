@@ -71,6 +71,7 @@ function Invoke-FoPlugin {
     $sizeAfter = $sizeBefore
     $exitCode = 0
     $exitOk = $false
+    $reason = $null
     try {
         if ($usesInPlace) {
             $inplaceBackup = Join-Path $tempDir "FileOptimizer_inplacebak_${rand}_$baseName"
@@ -82,20 +83,20 @@ function Invoke-FoPlugin {
         }
 
         foreach ($requiredExe in (Get-FoStepRequiredExecutables -Step $Step)) {
-        $toolCheck = Resolve-FoPluginExecutable -Name $requiredExe -SearchMode $SearchMode -PluginPath $PluginPath
-        if (-not $toolCheck.Found) {
-            return @{
-                ExitCode   = 1
-                Skipped    = $true
-                Reason     = 'ToolMissing'
-                Tool       = $requiredExe
-                Accepted   = $false
-                SizeBefore = $sizeBefore
-                SizeAfter  = $sizeBefore
-                DurationMs = $sw.ElapsedMilliseconds
+            $toolCheck = Resolve-FoPluginExecutable -Name $requiredExe -SearchMode $SearchMode -PluginPath $PluginPath
+            if (-not $toolCheck.Found) {
+                return @{
+                    ExitCode   = 1
+                    Skipped    = $true
+                    Reason     = 'ToolMissing'
+                    Tool       = $requiredExe
+                    Accepted   = $false
+                    SizeBefore = $sizeBefore
+                    SizeAfter  = $sizeBefore
+                    DurationMs = $sw.ElapsedMilliseconds
+                }
             }
         }
-    }
 
     if ($Step.Handler) {
         if (Test-FoDisablePluginMaskMatch -Mask $Settings.DisablePluginMask -Haystack $Step.Handler) {
@@ -130,16 +131,8 @@ function Invoke-FoPlugin {
         }
 
         if ($exitCode -eq -1) {
-            $sw.Stop()
-            return @{
-                ExitCode   = $exitCode
-                Skipped    = $false
-                Accepted   = $false
-                Reason     = 'Timeout'
-                SizeBefore = $sizeBefore
-                SizeAfter  = $sizeBefore
-                DurationMs = $sw.ElapsedMilliseconds
-            }
+            # Timeout should not early-return: we still need in-place rollback + temp cleanup.
+            $reason = 'Timeout'
         }
     }
     else {
@@ -220,16 +213,8 @@ function Invoke-FoPlugin {
         $p.Dispose()
 
         if ($timedOut) {
-            $sw.Stop()
-            return @{
-                ExitCode   = $exitCode
-                Skipped    = $false
-                Accepted   = $false
-                Reason     = 'Timeout'
-                SizeBefore = $sizeBefore
-                SizeAfter  = $sizeBefore
-                DurationMs = $sw.ElapsedMilliseconds
-            }
+            # Timeout should not early-return: we still need in-place rollback + temp cleanup.
+            $reason = 'Timeout'
         }
     }
 
@@ -303,6 +288,7 @@ function Invoke-FoPlugin {
         ExitCode   = $exitCode
         Skipped    = $false
         Accepted   = $accepted
+        Reason     = $reason
         SizeBefore = $sizeBefore
         SizeAfter  = $sizeAfter
         DurationMs = $sw.ElapsedMilliseconds
