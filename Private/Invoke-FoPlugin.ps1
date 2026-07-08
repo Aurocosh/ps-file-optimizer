@@ -115,14 +115,7 @@ function Invoke-FoPlugin {
         $psi.CreateNoWindow = $true
 
         $p = [System.Diagnostics.Process]::Start($psi)
-        $stderrBuilder = New-Object System.Text.StringBuilder
-        $stderrSourceId = 'FoPluginStderr_{0}' -f (Get-Random)
-        $stderrEvent = Register-ObjectEvent -InputObject $p -EventName ErrorDataReceived -SourceIdentifier $stderrSourceId -MessageData $stderrBuilder -Action {
-            if ($EventArgs.Data) {
-                [void]$Event.MessageData.AppendLine($EventArgs.Data)
-            }
-        }
-        $p.BeginErrorReadLine()
+        $stderrTask = $p.StandardError.ReadToEndAsync()
 
         $timeoutSec = 0
         if ($null -ne $Settings.PluginTimeoutSeconds) {
@@ -144,14 +137,9 @@ function Invoke-FoPlugin {
 
         $stderr = $null
         try {
-            $p.CancelErrorRead()
-            $stderr = $stderrBuilder.ToString()
+            $stderr = $stderrTask.GetAwaiter().GetResult()
         }
         catch { }
-        if ($stderrEvent) {
-            Unregister-Event -SourceIdentifier $stderrSourceId -ErrorAction SilentlyContinue
-            Remove-Job -Id $stderrEvent.Id -Force -ErrorAction SilentlyContinue
-        }
         if ($Settings.LogLevel -ge 3 -and $stderr) {
             Write-Verbose ("Plugin stderr ({0}): {1}" -f $Step.Name, $stderr.Trim())
         }
