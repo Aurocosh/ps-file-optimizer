@@ -46,6 +46,7 @@ Plugin-dependent describes use `-Skip:(-not (Test-FoPluginsAvailable))` instead 
 | Tag | When to use | CI unit job |
 |-----|-------------|-------------|
 | `Unit` | Config merge, helpers, corpus verify, bundle metadata | Included |
+| `Smoke` | Fast image optimize+compare (PNG/BMP/GIF); needs cached plugins | `image-smoke` job only |
 | `ImageIntegration` | Real optimize → compare loops; needs plugins | Excluded from PR unit job |
 | `Integration` | Network download tests (plugins, corpus tiers B+) | Separate Windows job on push to `master` |
 | `Lossy` | `*AllowLossy` settings profiles; SSIM thresholds | Excluded |
@@ -69,12 +70,13 @@ Recommended invocations:
 
 ## CI
 
-| Job | Runner | Command |
-|-----|--------|---------|
-| `unit` | `windows-latest` | `Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow` |
-| `integration-downloads` | `windows-latest` (push to `master` only) | `Invoke-FoTests.ps1 -Tag Integration` with `FO_RUN_*=1` (x64 + x86 plugin install) |
+| Job | Runner | Trigger | Command |
+|-----|--------|---------|---------|
+| `unit` | `windows-latest` | push / PR to `main` or `master` | `Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow` |
+| `image-smoke` | `windows-latest` | push / PR to `main` or `master` | Restore plugin cache (`actions/cache` on `FoPlugins64` + dssim); install bundle on miss; `FO_TEST_PLUGIN_PATH` → `Invoke-FoTests.ps1 -Tag Smoke` |
+| `integration-downloads` | `windows-latest` | push to `main` or `master` only | `FO_RUN_INSTALL_INTEGRATION=1`, `FO_RUN_CORPUS_INTEGRATION=1`, `FO_PLUGIN_BUNDLE_CACHE_DIR` → `Invoke-FoTests.ps1 -Tag Integration` (x64 + x86 plugin install) |
 
-Both jobs use `shell: pwsh` (PowerShell 7), which loads Pester 5 without the legacy Windows PowerShell 5.1 Pester 3 conflict.
+All jobs use `shell: pwsh` (PowerShell 7). The `image-smoke` and `integration-downloads` jobs cache downloaded bundle archives under `FO_PLUGIN_BUNDLE_CACHE_DIR` (see workflow SHA256 comment keys in `.github/workflows/pester.yml`).
 
 ## Layout
 

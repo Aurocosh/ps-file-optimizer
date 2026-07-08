@@ -1,27 +1,13 @@
 $script:FoModuleRoot = $PSScriptRoot
 $script:FoExtensionMap = $null
 
-# Private helpers
-. (Join-Path $PSScriptRoot 'Private\Import-FoPsd1File.ps1')
-. (Join-Path $PSScriptRoot 'Private\Import-FoJsonFile.ps1')
-. (Join-Path $PSScriptRoot 'Private\Get-FoModuleDefaults.ps1')
-. (Join-Path $PSScriptRoot 'Private\Format-FoFileSize.ps1')
-. (Join-Path $PSScriptRoot 'Private\Merge-FoSettings.ps1')
-. (Join-Path $PSScriptRoot 'Private\Write-FoLog.ps1')
-. (Join-Path $PSScriptRoot 'Private\Get-FoLevelFlags.ps1')
-. (Join-Path $PSScriptRoot 'Private\Get-ExtensionByContent.ps1')
-. (Join-Path $PSScriptRoot 'Private\Test-FoFileGate.ps1')
-. (Join-Path $PSScriptRoot 'Private\Handlers\Invoke-FoNativeHandlers.ps1')
-. (Join-Path $PSScriptRoot 'Private\Get-FoStepRequiredExecutables.ps1')
-. (Join-Path $PSScriptRoot 'Private\Invoke-FoPlugin.ps1')
-. (Join-Path $PSScriptRoot 'Private\Invoke-FoOutputMode.ps1')
-. (Join-Path $PSScriptRoot 'Private\Add-FoHistoryEntry.ps1')
-. (Join-Path $PSScriptRoot 'Private\Format-FoHistoryEntry.ps1')
-. (Join-Path $PSScriptRoot 'Private\Write-FoReport.ps1')
-. (Join-Path $PSScriptRoot 'Private\Get-FoTargetFiles.ps1')
-. (Join-Path $PSScriptRoot 'Private\Invoke-FoRollback.ps1')
+. (Join-Path $PSScriptRoot 'Private\_Import-FoEngine.ps1')
+foreach ($name in (Get-FoEnginePrivateScriptNames)) {
+    . (Join-Path $PSScriptRoot "Private\$name.ps1")
+}
 
-# Pipelines
+. (Join-Path $PSScriptRoot 'Private\Handlers\Invoke-FoNativeHandlers.ps1')
+
 . (Join-Path $PSScriptRoot 'Pipelines\_Helpers.ps1')
 Get-ChildItem -Path (Join-Path $PSScriptRoot 'Pipelines\*.ps1') -Exclude '_Helpers.ps1' | ForEach-Object {
     . $_.FullName

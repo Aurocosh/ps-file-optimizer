@@ -3,25 +3,14 @@ $script:FoModuleRoot = Split-Path -Parent $script:FoTestSupportRoot
 
 Import-Module (Join-Path $script:FoModuleRoot 'FileOptimizer.psd1') -Force
 
-foreach ($name in @(
-        'Import-FoPsd1File'
-        'Import-FoJsonFile'
-        'Get-FoModuleDefaults'
-        'Format-FoFileSize'
-        'Merge-FoSettings'
-        'Get-FoLevelFlags'
-        'Get-ExtensionByContent'
-        'Test-FoFileGate'
-        'Invoke-FoOutputMode'
-        'Add-FoHistoryEntry'
-        'Format-FoHistoryEntry'
-    )) {
+. (Join-Path $script:FoModuleRoot 'Private\_Import-FoEngine.ps1')
+foreach ($name in (Get-FoTestSupportPrivateScriptNames)) {
     . (Join-Path $script:FoModuleRoot "Private\$name.ps1")
 }
 
 . (Join-Path $script:FoModuleRoot 'Public\Resolve-FoPluginExecutable.ps1')
-. (Join-Path $script:FoModuleRoot 'Private\Compare-FoImage.ps1')
-. (Join-Path $script:FoModuleRoot 'Private\Get-FoImageInfo.ps1')
+. (Join-Path $PSScriptRoot 'Private\Get-FoImageInfo.ps1')
+. (Join-Path $PSScriptRoot 'Private\Compare-FoImage.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Get-FoPluginBundleMetadata.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Install-FoPluginBundle.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Get-FoDssimBundleMetadata.ps1')

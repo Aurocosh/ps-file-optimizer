@@ -54,6 +54,12 @@ When you install/use `Plugins32\` (x86), several x64-only tools are intentionall
 
 Related pipelines automatically skip missing steps when these tools are unavailable, so optimization still runs but may produce fewer size wins than `Plugins64\`.
 
+## Pipelines
+
+The module defines **39 format groups** under `Pipelines/`. Most map 1:1 from file extension via `Data/ExtensionMap.psd1`.
+
+**MISC catch-all:** Unrecognized image-like extensions route to the `MISC` pipeline, which runs ImageMagick `convert` optimization. This can alter pixels or metadata in ways that are hard to predict. Leave `MiscDisable = false` only when you explicitly want that behavior; set `MiscDisable = true` in config (or pass `-MiscDisable`) to skip the MISC group entirely.
+
 ## Layout
 
 | Path | Purpose |
