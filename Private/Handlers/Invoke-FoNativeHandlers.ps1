@@ -126,14 +126,34 @@ function Invoke-FoDefluffPipe {
 
     $p = [System.Diagnostics.Process]::Start($psi)
     try {
-        $inputStream = [System.IO.File]::OpenRead($InputPath)
-        try {
-            $inputStream.CopyTo($p.StandardInput.BaseStream)
+        if ($TimeoutSeconds -gt 0) {
+            $inputStream = [System.IO.File]::OpenRead($InputPath)
+            try {
+                $stdinCopy = Start-FoAsyncStreamCopy -From $inputStream -To $p.StandardInput.BaseStream
+                if (-not (Wait-FoAsyncStreamCopy -AsyncCopy $stdinCopy -TimeoutSeconds $TimeoutSeconds)) {
+                    try { $p.StandardInput.Close() } catch { }
+                    if (-not $p.HasExited) { try { $p.Kill() } catch { } }
+                    if (Test-Path -LiteralPath $OutputPath) {
+                        Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+                    }
+                    return -1
+                }
+            }
+            finally {
+                $inputStream.Dispose()
+            }
+            $p.StandardInput.Close()
         }
-        finally {
-            $inputStream.Dispose()
+        else {
+            $inputStream = [System.IO.File]::OpenRead($InputPath)
+            try {
+                $inputStream.CopyTo($p.StandardInput.BaseStream)
+            }
+            finally {
+                $inputStream.Dispose()
+            }
+            $p.StandardInput.Close()
         }
-        $p.StandardInput.Close()
 
         $outputStream = [System.IO.File]::Create($OutputPath)
         try {
