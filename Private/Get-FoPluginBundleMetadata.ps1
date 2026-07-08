@@ -260,23 +260,9 @@ function Get-FoRequiredPluginExecutables {
 
     $exes = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 
-    foreach ($handlerExes in $script:FoHandlerExecutables.Values) {
-        foreach ($e in $handlerExes) {
-            [void]$exes.Add($e)
-        }
+    foreach ($e in (Get-FoPipelineDeclaredExecutables -Architecture $Architecture)) {
+        [void]$exes.Add($e)
     }
-
-    [void]$exes.Add((Get-FoGhostscriptExecutableName -Architecture $Architecture))
-
-    $pipelineDir = Join-Path $script:FoModuleRoot 'Pipelines'
-    Get-ChildItem -LiteralPath $pipelineDir -Filter '*.ps1' -File -ErrorAction Stop |
-        Where-Object { $_.Name -ne '_Helpers.ps1' } |
-        ForEach-Object {
-            $content = Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8
-            foreach ($m in [regex]::Matches($content, "-Executable\s+'([^']+)'")) {
-                [void]$exes.Add($m.Groups[1].Value)
-            }
-        }
 
     if ($Architecture -eq '32') {
         foreach ($only64 in $script:FoPlugin64OnlyExecutables) {

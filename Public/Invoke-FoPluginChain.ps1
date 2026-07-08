@@ -79,7 +79,7 @@ function Invoke-FoPluginChain {
         Write-Host ('Optimizing {0} via {1}' -f $Path, ($groupNames -join ', '))
     }
 
-    $workFile = Join-Path ([System.IO.Path]::GetTempPath()) ('FileOptimizer_work_{0}_{1}' -f (Get-Random -Max 99999), [System.IO.Path]::GetFileName($Path))
+    $workFile = Join-Path ([System.IO.Path]::GetTempPath()) ('FileOptimizer_work_{0}_{1}' -f ([guid]::NewGuid().ToString('N')), [System.IO.Path]::GetFileName($Path))
     Copy-Item -LiteralPath $Path -Destination $workFile -Force
     $originalSize = (Get-Item -LiteralPath $Path).Length
     $stepLog = @()

@@ -138,6 +138,24 @@ Describe 'Get-FoActiveSteps gate safety' -Tag Unit {
         { $results = @(Get-FoActiveSteps -Steps @($step) -Context $ctx) } | Should -Not -Throw
         $results.Count | Should -Be 0
     }
+
+    It 'Logs gate exceptions when LogLevel is elevated' {
+        InModuleScope FoTestSupport {
+            $captured = $null
+            Mock Write-Warning { param($Message) $script:captured = $Message }
+
+            $step = [PSCustomObject]@{
+                Name = 'gate-throw-test'
+                Gate = { throw 'boom' }
+            }
+            $ctx = @{
+                Settings = @{ LogLevel = 2 }
+            }
+
+            Get-FoActiveSteps -Steps @($step) -Context $ctx | Out-Null
+            $script:captured | Should -Match 'boom'
+        }
+    }
 }
 
 Describe 'Invoke-FoPluginChain multi-group routing' -Tag Unit {

@@ -58,6 +58,10 @@ function Get-FoActiveSteps {
             }
             catch {
                 # Gate exceptions must not crash planning/execution; treat as gate-false.
+                if ($Context.Settings.Debug -or ($Context.Settings.LogLevel -ge 2)) {
+                    $stepName = if ($step.Name) { $step.Name } else { '(unnamed)' }
+                    Write-Warning "Gate evaluation failed for step '$stepName': $($_.Exception.Message)"
+                }
                 continue
             }
         }

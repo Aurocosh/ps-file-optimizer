@@ -716,6 +716,20 @@ Describe 'Get-FoRequiredPluginExecutables' -Tag Unit {
             Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
+
+    It 'Collects executables from pipeline step objects instead of regex scraping' {
+        InModuleScope FileOptimizer {
+            $x64 = Get-FoRequiredPluginExecutables -Architecture 64
+            $x64.Count | Should -BeGreaterThan 50
+            ($x64 -contains 'oxipng.exe') | Should -Be $true
+            ($x64 -contains 'defluff.exe') | Should -Be $true
+            ($x64 -contains 'gswin64c.exe') | Should -Be $true
+            ($x64 -contains 'magick.exe') | Should -Be $true
+
+            $declared = Get-FoPipelineDeclaredExecutables -Architecture 64
+            @($declared | Sort-Object) | Should -Be @($x64 | Sort-Object)
+        }
+    }
 }
 
 Describe 'Install-FoPlugins planning' -Tag Unit {

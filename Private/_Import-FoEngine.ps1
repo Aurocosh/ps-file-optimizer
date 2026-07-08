@@ -10,6 +10,7 @@ function Get-FoEnginePrivateScriptNames {
         'Get-ExtensionByContent'
         'Test-FoFileGate'
         'Get-FoStepRequiredExecutables'
+        'Get-FoPipelineExecutableInventory'
         'Invoke-FoPlugin'
         'Invoke-FoOutputMode'
         'Add-FoHistoryEntry'
