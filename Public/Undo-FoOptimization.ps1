@@ -33,11 +33,9 @@ function Undo-FoOptimization {
     )
 
     $pathHist = if ($HistoryPath) { $HistoryPath } else { Get-FoDefaultHistoryPath }
-    $data = Get-FoHistoryData -HistoryPath $pathHist
-    $entries = @($data.Entries | Where-Object { $_.ReversalStatus -eq 'Pending' } | Sort-Object Timestamp -Descending)
 
+    $normalized = @()
     if ($Path) {
-        $normalized = @()
         foreach ($p in $Path) {
             $resolved = Resolve-Path -LiteralPath $p -ErrorAction SilentlyContinue
             if (-not $resolved) {
@@ -45,32 +43,49 @@ function Undo-FoOptimization {
             }
             $normalized += [System.IO.Path]::GetFullPath($resolved.Path)
         }
-        $entries = @($entries | Where-Object {
-            $op = [System.IO.Path]::GetFullPath($_.OriginalPath)
-            $opt = if ($_.OptimizedPath) { [System.IO.Path]::GetFullPath($_.OptimizedPath) } else { '' }
-            ($normalized -contains $op) -or ($opt -and ($normalized -contains $opt))
-        })
     }
-    elseif ($Last -gt 0) {
-        $entries = @($entries | Select-Object -First $Last)
-    }
-    else {
+    elseif (-not ($Last -gt 0)) {
         throw 'Specify -Path or -Last.'
     }
 
-    $results = @()
-    foreach ($entry in $entries) {
-        if ($WhatIfPreference -eq 'Continue') {
-            $r = Invoke-FoRollback -Entry $entry -WhatIf
-            Write-Host "WHATIF: $($r.Message)"
-            continue
+    $results = [System.Collections.Generic.List[object]]::new()
+
+    Invoke-FoHistoryFileLock -HistoryPath $pathHist -Action {
+        $data = Get-FoHistoryData -HistoryPath $pathHist
+        $entries = @($data.Entries | Where-Object { $_.ReversalStatus -eq 'Pending' } | Sort-Object Timestamp -Descending)
+
+        if ($Path) {
+            $entries = @($entries | Where-Object {
+                $op = [System.IO.Path]::GetFullPath($_.OriginalPath)
+                $opt = if ($_.OptimizedPath) { [System.IO.Path]::GetFullPath($_.OptimizedPath) } else { '' }
+                ($normalized -contains $op) -or ($opt -and ($normalized -contains $opt))
+            })
         }
-        if ($PSCmdlet.ShouldProcess($entry.OriginalPath, 'Rollback optimization')) {
-            $r = Invoke-FoRollback -Entry $entry
-            Update-FoHistoryEntry -Id $entry.Id -ReversalStatus $r.Status -ErrorMessage $(if ($r.Success) { $null } else { $r.Message }) -HistoryPath $pathHist
-            if ($r.Success) { Write-Host $r.Message } else { Write-Warning $r.Message }
-            $results += [PSCustomObject]@{ Id = $entry.Id; Path = $entry.OriginalPath; Status = $r.Status; Message = $r.Message }
+        elseif ($Last -gt 0) {
+            $entries = @($entries | Select-Object -First $Last)
         }
+
+        foreach ($entry in $entries) {
+            if ($WhatIfPreference -eq 'Continue') {
+                $r = Invoke-FoRollback -Entry $entry -WhatIf
+                Write-Host "WHATIF: $($r.Message)"
+                continue
+            }
+            if ($PSCmdlet.ShouldProcess($entry.OriginalPath, 'Rollback optimization')) {
+                $r = Invoke-FoRollback -Entry $entry
+                foreach ($e in $data.Entries) {
+                    if ($e.Id -eq $entry.Id) {
+                        $e.ReversalStatus = $r.Status
+                        $e.ErrorMessage = if ($r.Success) { $null } else { $r.Message }
+                    }
+                }
+                if ($r.Success) { Write-Host $r.Message } else { Write-Warning $r.Message }
+                $results.Add([PSCustomObject]@{ Id = $entry.Id; Path = $entry.OriginalPath; Status = $r.Status; Message = $r.Message })
+            }
+        }
+
+        Save-FoHistoryData -Data $data -HistoryPath $pathHist
     }
-    return $results
+
+    return @($results)
 }

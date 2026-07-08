@@ -89,9 +89,9 @@ function Invoke-FoPlugin {
     }
     else {
         $argTemplate = $stepArgs
-        $argTemplate = $argTemplate.Replace('%INPUTFILE%', "`"$InputFile`"")
-        $argTemplate = $argTemplate.Replace('%TMPINPUTFILE%', "`"$tmpIn`"")
-        $argTemplate = $argTemplate.Replace('%TMPOUTPUTFILE%', "`"$tmpOut`"")
+        $argTemplate = $argTemplate.Replace('%INPUTFILE%', (Format-FoProcessArgument $InputFile))
+        $argTemplate = $argTemplate.Replace('%TMPINPUTFILE%', (Format-FoProcessArgument $tmpIn))
+        $argTemplate = $argTemplate.Replace('%TMPOUTPUTFILE%', (Format-FoProcessArgument $tmpOut))
         $argTemplate = $argTemplate.Replace('%OUTPUTFILE%', '""')
 
         $resolved = Resolve-FoPluginExecutable -Name $Step.Executable -SearchMode $SearchMode -PluginPath $PluginPath

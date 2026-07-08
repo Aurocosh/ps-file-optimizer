@@ -58,7 +58,7 @@ function Invoke-FoGzipRecompress {
 
     $decomp = New-Object System.Diagnostics.ProcessStartInfo
     $decomp.FileName = $GzipExe
-    $decomp.Arguments = "-cd `"$InputPath`""
+    $decomp.Arguments = '-cd ' + (Format-FoProcessArgument $InputPath)
     $decomp.UseShellExecute = $false
     $decomp.RedirectStandardOutput = $true
     $decomp.RedirectStandardError = $true

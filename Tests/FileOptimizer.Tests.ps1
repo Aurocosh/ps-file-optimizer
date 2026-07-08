@@ -227,6 +227,64 @@ Describe 'History and rollback' -Tag Unit {
             Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
         }
     }
+
+    It 'Allows only one parallel undo to reverse a single pending entry' {
+        $histDir = Join-Path $env:TEMP "FoHistParallel_$(Get-Random)"
+        $histFile = Join-Path $histDir 'history.json'
+        $workDir = Join-Path $histDir 'work'
+        $bakRoot = Join-Path $histDir 'backups'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $orig = Join-Path $workDir 'doc.txt'
+        $opt = Join-Path $env:TEMP "fo_opt_parallel_$(Get-Random).txt"
+        Set-Content -LiteralPath $orig -Value 'original-long-content' -NoNewline
+        Set-Content -LiteralPath $opt -Value 'x' -NoNewline
+
+        Push-Location $workDir
+        try {
+            $s = Get-FoConfig
+            $s.OutputMode = 'TempMove'
+            $s.TempBackupPath = $bakRoot
+            $s.HistoryPath = $histFile
+            $s.HistoryEnabled = $true
+
+            $out = Invoke-FoOutputMode -SourceFile $opt -TargetPath $orig -Settings $s
+            $result = [PSCustomObject]@{
+                Path         = $orig
+                OriginalSize = 21
+                FinalSize    = 1
+                OutputPath   = $orig
+                BackupPath   = $out.BackupPath
+                OutputMode   = 'TempMove'
+            }
+            Add-FoHistoryEntry -Result $result -Settings $s
+
+            $moduleRoot = (Get-Module FileOptimizer).ModuleBase
+            $undoScript = {
+                param($HistoryPath, $ModuleRoot)
+                Import-Module (Join-Path $ModuleRoot 'FileOptimizer.psd1') -Force
+                return @(Undo-FoOptimization -Last 1 -HistoryPath $HistoryPath)
+            }
+            $jobA = Start-Job -ScriptBlock $undoScript -ArgumentList $histFile, $moduleRoot
+            $jobB = Start-Job -ScriptBlock $undoScript -ArgumentList $histFile, $moduleRoot
+            Wait-Job -Job $jobA, $jobB | Out-Null
+            $results = @()
+            foreach ($job in @($jobA, $jobB)) {
+                $received = Receive-Job -Job $job
+                if ($null -ne $received) {
+                    $results += @($received)
+                }
+            }
+            Remove-Job -Job $jobA, $jobB -Force
+
+            @($results | Where-Object { $_.Status -eq 'Reversed' }).Count | Should -Be 1
+            @((Get-FoHistory -HistoryPath $histFile -Format Object) | Where-Object { $_.ReversalStatus -eq 'Reversed' }).Count | Should -Be 1
+        }
+        finally {
+            Pop-Location
+            Remove-Item -LiteralPath $histDir -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $opt -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 Describe 'Missing tools policy' -Tag Unit {

@@ -116,6 +116,39 @@ function Invoke-FoPluginBundleDownload {
     }
 }
 
+function Publish-FoPluginInstallStage {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$StageDir,
+        [Parameter(Mandatory)]
+        [string]$DestinationPath
+    )
+
+    $prev = "$DestinationPath.fo-install-prev"
+    if (Test-Path -LiteralPath $prev) {
+        Remove-Item -LiteralPath $prev -Recurse -Force
+    }
+
+    $hadDest = Test-Path -LiteralPath $DestinationPath
+    if ($hadDest) {
+        Move-Item -LiteralPath $DestinationPath -Destination $prev -Force
+    }
+
+    try {
+        Move-Item -LiteralPath $StageDir -Destination $DestinationPath -Force
+        if (Test-Path -LiteralPath $prev) {
+            Remove-Item -LiteralPath $prev -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+    catch {
+        if (-not (Test-Path -LiteralPath $DestinationPath) -and $hadDest -and (Test-Path -LiteralPath $prev)) {
+            Move-Item -LiteralPath $prev -Destination $DestinationPath -Force
+        }
+        throw
+    }
+}
+
 function Copy-FoPluginFilesFromBundle {
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -353,11 +386,29 @@ function Install-FoPluginBundleCore {
         $sourcePlugins = Resolve-FoBundledPluginDirectory -ExtractRoot $extractRoot -ExpectedFolder $bundle.Folder
         $filesToCopy = Get-FoPluginInstallFilePlan -Executables $exesToInstall -SourcePluginDir $sourcePlugins
 
+        $stageDir = Join-Path $tempRoot 'stage-plugins'
+        if (Test-Path -LiteralPath $dest) {
+            if (Test-Path -LiteralPath $stageDir) {
+                Remove-Item -LiteralPath $stageDir -Recurse -Force
+            }
+            Copy-Item -LiteralPath $dest -Destination $stageDir -Recurse -Force
+        }
+        elseif (-not (Test-Path -LiteralPath $stageDir)) {
+            New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
+        }
+
         $copyResult = Copy-FoPluginFilesFromBundle `
             -SourcePluginDir $sourcePlugins `
-            -DestinationPluginDir $dest `
+            -DestinationPluginDir $stageDir `
             -FileNames $filesToCopy `
             -Force:$Force
+
+        if ($copyResult.Missing.Count -gt 0) {
+            throw "Plugin bundle is missing $($copyResult.Missing.Count) required file(s): $($copyResult.Missing -join ', ')"
+        }
+
+        Publish-FoPluginInstallStage -StageDir $stageDir -DestinationPath $dest
+        $stageDir = $null
 
         if ($copyResult.Copied.Count -gt 0) {
             Clear-FoPluginResolveCache

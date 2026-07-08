@@ -249,6 +249,56 @@ Describe 'Plugin bundle extract safety' -Tag Unit {
     }
 }
 
+Describe 'Staged plugin install' -Tag Unit {
+    BeforeAll {
+        . (Join-Path (Get-FoTestModuleRoot) 'Private\Install-FoPluginBundle.ps1')
+    }
+
+    It 'Leaves destination unchanged when staging copy fails' {
+        $dest = Join-Path $TestDrive 'plugins-dest'
+        $stage = Join-Path $TestDrive 'plugins-stage'
+        $source = Join-Path $TestDrive 'bundle-src'
+        New-Item -ItemType Directory -Path $dest, $source -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $dest 'magick.exe') -Value 'keep-me' -NoNewline
+        Copy-Item -LiteralPath $dest -Destination $stage -Recurse -Force
+        Set-Content -LiteralPath (Join-Path $source 'oxipng.exe') -Value 'new-tool' -NoNewline
+
+        $realCopy = Get-Command Copy-Item -Module Microsoft.PowerShell.Management
+        Mock Copy-Item {
+            param($LiteralPath, $Destination, $Force)
+            if ($LiteralPath -like '*oxipng.exe') {
+                throw 'Simulated staging copy failure'
+            }
+            & $realCopy @PSBoundParameters
+        }
+
+        { Copy-FoPluginFilesFromBundle -SourcePluginDir $source -DestinationPluginDir $stage -FileNames @('oxipng.exe') -Force } |
+            Should -Throw 'Simulated staging copy failure'
+        (Get-Content -LiteralPath (Join-Path $dest 'magick.exe') -Raw) | Should -Be 'keep-me'
+    }
+
+    It 'Restores destination when publish fails after staging' {
+        $dest = Join-Path $TestDrive 'plugins-publish'
+        $stage = Join-Path $TestDrive 'plugins-publish-stage'
+        New-Item -ItemType Directory -Path $dest, $stage -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $dest 'existing.exe') -Value 'original' -NoNewline
+        Set-Content -LiteralPath (Join-Path $stage 'existing.exe') -Value 'staged' -NoNewline
+
+        $realMove = Get-Command Move-Item -Module Microsoft.PowerShell.Management
+        $stageFull = [System.IO.Path]::GetFullPath($stage)
+        Mock Move-Item {
+            param($LiteralPath, $Destination, $Force)
+            if ([System.IO.Path]::GetFullPath($LiteralPath) -eq $stageFull) {
+                throw 'Simulated publish failure'
+            }
+            & $realMove @PSBoundParameters
+        }
+
+        { Publish-FoPluginInstallStage -StageDir $stage -DestinationPath $dest } | Should -Throw 'Simulated publish failure'
+        (Get-Content -LiteralPath (Join-Path $dest 'existing.exe') -Raw) | Should -Be 'original'
+    }
+}
+
 Describe 'Clear-FoPluginResolveCache' -Tag Unit {
     BeforeAll {
         Import-Module (Join-Path (Get-FoTestModuleRoot) 'FileOptimizer.psd1') -Force

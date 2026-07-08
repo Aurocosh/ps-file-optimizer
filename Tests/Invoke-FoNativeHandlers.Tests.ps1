@@ -89,4 +89,23 @@ Describe 'Invoke-FoGzipRecompress' -Tag Unit -Skip:(-not (
             $bytes[$i] | Should -Be $payload[$i]
         }
     }
+
+    It 'Handles gzip input paths that require quoting' {
+        $workDir = Join-Path $TestDrive 'gzip path'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $inputPath = Join-Path $workDir 'payload file.gz'
+        $outputPath = Join-Path $workDir 'payload out.gz'
+        $payload = [byte[]](0x10, 0x20, 0x30, 0x40, 0x50)
+
+        $ms = New-Object System.IO.MemoryStream
+        $gz = New-Object System.IO.Compression.GZipStream($ms, [System.IO.Compression.CompressionMode]::Compress)
+        $gz.Write($payload, 0, $payload.Length)
+        $gz.Dispose()
+        [System.IO.File]::WriteAllBytes($inputPath, $ms.ToArray())
+        $ms.Dispose()
+
+        $exitCode = Invoke-FoGzipRecompress -InputPath $inputPath -OutputPath $outputPath -GzipExe $script:GzipExe
+        $exitCode | Should -Be 0
+        (Test-Path -LiteralPath $outputPath) | Should -Be $true
+    }
 }

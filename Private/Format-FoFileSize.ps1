@@ -28,3 +28,41 @@ function Format-FoFileSize {
     }
     return ($sign + $formatted)
 }
+
+function Format-FoProcessArgument {
+    [CmdletBinding()]
+    param(
+        [AllowNull()]
+        [string]$Value
+    )
+
+    if ($null -eq $Value) { return '""' }
+    if ($Value.Length -eq 0) { return '""' }
+    if ($Value -notmatch '[\s"]') { return $Value }
+
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.Append('"')
+    $backslashes = 0
+    foreach ($ch in $Value.ToCharArray()) {
+        if ($ch -eq '\') {
+            $backslashes++
+            continue
+        }
+        if ($ch -eq '"') {
+            [void]$sb.Append('\', ($backslashes * 2 + 1))
+            [void]$sb.Append('"')
+            $backslashes = 0
+            continue
+        }
+        if ($backslashes -gt 0) {
+            [void]$sb.Append('\', $backslashes)
+            $backslashes = 0
+        }
+        [void]$sb.Append($ch)
+    }
+    if ($backslashes -gt 0) {
+        [void]$sb.Append('\', ($backslashes * 2))
+    }
+    [void]$sb.Append('"')
+    return $sb.ToString()
+}
