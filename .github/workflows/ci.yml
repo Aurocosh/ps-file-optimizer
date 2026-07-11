@@ -95,7 +95,6 @@ jobs:
     runs-on: windows-latest
     needs: [unit, image-smoke, integration-downloads]
     if: >
-      env.RELEASE_CI_ENABLED == 'true' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/master' &&
       needs.unit.result == 'success' &&
@@ -104,9 +103,17 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Release CI disabled
+        if: env.RELEASE_CI_ENABLED != 'true'
+        shell: pwsh
+        run: |
+          Write-Host "Release CI disabled. Set RELEASE_CI_ENABLED to 'true' in .github/workflows/ci.yml to publish GitHub releases."
+
       - uses: actions/checkout@v4
+        if: env.RELEASE_CI_ENABLED == 'true'
 
       - name: Publish GitHub release when ModuleVersion increases
+        if: env.RELEASE_CI_ENABLED == 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
