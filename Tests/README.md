@@ -73,11 +73,11 @@ Recommended invocations:
 
 | Job | Runner | Trigger | Command |
 |-----|--------|---------|---------|
-| `unit` | `windows-latest` | push / PR to `main` or `master` | `Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow` |
-| `image-smoke` | `windows-latest` | push / PR to `main` or `master` | Restore plugin cache (`actions/cache` on `FoPlugins64` + dssim); install bundle on miss; `FO_TEST_PLUGIN_PATH` → `Invoke-FoTests.ps1 -Tag Smoke` |
-| `integration-downloads` | `windows-latest` | push to `main` or `master` only | `FO_RUN_INSTALL_INTEGRATION=1`, `FO_RUN_CORPUS_INTEGRATION=1`, `FO_PLUGIN_BUNDLE_CACHE_DIR` → `Invoke-FoTests.ps1 -Tag Integration` (x64 + x86 plugin install) |
+| `unit` | `windows-latest` | push / PR to `master` | `Invoke-FoTests.ps1 -Tag Unit -ExcludeTag ImageIntegration,Lossy,Slow` |
+| `image-smoke` | `windows-latest` | push / PR to `master` | Restore plugin cache (`actions/cache` on `FoPlugins64` + dssim); install bundle on miss; `FO_TEST_PLUGIN_PATH` → `Invoke-FoTests.ps1 -Tag Smoke` |
+| `integration-downloads` | `windows-latest` | push to `master` only | `FO_RUN_INSTALL_INTEGRATION=1`, `FO_RUN_CORPUS_INTEGRATION=1`, `FO_PLUGIN_BUNDLE_CACHE_DIR` → `Invoke-FoTests.ps1 -Tag Integration` (x64 + x86 plugin install) |
 
-All jobs use `shell: pwsh` (PowerShell 7). The `image-smoke` and `integration-downloads` jobs cache downloaded bundle archives under `FO_PLUGIN_BUNDLE_CACHE_DIR` (see workflow SHA256 comment keys in `.github/workflows/pester.yml`). On `image-smoke` failure, compare artifacts under `FO_TEST_ARTIFACT_DIR` are uploaded via `actions/upload-artifact`.
+All jobs use `shell: pwsh` (PowerShell 7). The `image-smoke` and `integration-downloads` jobs cache downloaded bundle archives under `FO_PLUGIN_BUNDLE_CACHE_DIR` (see workflow SHA256 comment keys in `.github/workflows/ci.yml`). On `image-smoke` failure, compare artifacts under `FO_TEST_ARTIFACT_DIR` are uploaded via `actions/upload-artifact`.
 
 ## Layout
 

@@ -41,10 +41,12 @@ Describe 'CLI script exit codes' -Tag Unit {
 
     It 'Optimize-File.ps1 -Version prints ModuleVersion and exits 0' {
         $scriptPath = Join-Path $script:FoCliModuleRoot 'Scripts\Optimize-File.ps1'
+        $manifestPath = Join-Path $script:FoCliModuleRoot 'FileOptimizer.psd1'
+        $expectedVersion = (Import-FoPsd1File -Path $manifestPath).ModuleVersion.ToString()
         $command = "& '$($scriptPath.Replace("'", "''"))' -Version"
         $result = Invoke-FoCliScriptExitCode -Command $command
         $result.ExitCode | Should -Be 0
-        $result.StdOut | Should -Be '0.1.0'
+        $result.StdOut | Should -Be $expectedVersion
     }
 
     It 'Optimize-File.ps1 exits 1 when no paths are specified' {

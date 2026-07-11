@@ -2,3 +2,4 @@ plugins/
 Plugins32/
 Plugins64/
 Tests/Fixtures/Corpus/
+dist/

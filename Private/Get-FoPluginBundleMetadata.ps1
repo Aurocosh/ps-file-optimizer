@@ -1,5 +1,5 @@
 # Plugin bundle metadata — ps-file-optimizer-aux GitHub Release (plain .zip).
-# CI cache keys in .github/workflows/pester.yml must be updated when Sha256 values below change.
+# CI cache keys in .github/workflows/ci.yml must be updated when Sha256 values below change.
 
 $script:FoPluginBundleVersion = '1.0.0'
 $script:FoPluginBundleReleaseTag = 'plugins-v1.0.0'
