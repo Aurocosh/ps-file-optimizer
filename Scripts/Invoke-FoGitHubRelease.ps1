@@ -5,8 +5,7 @@ param(
     [string]$ModuleRoot = (Split-Path -Parent $PSScriptRoot),
     [string]$ManifestPath,
     [string]$MinimumReleaseVersion = '1.0.0',
-    [string]$ReleaseNotes,
-    [switch]$WhatIf
+    [string]$ReleaseNotes
 )
 
 $ErrorActionPreference = 'Stop'
@@ -108,11 +107,6 @@ $tagName = 'v{0}' -f $moduleVersion
 $title = $tagName
 
 Write-Host "Publishing GitHub release $tagName from $($build.ArchivePath)"
-
-if ($WhatIf) {
-    Write-Host 'WhatIf: release would be created.'
-    exit 0
-}
 
 if (-not $PSCmdlet.ShouldProcess($Repository, "Create GitHub release $tagName")) {
     exit 0
