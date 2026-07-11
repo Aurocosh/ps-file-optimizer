@@ -26,6 +26,7 @@ param(
     [switch]$Recurse,
     [switch]$ContinueOnError,
     [switch]$ShowHistory,
+    [switch]$Version,
     [int]$Last = 10,
     [ValidateSet('Summary', 'Detailed', 'Object')]
     [string]$HistoryFormat = 'Summary'
@@ -35,7 +36,12 @@ $ErrorActionPreference = 'Stop'
 
 try {
     $moduleRoot = Split-Path -Parent $PSScriptRoot
-    Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force
+    $module = Import-Module (Join-Path $moduleRoot 'FileOptimizer.psd1') -Force -PassThru
+
+    if ($Version) {
+        Write-Output $module.Version.ToString()
+        exit 0
+    }
 
     if ($InitializeConfig) {
         Initialize-FoConfig -Scope $InitializeConfig -Path $ConfigPath -Force:$Force

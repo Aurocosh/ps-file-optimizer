@@ -29,13 +29,27 @@ Describe 'CLI script exit codes' -Tag Unit {
 
             $proc = Start-Process -FilePath 'powershell.exe' -ArgumentList $argList -NoNewWindow -Wait -PassThru `
                 -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
-            return $proc.ExitCode
+            return [PSCustomObject]@{
+                ExitCode = $proc.ExitCode
+                StdOut   = if (Test-Path -LiteralPath $stdoutPath) {
+                    $content = Get-Content -LiteralPath $stdoutPath -Raw -ErrorAction SilentlyContinue
+                    if ($null -eq $content) { '' } else { $content.Trim() }
+                } else { '' }
+            }
         }
+    }
+
+    It 'Optimize-File.ps1 -Version prints ModuleVersion and exits 0' {
+        $scriptPath = Join-Path $script:FoCliModuleRoot 'Scripts\Optimize-File.ps1'
+        $command = "& '$($scriptPath.Replace("'", "''"))' -Version"
+        $result = Invoke-FoCliScriptExitCode -Command $command
+        $result.ExitCode | Should -Be 0
+        $result.StdOut | Should -Be '0.1.0'
     }
 
     It 'Optimize-File.ps1 exits 1 when no paths are specified' {
         $scriptPath = Join-Path $script:FoCliModuleRoot 'Scripts\Optimize-File.ps1'
-        $exitCode = Invoke-FoCliScriptExitCode -ScriptPath $scriptPath
+        $exitCode = (Invoke-FoCliScriptExitCode -ScriptPath $scriptPath).ExitCode
         $exitCode | Should -Be 1
     }
 
@@ -44,7 +58,7 @@ Describe 'CLI script exit codes' -Tag Unit {
         [System.IO.File]::WriteAllBytes($file, [byte[]](0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0))
         $scriptPath = Join-Path $script:FoCliModuleRoot 'Scripts\Optimize-File.ps1'
         $command = "& '$scriptPath' '$($file.Replace("'", "''"))' -WhatIf"
-        $exitCode = Invoke-FoCliScriptExitCode -Command $command
+        $exitCode = (Invoke-FoCliScriptExitCode -Command $command).ExitCode
         $exitCode | Should -Be 0
     }
 
@@ -53,19 +67,19 @@ Describe 'CLI script exit codes' -Tag Unit {
         [System.IO.File]::WriteAllBytes($file, [byte[]](0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0))
         $scriptPath = Join-Path $script:FoCliModuleRoot 'Scripts\Optimize-File.ps1'
         $command = "& '$scriptPath' '$($file.Replace("'", "''"))' -WhatIf -ContinueOnError"
-        $exitCode = Invoke-FoCliScriptExitCode -Command $command
+        $exitCode = (Invoke-FoCliScriptExitCode -Command $command).ExitCode
         $exitCode | Should -Be 0
     }
 
     It 'Undo-Optimization.ps1 exits 1 when neither -Path nor -Last is given' {
         $scriptPath = Join-Path $script:FoCliModuleRoot 'Scripts\Undo-Optimization.ps1'
-        $exitCode = Invoke-FoCliScriptExitCode -ScriptPath $scriptPath
+        $exitCode = (Invoke-FoCliScriptExitCode -ScriptPath $scriptPath).ExitCode
         $exitCode | Should -Be 1
     }
 
     It 'Install-Plugins.ps1 exits 0 for -WhatIf' {
         $scriptPath = Join-Path $script:FoCliModuleRoot 'Scripts\Install-Plugins.ps1'
-        $exitCode = Invoke-FoCliScriptExitCode -ScriptPath $scriptPath -ArgumentList @('-WhatIf', '-Mode', 'Remove')
+        $exitCode = (Invoke-FoCliScriptExitCode -ScriptPath $scriptPath -ArgumentList @('-WhatIf', '-Mode', 'Remove')).ExitCode
         $exitCode | Should -Be 0
     }
 }
