@@ -7,7 +7,7 @@ name: CI
 # DSSIM SHA256:       c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c
 
 env:
-  RELEASE_CI_ENABLED: 'false'
+  RELEASE_CI_ENABLED: 'true'
 
 on:
   push:
