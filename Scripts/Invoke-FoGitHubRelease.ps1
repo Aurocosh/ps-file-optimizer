@@ -4,7 +4,6 @@ param(
     [string]$Repository = $env:GITHUB_REPOSITORY,
     [string]$ModuleRoot = (Split-Path -Parent $PSScriptRoot),
     [string]$ManifestPath,
-    [string]$MinimumReleaseVersion = '1.0.0',
     [string]$ReleaseNotes
 )
 
@@ -75,17 +74,10 @@ if (-not $ManifestPath) {
 }
 
 $moduleVersion = Get-FoModuleVersionFromManifest -Path $ManifestPath
-$minimumVersion = [version]$MinimumReleaseVersion
 $latestReleaseVersion = Get-FoLatestGitHubReleaseVersion -Repo $Repository
 
 Write-Host "ModuleVersion: $moduleVersion"
-Write-Host "Minimum release version: $minimumVersion"
 Write-Host "Latest GitHub release: $(if ($latestReleaseVersion) { $latestReleaseVersion } else { '<none>' })"
-
-if ($moduleVersion -lt $minimumVersion) {
-    Write-Host "ModuleVersion $moduleVersion is below minimum release version $minimumVersion; skipping GitHub release."
-    exit 0
-}
 
 if ($latestReleaseVersion -and $moduleVersion -eq $latestReleaseVersion) {
     Write-Host 'ModuleVersion matches the latest GitHub release; no new release required.'
