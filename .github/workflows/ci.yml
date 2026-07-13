@@ -1,13 +1,9 @@
 name: CI
 
-# Set RELEASE_CI_ENABLED to true to publish GitHub releases after tests pass on master.
 # Bundle cache keys — bump when pins change in Get-FoPluginBundleMetadata.ps1 / Get-FoDssimBundleMetadata.ps1
 # Plugins x64 SHA256: d2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0
 # Plugins x86 SHA256: 96bce923ca76a95db522eeea269a031a2b2a648fc0b44b45ef2a1fec202bc5b6
 # DSSIM SHA256:       c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c
-
-env:
-  RELEASE_CI_ENABLED: 'true'
 
 on:
   push:
@@ -103,17 +99,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Release CI disabled
-        if: env.RELEASE_CI_ENABLED != 'true'
-        shell: pwsh
-        run: |
-          Write-Host "Release CI disabled. Set RELEASE_CI_ENABLED to 'true' in .github/workflows/ci.yml to publish GitHub releases."
-
       - uses: actions/checkout@v4
-        if: env.RELEASE_CI_ENABLED == 'true'
 
       - name: Publish GitHub release when ModuleVersion increases
-        if: env.RELEASE_CI_ENABLED == 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
