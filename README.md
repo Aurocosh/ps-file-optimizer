@@ -2,6 +2,12 @@
 
 PowerShell module and CLI scripts that replicate [FileOptimizer](https://sourceforge.net/projects/nikkhokkho/files/FileOptimizer/) plugin chains with a proper command-line interface.
 
+## License
+
+This project’s source code is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+Third-party plugin binaries and optional test tools have **their own licenses** and are not covered by this project’s AGPL. See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) and the aux repo [`PLUGIN-CREDITS.md`](https://github.com/Aurocosh/ps-file-optimizer-aux/blob/master/PLUGIN-CREDITS.md).
+
 ## Quick start
 
 ```powershell
