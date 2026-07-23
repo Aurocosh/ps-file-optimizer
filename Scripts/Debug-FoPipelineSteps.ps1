@@ -60,6 +60,7 @@ Import-Module (Join-Path $moduleRoot 'Tests\FoTestSupport\FoTestSupport.psd1') -
 
 . (Join-Path $moduleRoot 'Public\Resolve-FoPluginExecutable.ps1')
 . (Join-Path $moduleRoot 'Private\Handlers\Invoke-FoNativeHandlers.ps1')
+. (Join-Path $moduleRoot 'Private\Get-FoStepRequiredExecutables.ps1')
 . (Join-Path $moduleRoot 'Private\Invoke-FoPlugin.ps1')
 . (Join-Path $moduleRoot 'Private\Get-FoLevelFlags.ps1')
 . (Join-Path $moduleRoot 'Private\Get-ExtensionByContent.ps1')
