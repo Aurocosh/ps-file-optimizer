@@ -93,6 +93,12 @@ if ($latestGalleryVersion -and $moduleVersion -lt $latestGalleryVersion) {
     exit 0
 }
 
+$resolveNotes = Join-Path $PSScriptRoot 'Resolve-FoReleaseNotesFile.ps1'
+$notesFile = & $resolveNotes -ModuleRoot $ModuleRoot -Version $moduleVersion
+if (-not $notesFile) {
+    throw ("ModuleVersion {0} is newer than the latest {1} release, but ReleaseNotes/{0}.md is missing. Add release notes before publishing." -f $moduleVersion, $Repository)
+}
+
 if (-not $ModulePath) {
     $buildScript = Join-Path $PSScriptRoot 'Build-FoModuleRelease.ps1'
     $build = & $buildScript -ModuleRoot $ModuleRoot -ManifestPath $ManifestPath
@@ -104,7 +110,7 @@ if (-not (Test-Path -LiteralPath $ModulePath)) {
 }
 
 $publishRoot = Split-Path -Parent $ModulePath
-Write-Host "Publishing FileOptimizer $moduleVersion to $Repository from $publishRoot"
+Write-Host "Publishing FileOptimizer $moduleVersion to $Repository from $publishRoot using $($notesFile.Path)"
 
 if (-not $PSCmdlet.ShouldProcess($Repository, "Publish-Module FileOptimizer $moduleVersion")) {
     exit 0
@@ -115,6 +121,7 @@ $publishParams = @{
     NuGetApiKey     = $NuGetApiKey
     Repository      = $Repository
     RequiredVersion = $moduleVersion.ToString()
+    ReleaseNotes    = @($notesFile.Content)
     Force           = $true
     ErrorAction     = 'Stop'
 }

@@ -22,6 +22,8 @@ function Get-FoShipRootNames {
         'README.md'
         'LICENSE'
         'THIRD_PARTY_NOTICES.md'
+        'RELEASE_NOTES.md'
+        'ReleaseNotes'
     )
 }
 

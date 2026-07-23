@@ -3,8 +3,7 @@
 param(
     [string]$Repository = $env:GITHUB_REPOSITORY,
     [string]$ModuleRoot = (Split-Path -Parent $PSScriptRoot),
-    [string]$ManifestPath,
-    [string]$ReleaseNotes
+    [string]$ManifestPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -47,24 +46,6 @@ function Get-FoLatestGitHubReleaseVersion {
     return [version]($output.Trim() -replace '^[vV]', '')
 }
 
-function Get-FoDefaultReleaseNotes {
-    param(
-        [Parameter(Mandatory)]
-        [string]$Path,
-        [Parameter(Mandatory)]
-        [version]$Version
-    )
-
-    $content = Get-Content -LiteralPath $Path -Raw
-    $manifest = & ([scriptblock]::Create($content))
-    $notes = $manifest.PrivateData.PSData.ReleaseNotes
-    if ($notes) {
-        return $notes
-    }
-
-    return "PS-FileOptimizer $Version"
-}
-
 if (-not $Repository) {
     throw 'Repository is required. Set -Repository or GITHUB_REPOSITORY.'
 }
@@ -89,8 +70,10 @@ if ($latestReleaseVersion -and $moduleVersion -lt $latestReleaseVersion) {
     exit 0
 }
 
-if (-not $ReleaseNotes) {
-    $ReleaseNotes = Get-FoDefaultReleaseNotes -Path $ManifestPath -Version $moduleVersion
+$resolveNotes = Join-Path $PSScriptRoot 'Resolve-FoReleaseNotesFile.ps1'
+$notesFile = & $resolveNotes -ModuleRoot $ModuleRoot -Version $moduleVersion
+if (-not $notesFile) {
+    throw ("ModuleVersion {0} is newer than the latest GitHub release, but ReleaseNotes/{0}.md is missing. Add release notes before publishing." -f $moduleVersion)
 }
 
 $buildScript = Join-Path $PSScriptRoot 'Build-FoModuleRelease.ps1'
@@ -98,7 +81,7 @@ $build = & $buildScript -ModuleRoot $ModuleRoot -ManifestPath $ManifestPath
 $tagName = 'v{0}' -f $moduleVersion
 $title = $tagName
 
-Write-Host "Publishing GitHub release $tagName from $($build.ArchivePath)"
+Write-Host "Publishing GitHub release $tagName from $($build.ArchivePath) using $($notesFile.Path)"
 
 if (-not $PSCmdlet.ShouldProcess($Repository, "Create GitHub release $tagName")) {
     exit 0
@@ -108,7 +91,7 @@ $ghArgs = @(
     'release', 'create', $tagName, $build.ArchivePath
     '--repo', $Repository
     '--title', $title
-    '--notes', $ReleaseNotes
+    '--notes-file', $notesFile.Path
 )
 
 & gh @ghArgs

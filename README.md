@@ -8,6 +8,10 @@ This project’s source code is licensed under the [GNU Affero General Public Li
 
 Third-party plugin binaries and optional test tools have **their own licenses** and are not covered by this project’s AGPL. See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) and the aux repo [`PLUGIN-CREDITS.md`](https://github.com/Aurocosh/ps-file-optimizer-aux/blob/master/PLUGIN-CREDITS.md).
 
+## Release notes
+
+See [`RELEASE_NOTES.md`](RELEASE_NOTES.md) for the version index, and [`ReleaseNotes/`](ReleaseNotes/) for per-version notes.
+
 ## Quick start
 
 ```powershell
@@ -75,6 +79,8 @@ The module defines **39 format groups** under `Pipelines/`. Most map 1:1 from fi
 | Path | Purpose |
 |------|---------|
 | `FileOptimizer.psd1` | Module manifest |
+| `RELEASE_NOTES.md` | Index of per-version release notes |
+| `ReleaseNotes/` | Release notes markdown files named `{ModuleVersion}.md` |
 | `Public/` | Exported cmdlets |
 | `Private/` | Engine, handlers, history |
 | `Pipelines/` | Per-format plugin chains (39 groups) |

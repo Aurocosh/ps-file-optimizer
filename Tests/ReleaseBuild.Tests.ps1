@@ -25,7 +25,32 @@ Describe 'Release packaging' -Tag Unit {
         Test-Path -LiteralPath (Join-Path $packagedRoot 'LICENSE') | Should -Be $true
         Test-Path -LiteralPath (Join-Path $packagedRoot 'THIRD_PARTY_NOTICES.md') | Should -Be $true
         Test-Path -LiteralPath (Join-Path $packagedRoot 'en-US\about_FileOptimizer.help.txt') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $packagedRoot 'RELEASE_NOTES.md') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $packagedRoot ("ReleaseNotes\{0}.md" -f $expectedVersion)) | Should -Be $true
         Test-Path -LiteralPath $result.ModulePath | Should -Be $true
         Test-Path -LiteralPath (Join-Path $result.ModulePath 'LICENSE') | Should -Be $true
+    }
+}
+
+Describe 'Release notes resolution' -Tag Unit {
+    BeforeAll {
+        $moduleRoot = Get-FoTestModuleRoot
+        $resolveScript = Join-Path $moduleRoot 'Scripts\Resolve-FoReleaseNotesFile.ps1'
+    }
+
+    It 'resolves ReleaseNotes/{version}.md for the current ModuleVersion' {
+        $manifestPath = Join-Path $moduleRoot 'FileOptimizer.psd1'
+        $version = [version](Import-FoPsd1File -Path $manifestPath).ModuleVersion
+
+        $notes = & $resolveScript -ModuleRoot $moduleRoot -Version $version
+
+        $notes | Should -Not -BeNullOrEmpty
+        $notes.Path | Should -BeLike "*ReleaseNotes*$version.md"
+        $notes.Content | Should -Match $version.ToString()
+    }
+
+    It 'returns null when ReleaseNotes/{version}.md is missing' {
+        $notes = & $resolveScript -ModuleRoot $moduleRoot -Version ([version]'9.9.9')
+        $notes | Should -BeNullOrEmpty
     }
 }
