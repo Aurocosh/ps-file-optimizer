@@ -19,7 +19,13 @@ Describe 'Release packaging' -Tag Unit {
         $extractRoot = Join-Path $TestDrive 'release-extract'
         Expand-Archive -LiteralPath $result.ArchivePath -DestinationPath $extractRoot -Force
 
-        $packagedManifestPath = Join-Path (Join-Path (Join-Path $extractRoot 'FileOptimizer') $expectedVersion.ToString()) 'FileOptimizer.psd1'
+        $packagedRoot = Join-Path (Join-Path $extractRoot 'FileOptimizer') $expectedVersion.ToString()
+        $packagedManifestPath = Join-Path $packagedRoot 'FileOptimizer.psd1'
         Test-Path -LiteralPath $packagedManifestPath | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $packagedRoot 'LICENSE') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $packagedRoot 'THIRD_PARTY_NOTICES.md') | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $packagedRoot 'en-US\about_FileOptimizer.help.txt') | Should -Be $true
+        Test-Path -LiteralPath $result.ModulePath | Should -Be $true
+        Test-Path -LiteralPath (Join-Path $result.ModulePath 'LICENSE') | Should -Be $true
     }
 }

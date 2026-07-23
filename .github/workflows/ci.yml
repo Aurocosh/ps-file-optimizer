@@ -107,3 +107,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ./Scripts/Invoke-FoGitHubRelease.ps1
+
+      - name: Publish to PowerShell Gallery when ModuleVersion increases
+        shell: pwsh
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+        run: |
+          ./Scripts/Invoke-FoPSGalleryPublish.ps1

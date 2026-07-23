@@ -1,8 +1,7 @@
 @{
     ModuleVersion     = '0.1.0'
     GUID              = 'a47c8e21-5f3b-4d92-9c1a-6e8b2d4f7c90'
-    Author            = 'PS-FileOptimizer'
-    CompanyName       = 'PS-FileOptimizer'
+    Author            = 'Aurocosh'
     Copyright         = '(c) PS-FileOptimizer contributors. FileOptimizer plugins are subject to their respective licenses.'
     Description       = 'PowerShell module mirroring FileOptimizer plugin optimization chains with a scriptable CLI.'
     PowerShellVersion = '5.1'

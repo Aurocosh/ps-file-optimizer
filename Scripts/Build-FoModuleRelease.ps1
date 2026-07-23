@@ -18,7 +18,10 @@ function Get-FoShipRootNames {
         'Scripts'
         'Data'
         'Templates'
+        'en-US'
         'README.md'
+        'LICENSE'
+        'THIRD_PARTY_NOTICES.md'
     )
 }
 
@@ -38,10 +41,14 @@ if (-not $OutputDirectory) {
     $OutputDirectory = Join-Path $ModuleRoot 'dist'
 }
 
-$stagingRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("fo-release-{0}" -f [guid]::NewGuid().ToString('N'))
-$moduleFolder = Join-Path (Join-Path $stagingRoot 'FileOptimizer') $version.ToString()
+$moduleFolder = Join-Path (Join-Path $OutputDirectory 'FileOptimizer') $version.ToString()
+$zipStagingRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("fo-release-{0}" -f [guid]::NewGuid().ToString('N'))
 
 try {
+    if (Test-Path -LiteralPath $moduleFolder) {
+        Remove-Item -LiteralPath $moduleFolder -Recurse -Force
+    }
+
     New-Item -ItemType Directory -Path $moduleFolder -Force | Out-Null
 
     foreach ($name in (Get-FoShipRootNames)) {
@@ -69,17 +76,21 @@ try {
         Remove-Item -LiteralPath $zipPath -Force
     }
 
-    $archiveSource = Join-Path $stagingRoot 'FileOptimizer'
-    Compress-Archive -LiteralPath $archiveSource -DestinationPath $zipPath -Force
+    $zipModuleRoot = Join-Path $zipStagingRoot 'FileOptimizer'
+    $zipVersionFolder = Join-Path $zipModuleRoot $version.ToString()
+    New-Item -ItemType Directory -Path $zipVersionFolder -Force | Out-Null
+    Get-ChildItem -LiteralPath $moduleFolder | Copy-Item -Destination $zipVersionFolder -Recurse -Force
+    Compress-Archive -LiteralPath $zipModuleRoot -DestinationPath $zipPath -Force
 
     [PSCustomObject]@{
         Version     = $version
         ArchivePath = (Resolve-Path -LiteralPath $zipPath).Path
+        ModulePath  = (Resolve-Path -LiteralPath $moduleFolder).Path
         ModuleRoot  = $ModuleRoot
     }
 }
 finally {
-    if (Test-Path -LiteralPath $stagingRoot) {
-        Remove-Item -LiteralPath $stagingRoot -Recurse -Force -ErrorAction SilentlyContinue
+    if (Test-Path -LiteralPath $zipStagingRoot) {
+        Remove-Item -LiteralPath $zipStagingRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
