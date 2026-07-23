@@ -116,14 +116,14 @@ if (-not $PSCmdlet.ShouldProcess($Repository, "Publish-Module FileOptimizer $mod
     exit 0
 }
 
+# Path and RequiredVersion are different Publish-Module parameter sets; version comes from the packaged manifest.
 $publishParams = @{
-    Path            = $publishRoot
-    NuGetApiKey     = $NuGetApiKey
-    Repository      = $Repository
-    RequiredVersion = $moduleVersion.ToString()
-    ReleaseNotes    = @($notesFile.Content)
-    Force           = $true
-    ErrorAction     = 'Stop'
+    Path         = $publishRoot
+    NuGetApiKey  = $NuGetApiKey
+    Repository   = $Repository
+    ReleaseNotes = @($notesFile.Content)
+    Force        = $true
+    ErrorAction  = 'Stop'
 }
 
 if ($prereleaseLabel) {
