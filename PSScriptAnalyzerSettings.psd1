@@ -9,7 +9,6 @@
         'PSAvoidUsingWriteHost'              # Intentional CLI / CI host output
         'PSUseSingularNouns'                # Plural nouns are intentional (Plugins, Flags, Steps, …)
         'PSUseBOMForUnicodeEncodedFile'     # UTF-8 without BOM is project encoding policy
-        'PSUseOutputTypeCorrectly'          # Optional; enable later for OutputType polish
         'PSUseShouldProcessForStateChangingFunctions'  # Private New-* / factory helpers are in-memory
     )
 }

@@ -1,5 +1,6 @@
 function Get-FoModuleDefaults {
     [CmdletBinding()]
+    [OutputType([hashtable])]
     param()
 
     @{

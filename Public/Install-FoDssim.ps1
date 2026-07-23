@@ -44,6 +44,7 @@ function Install-FoDssim {
     Install-FoDssim -DestinationPath (Join-Path $HOME 'FoPlugins') -Force
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([pscustomobject])]
     param(
         [Alias('PluginPath')]
         [string]$DestinationPath,

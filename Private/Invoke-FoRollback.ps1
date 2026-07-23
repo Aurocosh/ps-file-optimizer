@@ -7,6 +7,7 @@ function Get-FoHistoryRestorePath {
 
 function Invoke-FoRollback {
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([hashtable])]
     param(
         $Entry
     )

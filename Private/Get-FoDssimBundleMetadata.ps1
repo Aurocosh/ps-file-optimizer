@@ -11,6 +11,7 @@ $script:FoCompareDssimRequiredPrefix = 'DSSIM is required for PNG pixel compare'
 
 function Test-FoCompareAllowMissingDssim {
     [CmdletBinding()]
+    [OutputType([bool])]
     param(
         [switch]$AllowMissingDssim
     )
@@ -39,6 +40,7 @@ function Test-FoCompareDssimRequiredError {
 
 function Get-FoDssimCompareRequiredMessage {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [string]$PluginPath
     )
@@ -155,6 +157,7 @@ function Get-FoDssimInstallPath {
 
 function Test-FoDssimCompareAvailable {
     [CmdletBinding()]
+    [OutputType([bool])]
     param(
         [string]$PluginPath
     )

@@ -37,6 +37,7 @@ function Undo-FoOptimization {
     Undo-FoOptimization -Last 1 -WhatIf
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([object[]])]
     param(
         [string[]]$Path,
         [int]$Last,

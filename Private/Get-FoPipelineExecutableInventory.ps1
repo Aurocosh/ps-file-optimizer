@@ -36,6 +36,7 @@ function Get-FoPipelineInventorySettings {
 
 function Get-FoPipelineGroupPrimaryExtensions {
     [CmdletBinding()]
+    [OutputType([hashtable])]
     param()
 
     if ($script:FoPipelineGroupPrimaryExtensions) {
@@ -58,6 +59,7 @@ function Get-FoPipelineGroupPrimaryExtensions {
 
 function New-FoPipelineInventoryContext {
     [CmdletBinding()]
+    [OutputType([hashtable])]
     param(
         [string]$Extension = '.bin',
         [hashtable]$Flags = @{},
@@ -92,6 +94,7 @@ function New-FoPipelineInventoryContext {
 
 function Get-FoPipelineInventoryFlagVariants {
     [CmdletBinding()]
+    [OutputType([object[]])]
     param()
 
     # Inventory must exercise every context flag path that conditionally adds
@@ -113,6 +116,7 @@ function Get-FoPipelineInventoryFlagVariants {
 
 function Get-FoPipelineDeclaredExecutables {
     [CmdletBinding()]
+    [OutputType([object[]])]
     param(
         [ValidateSet('32', '64')]
         [string]$Architecture = $(if ([Environment]::Is64BitProcess) { '64' } else { '32' })

@@ -16,6 +16,7 @@ function Test-FoDisablePluginMaskMatch {
 
 function Invoke-FoPlugin {
     [CmdletBinding()]
+    [OutputType([hashtable])]
     param(
         [Parameter(Mandatory)]
         $Step,

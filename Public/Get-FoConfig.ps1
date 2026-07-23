@@ -18,6 +18,7 @@ function Get-FoConfig {
     $s.Level
     #>
     [CmdletBinding()]
+    [OutputType([hashtable])]
     param(
         [string]$ConfigPath
     )

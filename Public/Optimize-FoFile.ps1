@@ -45,6 +45,7 @@ function Optimize-FoFile {
     # CLI wrapper with the same parameters.
     #>
     [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'Optimize')]
+    [OutputType([object[]])]
     param(
         [Parameter(ParameterSetName = 'Optimize', ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [Alias('FullName', 'PSPath')]

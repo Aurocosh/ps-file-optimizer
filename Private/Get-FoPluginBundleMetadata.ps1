@@ -27,6 +27,7 @@ $script:FoPluginBundleSha256 = $script:FoPluginBundles['64'].Sha256
 
 function Resolve-FoPluginBundleArchitecture {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [ValidateSet('Auto', '32', '64')]
         [string]$Architecture = 'Auto'
@@ -42,6 +43,7 @@ function Resolve-FoPluginBundleArchitecture {
 
 function Resolve-FoPluginArchitectureFromPath {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [string]$PluginPath
     )
@@ -57,6 +59,7 @@ function Resolve-FoPluginArchitectureFromPath {
 
 function Get-FoPluginBundleFolderName {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [ValidateSet('32', '64')]
         [Parameter(Mandatory)]
@@ -69,6 +72,7 @@ function Get-FoPluginBundleFolderName {
 
 function Get-FoPluginInstallRootPath {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [string]$ModuleRoot = $script:FoModuleRoot
     )
@@ -79,6 +83,7 @@ function Get-FoPluginInstallRootPath {
 
 function Get-FoInstalledPluginArchitecturePaths {
     [CmdletBinding()]
+    [OutputType([object[]])]
     param(
         [string]$ModuleRoot = $script:FoModuleRoot
     )
@@ -101,6 +106,7 @@ function Get-FoInstalledPluginArchitecturePaths {
 
 function Remove-FoInstalledPluginArchitectures {
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([object[]])]
     param(
         [string]$ModuleRoot = $script:FoModuleRoot,
         [ValidateSet('32', '64', 'All')]
@@ -242,6 +248,7 @@ $script:FoPlugin64OnlyExecutables = @(
 # Ghostscript is chosen at runtime in PDF.ps1 via -Executable $gs (not a string literal).
 function Get-FoGhostscriptExecutableName {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [ValidateSet('32', '64')]
         [string]$Architecture = $(if ([Environment]::Is64BitProcess) { '64' } else { '32' })
@@ -253,6 +260,7 @@ function Get-FoGhostscriptExecutableName {
 
 function Get-FoRequiredPluginExecutables {
     [CmdletBinding()]
+    [OutputType([object[]])]
     param(
         [ValidateSet('32', '64')]
         [string]$Architecture = $(if ([Environment]::Is64BitProcess) { '64' } else { '32' })
@@ -275,6 +283,7 @@ function Get-FoRequiredPluginExecutables {
 
 function Test-FoPluginFilePresent {
     [CmdletBinding()]
+    [OutputType([bool])]
     param(
         [Parameter(Mandatory)]
         [string]$PluginPath,
@@ -296,6 +305,7 @@ function Test-FoPluginFilePresent {
 
 function Get-FoPluginSupportFilesForExecutables {
     [CmdletBinding()]
+    [OutputType([object[]])]
     param(
         [Parameter(Mandatory)]
         [string[]]$Executables,
@@ -371,6 +381,7 @@ function Get-FoPluginSupportFilesForExecutables {
 
 function Get-FoPluginInstallFilePlan {
     [CmdletBinding()]
+    [OutputType([object[]])]
     param(
         [Parameter(Mandatory)]
         [string[]]$Executables,
@@ -390,6 +401,7 @@ function Get-FoPluginInstallFilePlan {
 
 function Get-FoMissingPluginExecutables {
     [CmdletBinding()]
+    [OutputType([object[]])]
     param(
         [Parameter(Mandatory)]
         [string]$PluginPath,

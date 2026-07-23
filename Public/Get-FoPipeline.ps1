@@ -18,6 +18,7 @@ function Get-FoPipeline {
     Get-FoPipeline -GroupName PNG -Context $ctx
     #>
     [CmdletBinding()]
+    [OutputType([object[]])]
     param(
         [Parameter(Mandatory)]
         [string]$GroupName,
@@ -53,6 +54,7 @@ function Get-FoExecutionPlan {
     Get-FoExecutionPlan -Path .\image.png -Settings $settings
     #>
     [CmdletBinding()]
+    [OutputType([pscustomobject])]
     param(
         [Parameter(Mandatory)]
         [string]$Path,

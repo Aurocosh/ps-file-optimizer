@@ -58,6 +58,7 @@ function Install-FoPlugins {
     Install-FoPlugins -Mode Missing -Architecture 64 -DestinationPath (Join-Path $HOME 'FoPlugins64')
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([pscustomobject])]
     param(
         [ValidateSet('FullPortable', 'Missing', 'Remove')]
         [string]$Mode = 'FullPortable',

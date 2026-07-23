@@ -1,5 +1,6 @@
 function Format-FoFileSize {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory)]
         [long]$Bytes,
@@ -31,6 +32,7 @@ function Format-FoFileSize {
 
 function Format-FoProcessArgument {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [AllowNull()]
         [string]$Value

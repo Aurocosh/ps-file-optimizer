@@ -25,6 +25,7 @@ function Invoke-FoPluginChain {
     Invoke-FoPluginChain -Path .\photo.png -Settings (Get-FoConfig) -WhatIf
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([pscustomobject])]
     param(
         [Parameter(Mandatory)]
         [string]$Path,

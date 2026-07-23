@@ -13,6 +13,7 @@ function Test-FoPathMask {
 
 function Test-FoFileGate {
     [CmdletBinding()]
+    [OutputType([hashtable])]
     param(
         [Parameter(Mandatory)]
         [string]$Path,

@@ -24,6 +24,7 @@ function Initialize-FoConfig {
     .\Scripts\Optimize-File.ps1 -InitializeConfig Global
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([void])]
     param(
         [Parameter(Mandatory)]
         [ValidateSet('Global', 'Local')]

@@ -32,6 +32,7 @@ function Resolve-FoPluginExecutable {
     Resolve-FoPluginExecutable -Name 'oxipng.exe' -SearchMode PortableOnly -PluginPath .\Plugins64
     #>
     [CmdletBinding()]
+    [OutputType([pscustomobject])]
     param(
         [Parameter(Mandatory)]
         [string]$Name,

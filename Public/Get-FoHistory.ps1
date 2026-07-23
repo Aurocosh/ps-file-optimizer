@@ -41,6 +41,7 @@ function Get-FoHistory {
     $pending | Select-Object Id, OriginalPath, BytesSaved
     #>
     [CmdletBinding()]
+    [OutputType([object[]])]
     param(
         [int]$Last = 10,
         [string]$HistoryPath,

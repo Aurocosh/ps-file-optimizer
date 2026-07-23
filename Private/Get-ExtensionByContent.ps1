@@ -28,6 +28,7 @@ function Test-FoBufferAscii {
 
 function Get-ExtensionByContent {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory)]
         [string]$Path,
