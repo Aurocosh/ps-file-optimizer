@@ -1,5 +1,6 @@
 function Get-FoWAVPipeline {
     param([hashtable]$Context)
+    $null = $Context  # Reserved pipeline-host signature
 
     $noMeta = { -not $args[0].Settings.WAVCopyMetadata }
     $steps = @()

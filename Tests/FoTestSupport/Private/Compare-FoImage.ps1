@@ -142,14 +142,14 @@ function Invoke-FoDssimCli {
         [int]$TimeoutSeconds = 90
     )
 
-    $args = @($Before, $After)
+    $argumentList = @($Before, $After)
     if ($DiffOutputPath) {
-        $args = @('-o', $DiffOutputPath) + $args
+        $argumentList = @('-o', $DiffOutputPath) + $argumentList
     }
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = $DssimExe
-    $psi.Arguments = ($args | ForEach-Object {
+    $psi.Arguments = ($argumentList | ForEach-Object {
             if ($_ -match '\s') { "`"$_`"" } else { $_ }
         }) -join ' '
     $psi.WorkingDirectory = Split-Path -Parent $DssimExe

@@ -18,22 +18,18 @@ function Invoke-FoPluginChain {
     .PARAMETER Settings
     Merged settings from Get-FoConfig.
 
-    .PARAMETER WhatIf
-    Print planned steps without modifying the file.
-
     .PARAMETER ShowProgress
     Show per-step progress.
 
     .EXAMPLE
     Invoke-FoPluginChain -Path .\photo.png -Settings (Get-FoConfig) -WhatIf
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)]
         [string]$Path,
         [Parameter(Mandatory)]
         [hashtable]$Settings,
-        [switch]$WhatIf,
         [switch]$ShowProgress
     )
 
@@ -41,8 +37,9 @@ function Invoke-FoPluginChain {
     $groupNames = @($plan.Plans | ForEach-Object { $_.GroupName })
     $allMissing = @($plan.Plans | ForEach-Object { $_.Missing } | Select-Object -Unique)
     $allSteps = @($plan.Plans | ForEach-Object { $_.Steps })
+    $optimizeAction = 'Optimize via {0}' -f ($groupNames -join ', ')
 
-    if ($WhatIf) {
+    if (-not $PSCmdlet.ShouldProcess($Path, $optimizeAction)) {
         foreach ($p in $plan.Plans) {
             Write-Host ('WHATIF: Would optimize {0} via {1} ({2} steps) [OutputMode={3}]' -f $Path, $p.GroupName, $p.Steps.Count, $Settings.OutputMode)
             foreach ($step in $p.Steps) {

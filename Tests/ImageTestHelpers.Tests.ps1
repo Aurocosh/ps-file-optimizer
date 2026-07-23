@@ -52,7 +52,7 @@ Describe 'Image test profiles' -Tag Unit {
     }
 
     It 'Uses PNGMicro threshold for small PNG fixtures' {
-        Mock Get-FoImageInfo { return @{ Width = 32; Height = 32; Format = 'PNG' } }
+        Mock Get-FoImageInfo { return @{ Width = 32; Height = 32; Format = 'PNG' } } -ModuleName FoTestSupport
         $path = Get-FoImageTestFixturePath -Id 'png-basn0g04'
         Get-FoImageTestLossyThreshold -ProfileName 'LossyHighQuality' -Format 'PNG' `
             -ImagePath $path -PluginPath (Join-Path $TestDrive 'plugins') | Should -Be 0.8

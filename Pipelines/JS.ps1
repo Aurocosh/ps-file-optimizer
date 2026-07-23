@@ -1,5 +1,6 @@
 function Get-FoJSPipeline {
     param([hashtable]$Context)
+    $null = $Context  # Reserved pipeline-host signature
 
     $gate = { $args[0].Settings.JSEnableJSMin }
     $steps = @()

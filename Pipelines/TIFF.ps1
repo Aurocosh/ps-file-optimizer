@@ -2,7 +2,6 @@ function Get-FoTIFFPipeline {
     param([hashtable]$Context)
 
     $s = $Context.Settings
-    $level = $s.Level
     $cpus = [Environment]::ProcessorCount
     $jheadMeta = if ($s.TIFFCopyMetadata) { '-zt ' } else { '-purejpg -di -dx -dt -zt ' }
     $jpegStrip = if ($s.TIFFCopyMetadata) { '' } else { '--strip-all ' }

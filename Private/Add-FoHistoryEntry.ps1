@@ -26,7 +26,7 @@ function Invoke-FoHistoryFileLock {
         return & $Action
     }
     finally {
-        try { $mutex.ReleaseMutex() } catch { }
+        try { $mutex.ReleaseMutex() } catch { Write-Debug $_.Exception.Message }
         $mutex.Dispose()
     }
 }
@@ -50,6 +50,7 @@ function Save-FoHistoryData {
 }
 
 function Add-FoHistoryEntry {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '', Justification = 'Parameters are used inside the history lock scriptblock.')]
     param(
         $Result,
         [hashtable]$Settings
@@ -86,6 +87,7 @@ function Add-FoHistoryEntry {
 }
 
 function Update-FoHistoryEntry {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '', Justification = 'Parameters are used inside the history lock scriptblock.')]
     param(
         [string]$Id,
         [string]$ReversalStatus,

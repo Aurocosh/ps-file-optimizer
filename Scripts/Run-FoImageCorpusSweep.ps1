@@ -27,7 +27,6 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$moduleRoot = Split-Path -Parent $PSScriptRoot
 $sweepScript = Join-Path $PSScriptRoot 'Invoke-FoImageCorpusSweep.ps1'
 $tierScript = Join-Path $PSScriptRoot 'Get-ImageTestCorpus.ps1'
 

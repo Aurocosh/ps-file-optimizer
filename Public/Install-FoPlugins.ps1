@@ -73,5 +73,27 @@ function Install-FoPlugins {
         [bool]$ShowProgress = $true
     )
 
-    Install-FoPluginBundleCore @PSBoundParameters
+    $target = if ($DestinationPath) {
+        $DestinationPath
+    }
+    elseif ($Mode -eq 'Remove') {
+        'module plugin directories'
+    }
+    else {
+        'default plugin directory'
+    }
+
+    $action = switch ($Mode) {
+        'Remove'  { 'Remove installed plugin directories' }
+        'Missing' { 'Install missing plugin binaries' }
+        default   { 'Download and install plugin bundle' }
+    }
+
+    if ($PSCmdlet.ShouldProcess($target, $action)) {
+        return Install-FoPluginBundleCore @PSBoundParameters -Confirm:$false
+    }
+
+    if ($WhatIfPreference) {
+        return Install-FoPluginBundleCore @PSBoundParameters
+    }
 }

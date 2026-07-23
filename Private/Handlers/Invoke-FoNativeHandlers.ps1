@@ -7,8 +7,8 @@ function Wait-FoHandlerProcessExit {
     if ($TimeoutSeconds -gt 0) {
         $timeoutMs = $TimeoutSeconds * 1000
         if (-not $Process.WaitForExit($timeoutMs)) {
-            try { $Process.Kill() } catch { }
-            try { $Process.WaitForExit(5000) } catch { }
+            try { $Process.Kill() } catch { Write-Debug $_.Exception.Message }
+            try { $Process.WaitForExit(5000) } catch { Write-Debug $_.Exception.Message }
             return $false
         }
         return $true
@@ -53,8 +53,8 @@ function Wait-FoAsyncStreamCopy {
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
     while (-not $AsyncCopy.Handle.IsCompleted) {
         if ($sw.Elapsed.TotalSeconds -ge $TimeoutSeconds) {
-            try { $AsyncCopy.PowerShell.Stop() } catch { }
-            try { $AsyncCopy.PowerShell.Dispose() } catch { }
+            try { $AsyncCopy.PowerShell.Stop() } catch { Write-Debug $_.Exception.Message }
+            try { $AsyncCopy.PowerShell.Dispose() } catch { Write-Debug $_.Exception.Message }
             return $false
         }
         Start-Sleep -Milliseconds 50
@@ -88,7 +88,7 @@ function Wait-FoGzipHandlerPipeline {
         if ((Get-Date) -ge $deadline) {
             foreach ($proc in $Processes) {
                 if ($proc -and -not $proc.HasExited) {
-                    try { $proc.Kill() } catch { }
+                    try { $proc.Kill() } catch { Write-Debug $_.Exception.Message }
                 }
             }
             return $false
@@ -131,8 +131,8 @@ function Invoke-FoDefluffPipe {
             try {
                 $stdinCopy = Start-FoAsyncStreamCopy -From $inputStream -To $p.StandardInput.BaseStream
                 if (-not (Wait-FoAsyncStreamCopy -AsyncCopy $stdinCopy -TimeoutSeconds $TimeoutSeconds)) {
-                    try { $p.StandardInput.Close() } catch { }
-                    if (-not $p.HasExited) { try { $p.Kill() } catch { } }
+                    try { $p.StandardInput.Close() } catch { Write-Debug $_.Exception.Message }
+                    if (-not $p.HasExited) { try { $p.Kill() } catch { Write-Debug $_.Exception.Message } }
                     if (Test-Path -LiteralPath $OutputPath) {
                         Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
                     }
@@ -288,7 +288,7 @@ function Invoke-FoGzipRecompress {
     finally {
         foreach ($proc in @($dp, $cp)) {
             if ($proc -and -not $proc.HasExited) {
-                try { $proc.Kill() } catch { }
+                try { $proc.Kill() } catch { Write-Debug $_.Exception.Message }
             }
             if ($proc) { $proc.Dispose() }
         }

@@ -532,7 +532,7 @@ function Invoke-FoImageOptimizationTest {
     }
 }
 
-function Normalize-FoImageTestRelativePath {
+function ConvertTo-FoImageTestRelativePath {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
@@ -582,11 +582,11 @@ function Get-FoImageTestLossyFixtureOverride {
         return -1
     }
 
-    $normalized = Normalize-FoImageTestRelativePath -RelativePath $RelativePath
+    $normalized = ConvertTo-FoImageTestRelativePath -RelativePath $RelativePath
 
     $manifest = Get-FoImageTestManifest
     foreach ($entry in @($manifest.Tiers.A.Files)) {
-        if ((Normalize-FoImageTestRelativePath -RelativePath $entry.Source) -eq $normalized) {
+        if ((ConvertTo-FoImageTestRelativePath -RelativePath $entry.Source) -eq $normalized) {
             if ($null -ne $entry.LossySSIMMaximum) {
                 return [double]$entry.LossySSIMMaximum
             }
@@ -629,12 +629,12 @@ function Get-FoImageTestLossyThreshold {
         throw "Unknown image test profile '$ProfileName'."
     }
 
-    $profile = $profiles[$ProfileName]
-    if (-not $profile.SSIMDissimilarityMaximum) {
+    $imageProfile = $profiles[$ProfileName]
+    if (-not $imageProfile.SSIMDissimilarityMaximum) {
         throw "Profile '$ProfileName' has no SSIMDissimilarityMaximum thresholds."
     }
 
-    $thresholds = $profile.SSIMDissimilarityMaximum
+    $thresholds = $imageProfile.SSIMDissimilarityMaximum
 
     if ($Format -eq 'PNG' -and $ImagePath -and $PluginPath -and $thresholds.ContainsKey('PNGMicro')) {
         try {

@@ -377,13 +377,13 @@ Describe 'Pipeline argument quoting' -Tag Unit {
 
         $inputPath = Join-Path $TestDrive 'my images\test file.png'
         $outPath = Join-Path $TestDrive 'my images\test file.out.png'
-        $args = $step.Arguments
-        $args = $args.Replace('%INPUTFILE%', (Format-FoProcessArgument $inputPath))
-        $args = $args.Replace('%TMPOUTPUTFILE%', (Format-FoProcessArgument $outPath))
+        $argumentList = $step.Arguments
+        $argumentList = $argumentList.Replace('%INPUTFILE%', (Format-FoProcessArgument $inputPath))
+        $argumentList = $argumentList.Replace('%TMPOUTPUTFILE%', (Format-FoProcessArgument $outPath))
 
-        $args | Should -Not -Match '""'
-        $args | Should -Match ([regex]::Escape((Format-FoProcessArgument $inputPath)))
-        $args | Should -Match ([regex]::Escape((Format-FoProcessArgument $outPath)))
+        $argumentList | Should -Not -Match '""'
+        $argumentList | Should -Match ([regex]::Escape((Format-FoProcessArgument $inputPath)))
+        $argumentList | Should -Match ([regex]::Escape((Format-FoProcessArgument $outPath)))
     }
 }
 

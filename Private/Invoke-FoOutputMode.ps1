@@ -8,7 +8,7 @@ function Get-FoCanonicalPath {
             return (Get-Item -LiteralPath $Path -ErrorAction Stop).FullName
         }
     }
-    catch { }
+    catch { Write-Debug $_.Exception.Message }
 
     $parent = Split-Path -Parent $Path
     if ($parent -and (Test-Path -LiteralPath $parent)) {
@@ -136,7 +136,6 @@ function Invoke-FoOutputMode {
     $mode = $Settings.OutputMode
     $target = Get-FoCanonicalPath $TargetPath
     $dir = Split-Path -Parent $target
-    $name = [System.IO.Path]::GetFileName($target)
 
     $result = @{
         OptimizedPath = $target

@@ -55,5 +55,14 @@ function Install-FoDssim {
         [bool]$ShowProgress = $true
     )
 
-    Install-FoDssimBundleCore @PSBoundParameters
+    $target = if ($DestinationPath) { $DestinationPath } else { 'default plugin directory' }
+    $action = 'Download and install DSSIM compare tool'
+
+    if ($PSCmdlet.ShouldProcess($target, $action)) {
+        return Install-FoDssimBundleCore @PSBoundParameters -Confirm:$false
+    }
+
+    if ($WhatIfPreference) {
+        return Install-FoDssimBundleCore @PSBoundParameters
+    }
 }

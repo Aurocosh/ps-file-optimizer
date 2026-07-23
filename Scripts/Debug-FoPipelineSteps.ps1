@@ -39,7 +39,7 @@
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [Parameter(Mandatory)]
     [Alias('FullName')]
     [string]$Path,
     [string]$ProfileName = 'LosslessDefault',
@@ -117,8 +117,8 @@ function Invoke-FoDebugStepVisualCompare {
     if ($ext -match '(?i)^\.png$') {
         $beforeApng = 1
         $afterApng = 1
-        try { $beforeApng = Get-FoApngFrameCount -Path $Before -PluginPath $PluginPath -WorkDirectory (Join-Path $WorkDirectory 'apng-probe-before') } catch { }
-        try { $afterApng = Get-FoApngFrameCount -Path $After -PluginPath $PluginPath -WorkDirectory (Join-Path $WorkDirectory 'apng-probe-after') } catch { }
+        try { $beforeApng = Get-FoApngFrameCount -Path $Before -PluginPath $PluginPath -WorkDirectory (Join-Path $WorkDirectory 'apng-probe-before') } catch { Write-Debug $_.Exception.Message }
+        try { $afterApng = Get-FoApngFrameCount -Path $After -PluginPath $PluginPath -WorkDirectory (Join-Path $WorkDirectory 'apng-probe-after') } catch { Write-Debug $_.Exception.Message }
         if (($beforeApng -gt 1) -or ($afterApng -gt 1)) {
             $apngCompare = Compare-FoApngFrames -Before $Before -After $After -PluginPath $PluginPath `
                 -WorkDirectory (Join-Path $WorkDirectory 'apng') -DiffOutputPath $DiffOutputPath

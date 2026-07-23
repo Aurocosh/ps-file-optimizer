@@ -188,8 +188,8 @@ function Invoke-FoPlugin {
             $timeoutMs = $timeoutSec * 1000
             if (-not $p.WaitForExit($timeoutMs)) {
                 $timedOut = $true
-                try { $p.Kill() } catch { }
-                try { $p.WaitForExit(5000) } catch { }
+                try { $p.Kill() } catch { Write-Debug $_.Exception.Message }
+                try { $p.WaitForExit(5000) } catch { Write-Debug $_.Exception.Message }
             }
         }
         else {
@@ -200,7 +200,7 @@ function Invoke-FoPlugin {
         try {
             $stderr = $stderrTask.GetAwaiter().GetResult()
         }
-        catch { }
+        catch { Write-Debug $_.Exception.Message }
 
         # Truncate stderr for safety (especially when LogLevel is high).
         $maxStderrBytes = 1048576

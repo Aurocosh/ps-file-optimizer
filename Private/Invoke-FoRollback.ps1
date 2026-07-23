@@ -6,9 +6,9 @@ function Get-FoHistoryRestorePath {
 }
 
 function Invoke-FoRollback {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
-        $Entry,
-        [switch]$WhatIf
+        $Entry
     )
 
     $restorePath = Get-FoHistoryRestorePath -Entry $Entry
@@ -20,8 +20,9 @@ function Invoke-FoRollback {
     }
 
     if ($mode -eq 'OptimizedSuffix') {
-        if ($WhatIf) {
-            return @{ Success = $true; Status = 'WhatIf'; Message = "Would delete $($Entry.OptimizedPath)" }
+        $deleteTarget = $Entry.OptimizedPath
+        if (-not $PSCmdlet.ShouldProcess($deleteTarget, 'Remove optimized sibling')) {
+            return @{ Success = $true; Status = 'WhatIf'; Message = "Would delete $deleteTarget" }
         }
         if ($Entry.OptimizedPath -and (Test-Path -LiteralPath $Entry.OptimizedPath) -and $Entry.OptimizedPath -ne $restorePath) {
             Remove-Item -LiteralPath $Entry.OptimizedPath -Force
@@ -36,7 +37,7 @@ function Invoke-FoRollback {
         return @{ Success = $false; Status = 'Error'; Message = "Backup missing: $($Entry.BackupPath)" }
     }
 
-    if ($WhatIf) {
+    if (-not $PSCmdlet.ShouldProcess($restorePath, "Restore backup $($Entry.BackupPath)")) {
         return @{ Success = $true; Status = 'WhatIf'; Message = "Would restore $($Entry.BackupPath) -> $restorePath" }
     }
 

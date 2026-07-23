@@ -108,7 +108,7 @@ function Optimize-FoFile {
 
             if ($PSCmdlet.ShouldProcess($file, 'Optimize file')) {
                 try {
-                    $result = Invoke-FoPluginChain -Path $file -Settings $settings -ShowProgress:$ShowProgress
+                    $result = Invoke-FoPluginChain -Path $file -Settings $settings -ShowProgress:$ShowProgress -Confirm:$false
                     if ($result.Status -eq 'Optimized') {
                         if ($settings.LogLevel -ge 1) {
                             Write-Host ('Optimized {0}: {1} -> {2} (-{3}%)' -f $file, (Format-FoFileSize $result.OriginalSize), (Format-FoFileSize $result.FinalSize), $result.PercentSaved)
@@ -133,8 +133,8 @@ function Optimize-FoFile {
                     if (-not $ContinueOnError) { throw }
                 }
             }
-            else {
-                $result = Invoke-FoPluginChain -Path $file -Settings $settings -WhatIf -ShowProgress:$false
+            elseif ($WhatIfPreference) {
+                $result = Invoke-FoPluginChain -Path $file -Settings $settings -ShowProgress:$false -Confirm:$false
                 $script:FoBatchResults.Add($result)
             }
         }

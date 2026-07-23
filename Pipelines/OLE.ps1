@@ -1,5 +1,6 @@
 function Get-FoOLEPipeline {
     param([hashtable]$Context)
+    $null = $Context  # Reserved pipeline-host signature
 
     $steps = @()
 

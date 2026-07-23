@@ -79,13 +79,13 @@ function Undo-FoOptimization {
         }
 
         foreach ($entry in $entries) {
-            if ($WhatIfPreference -eq 'Continue') {
-                $r = Invoke-FoRollback -Entry $entry -WhatIf
+            if ($WhatIfPreference) {
+                $r = Invoke-FoRollback -Entry $entry -Confirm:$false
                 Write-Host "WHATIF: $($r.Message)"
                 continue
             }
             if ($PSCmdlet.ShouldProcess((Get-FoHistoryRestorePath -Entry $entry), 'Rollback optimization')) {
-                $r = Invoke-FoRollback -Entry $entry
+                $r = Invoke-FoRollback -Entry $entry -Confirm:$false
                 foreach ($e in $data.Entries) {
                     if ($e.Id -eq $entry.Id) {
                         $e.ReversalStatus = $r.Status

@@ -202,8 +202,6 @@ function Test-FoIsJPEGCMYK {
     $buf = Get-FoFileHeaderBytes -Path $Path -MaxBytes 524288
     if (-not $buf) { return $false }
 
-    $sof0 = [byte[]](0xFF, 0xC0)
-    $sof2 = [byte[]](0xFF, 0xC2)
     $start = 0
     while ($true) {
         $idx = -1
