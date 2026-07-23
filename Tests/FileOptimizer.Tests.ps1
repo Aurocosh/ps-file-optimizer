@@ -312,7 +312,7 @@ Describe 'History and rollback' -Tag Unit {
             }
             Add-FoHistoryEntry -Result $result -Settings $s
 
-            $moduleRoot = (Get-Module FileOptimizer).ModuleBase
+            $moduleRoot = Get-FoTestModuleRoot
             $undoScript = {
                 param($HistoryPath, $ModuleRoot)
                 Import-Module (Join-Path $ModuleRoot 'FileOptimizer.psd1') -Force
@@ -658,6 +658,8 @@ Describe 'Optimize-FoFile -ContinueOnError' -Tag Unit {
 
         InModuleScope -ArgumentList $good, $bad FileOptimizer {
             param($GoodPath, $BadPath)
+            # Analyzer does not see Mock scriptblock usage of these parameters.
+            $null = $GoodPath, $BadPath
 
             Mock Invoke-FoPluginChain {
                 if ($Path -eq $BadPath) { throw 'simulated optimize failure' }
@@ -738,6 +740,7 @@ Describe 'Get-FoRequiredPluginExecutables' -Tag Unit {
 
             function script:Get-FoInventoryTestThrowPipeline {
                 param([hashtable]$Context)
+                $null = $Context
                 throw 'inventory-test-failure'
             }
 

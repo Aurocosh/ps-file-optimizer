@@ -135,7 +135,14 @@ Describe 'Get-FoActiveSteps gate safety' -Tag Unit {
         }
 
         $results = $null
-        { $results = @(Get-FoActiveSteps -Steps @($step) -Context $ctx) } | Should -Not -Throw
+        $threw = $false
+        try {
+            $results = @(Get-FoActiveSteps -Steps @($step) -Context $ctx)
+        }
+        catch {
+            $threw = $true
+        }
+        $threw | Should -BeFalse
         $results.Count | Should -Be 0
     }
 

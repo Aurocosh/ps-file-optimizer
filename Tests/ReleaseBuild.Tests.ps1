@@ -33,12 +33,9 @@ Describe 'Release packaging' -Tag Unit {
 }
 
 Describe 'Release notes resolution' -Tag Unit {
-    BeforeAll {
+    It 'resolves ReleaseNotes/{version}.md for the current ModuleVersion' {
         $moduleRoot = Get-FoTestModuleRoot
         $resolveScript = Join-Path $moduleRoot 'Scripts\Resolve-FoReleaseNotesFile.ps1'
-    }
-
-    It 'resolves ReleaseNotes/{version}.md for the current ModuleVersion' {
         $manifestPath = Join-Path $moduleRoot 'FileOptimizer.psd1'
         $version = [version](Import-FoPsd1File -Path $manifestPath).ModuleVersion
 
@@ -50,6 +47,8 @@ Describe 'Release notes resolution' -Tag Unit {
     }
 
     It 'returns null when ReleaseNotes/{version}.md is missing' {
+        $moduleRoot = Get-FoTestModuleRoot
+        $resolveScript = Join-Path $moduleRoot 'Scripts\Resolve-FoReleaseNotesFile.ps1'
         $notes = & $resolveScript -ModuleRoot $moduleRoot -Version ([version]'9.9.9')
         $notes | Should -BeNullOrEmpty
     }

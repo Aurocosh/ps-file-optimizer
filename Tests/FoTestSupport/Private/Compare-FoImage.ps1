@@ -169,7 +169,7 @@ function Invoke-FoDssimCli {
     $exited = $process.WaitForExit($timeoutMs)
 
     if (-not $exited) {
-        try { $process.Kill() } catch { }
+        try { $process.Kill() } catch { Write-Debug $_.Exception.Message }
         $null = $process.WaitForExit(5000)
         $process.Dispose()
         throw "dssim.exe timed out after ${TimeoutSeconds}s"
@@ -293,7 +293,7 @@ function Invoke-FoMagickCli {
     $exited = $process.WaitForExit($timeoutMs)
 
     if (-not $exited) {
-        try { $process.Kill() } catch { }
+        try { $process.Kill() } catch { Write-Debug $_.Exception.Message }
         $null = $process.WaitForExit(5000)
         $process.Dispose()
         return @{
@@ -347,7 +347,7 @@ function Invoke-FoFfmpegCli {
     $exited = $process.WaitForExit($timeoutMs)
 
     if (-not $exited) {
-        try { $process.Kill() } catch { }
+        try { $process.Kill() } catch { Write-Debug $_.Exception.Message }
         $null = $process.WaitForExit(5000)
         $process.Dispose()
         return @{
@@ -401,7 +401,7 @@ function Invoke-FoImagewCli {
     $exited = $process.WaitForExit($timeoutMs)
 
     if (-not $exited) {
-        try { $process.Kill() } catch { }
+        try { $process.Kill() } catch { Write-Debug $_.Exception.Message }
         $null = $process.WaitForExit(5000)
         $process.Dispose()
         return @{
