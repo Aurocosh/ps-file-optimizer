@@ -277,6 +277,26 @@ function Test-FoPluginDirectoryHasBinaries {
     )
 }
 
+function Assert-FoPluginBundleInstalled {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Settings
+    )
+
+    # PathOnly users rely on PATH tools, not a portable Install-FoPlugins tree.
+    if ([string]$Settings.PluginSearchMode -eq 'PathOnly') {
+        return
+    }
+
+    if (Test-FoPluginDirectoryHasBinaries -PluginPath $Settings.PluginPath) {
+        return
+    }
+
+    $hintPath = if ($Settings.PluginPath) { $Settings.PluginPath } else { '{ModuleRoot}\Plugins64 (or Plugins32)' }
+    throw ("Plugin bundle is not installed at '{0}'. Run Install-FoPlugins (or .\Scripts\Install-Plugins.ps1) to download the plugin tools, then retry. To use only PATH tools, set PluginSearchMode to PathOnly." -f $hintPath)
+}
+
 function Assert-FoPluginBundleVersionForOptimize {
     [CmdletBinding()]
     param(
@@ -284,10 +304,12 @@ function Assert-FoPluginBundleVersionForOptimize {
         [hashtable]$Settings
     )
 
+    Assert-FoPluginBundleInstalled -Settings $Settings
+
     $minimum = Get-FoMinimumPluginBundleVersion
     if (-not $minimum) { return }
 
-    # No plugin binaries installed yet — let missing-tools handling report that.
+    # PathOnly / empty portable tree already handled above for portable modes.
     if (-not (Test-FoPluginDirectoryHasBinaries -PluginPath $Settings.PluginPath)) {
         return
     }

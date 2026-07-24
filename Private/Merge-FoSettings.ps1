@@ -16,6 +16,26 @@ function Test-FoSafeSuffix {
     }
 }
 
+function Merge-FoConfigHashtableIntoSettings {
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Settings,
+        [Parameter(Mandatory)]
+        [hashtable]$Config
+    )
+
+    foreach ($key in $Config.Keys) {
+        if ($key -eq 'SkipMissingTools') { continue }
+        $Settings[$key] = $Config[$key]
+    }
+
+    # Legacy config key: map only when MissingToolsPolicy was not set in this config object.
+    if ($Config.ContainsKey('SkipMissingTools') -and $null -ne $Config['SkipMissingTools'] -and
+        -not ($Config.ContainsKey('MissingToolsPolicy') -and -not [string]::IsNullOrWhiteSpace([string]$Config['MissingToolsPolicy']))) {
+        $Settings.MissingToolsPolicy = if ([bool]$Config['SkipMissingTools']) { 'SkipFile' } else { 'Error' }
+    }
+}
+
 function Merge-FoSettings {
     [CmdletBinding()]
     param(
@@ -26,24 +46,39 @@ function Merge-FoSettings {
     $globalPath = Get-FoGlobalConfigPath
     if (Test-Path -LiteralPath $globalPath) {
         $globalCfg = Import-FoJsonFile -Path $globalPath
-        foreach ($key in $globalCfg.Keys) {
-            $settings[$key] = $globalCfg[$key]
-        }
+        Merge-FoConfigHashtableIntoSettings -Settings $settings -Config $globalCfg
     }
 
     if ($BoundParameters.ConfigPath -and (Test-Path -LiteralPath $BoundParameters.ConfigPath)) {
         $localCfg = Import-FoJsonFile -Path $BoundParameters.ConfigPath
-        foreach ($key in $localCfg.Keys) {
-            $settings[$key] = $localCfg[$key]
-        }
+        Merge-FoConfigHashtableIntoSettings -Settings $settings -Config $localCfg
     }
 
-    $skipKeys = @('ConfigPath', 'InitializeConfig', 'Force', 'ShowHistory', 'HistoryFormat', 'Path', 'WhatIf', 'Confirm', 'Verbose', 'Debug', 'AcknowledgeOutdatedPlugins', 'ShowProgress', 'Recurse', 'ContinueOnError')
+    $skipKeys = @('ConfigPath', 'InitializeConfig', 'Force', 'ShowHistory', 'HistoryFormat', 'Path', 'WhatIf', 'Confirm', 'Verbose', 'Debug', 'AcknowledgeOutdatedPlugins', 'ShowProgress', 'Recurse', 'ContinueOnError', 'SkipMissingTools')
     foreach ($key in $BoundParameters.Keys) {
         if ($key -in $skipKeys) { continue }
         if ($null -ne $BoundParameters[$key]) {
             $settings[$key] = $BoundParameters[$key]
         }
+    }
+
+    # Legacy -SkipMissingTools switch on cmdlets (MissingToolsPolicy bound param wins).
+    if (-not ($BoundParameters.ContainsKey('MissingToolsPolicy') -and $null -ne $BoundParameters['MissingToolsPolicy'])) {
+        if ($BoundParameters.ContainsKey('SkipMissingTools') -and $null -ne $BoundParameters['SkipMissingTools']) {
+            $settings.MissingToolsPolicy = if ([bool]$BoundParameters['SkipMissingTools']) { 'SkipFile' } else { 'Error' }
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace([string]$settings.MissingToolsPolicy)) {
+        $settings.MissingToolsPolicy = 'Error'
+    }
+    $policy = [string]$settings.MissingToolsPolicy
+    if ($policy -notin @('Error', 'SkipTool', 'SkipFile')) {
+        throw [ArgumentException]::new("MissingToolsPolicy must be Error, SkipTool, or SkipFile (got '$policy').")
+    }
+    $settings.MissingToolsPolicy = $policy
+    if ($settings.ContainsKey('SkipMissingTools')) {
+        $null = $settings.Remove('SkipMissingTools')
     }
 
     if ($PSBoundParameters.ContainsKey('Verbose') -and $VerbosePreference -ne 'SilentlyContinue') {

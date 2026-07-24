@@ -577,31 +577,66 @@ Describe 'Optimize-FoFile history E2E' -Tag Unit {
 }
 
 Describe 'Missing tools policy' -Tag Unit {
-    It 'Continues per-step when tools missing (FileOptimizer parity)' {
-        $png = Join-Path $env:TEMP "fo_miss_$(Get-Random).png"
-        $emptyPlugins = Join-Path $TestDrive 'empty-plugins-continue'
+    It 'Fails hard when the plugin bundle is not installed' {
+        $png = Join-Path $env:TEMP "fo_miss_bundle_$(Get-Random).png"
+        $emptyPlugins = Join-Path $TestDrive 'empty-plugins-bundle'
         New-Item -ItemType Directory -Path $emptyPlugins -Force | Out-Null
         New-FoTestPng -Path $png
         try {
-            $r = Optimize-FoFile -Path $png -PluginPath $emptyPlugins -PluginSearchMode PortableOnly -ErrorAction Stop
-            $r[0].Status | Should -BeIn @('Unchanged', 'Optimized')
-            if ($r[0].Status -eq 'Unchanged') {
-                $r[0].Reason | Should -Be 'MissingTools'
-            }
+            { Optimize-FoFile -Path $png -PluginPath $emptyPlugins -PluginSearchMode PortableOnly -ErrorAction Stop } |
+                Should -Throw '*Plugin bundle is not installed*'
         }
         finally {
             Remove-Item $png -Force -ErrorAction SilentlyContinue
         }
     }
 
-    It 'Skips with SkipMissingTools' {
-        $png = Join-Path $env:TEMP "fo_skip_$(Get-Random).png"
-        $emptyPlugins = Join-Path $TestDrive 'empty-plugins-skip'
-        New-Item -ItemType Directory -Path $emptyPlugins -Force | Out-Null
+    It 'Fails hard when required tools are missing (default Error policy)' {
+        $png = Join-Path $env:TEMP "fo_miss_tools_$(Get-Random).png"
+        $partial = Join-Path $TestDrive 'partial-plugins-error'
+        New-Item -ItemType Directory -Path $partial -Force | Out-Null
+        [System.IO.File]::WriteAllBytes((Join-Path $partial 'oxipng.exe'), [byte[]](1))
+        $manifest = New-FoPluginBundleManifestObject -PluginDirectory $partial -BundleVersion (Get-FoMinimumPluginBundleVersion) -Architecture 64
+        Save-FoPluginBundleManifest -Manifest $manifest -Path (Join-Path $partial (Get-FoPluginBundleManifestFileName))
         New-FoTestPng -Path $png
         try {
-            $r = Optimize-FoFile -Path $png -PluginPath $emptyPlugins -PluginSearchMode PortableOnly -SkipMissingTools:$true
+            { Optimize-FoFile -Path $png -PluginPath $partial -PluginSearchMode PortableOnly -ErrorAction Stop } |
+                Should -Throw '*Required plugin tool*'
+        }
+        finally {
+            Remove-Item $png -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'Skips individual tools when MissingToolsPolicy is SkipTool' {
+        $png = Join-Path $env:TEMP "fo_miss_skiptool_$(Get-Random).png"
+        $partial = Join-Path $TestDrive 'partial-plugins-skiptool'
+        New-Item -ItemType Directory -Path $partial -Force | Out-Null
+        [System.IO.File]::WriteAllBytes((Join-Path $partial 'oxipng.exe'), [byte[]](1))
+        $manifest = New-FoPluginBundleManifestObject -PluginDirectory $partial -BundleVersion (Get-FoMinimumPluginBundleVersion) -Architecture 64
+        Save-FoPluginBundleManifest -Manifest $manifest -Path (Join-Path $partial (Get-FoPluginBundleManifestFileName))
+        New-FoTestPng -Path $png
+        try {
+            $r = Optimize-FoFile -Path $png -PluginPath $partial -PluginSearchMode PortableOnly -MissingToolsPolicy SkipTool -ErrorAction Stop
+            $r[0].Status | Should -BeIn @('Unchanged', 'Optimized')
+        }
+        finally {
+            Remove-Item $png -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'Skips the file when MissingToolsPolicy is SkipFile' {
+        $png = Join-Path $env:TEMP "fo_miss_skipfile_$(Get-Random).png"
+        $partial = Join-Path $TestDrive 'partial-plugins-skipfile'
+        New-Item -ItemType Directory -Path $partial -Force | Out-Null
+        [System.IO.File]::WriteAllBytes((Join-Path $partial 'oxipng.exe'), [byte[]](1))
+        $manifest = New-FoPluginBundleManifestObject -PluginDirectory $partial -BundleVersion (Get-FoMinimumPluginBundleVersion) -Architecture 64
+        Save-FoPluginBundleManifest -Manifest $manifest -Path (Join-Path $partial (Get-FoPluginBundleManifestFileName))
+        New-FoTestPng -Path $png
+        try {
+            $r = Optimize-FoFile -Path $png -PluginPath $partial -PluginSearchMode PortableOnly -MissingToolsPolicy SkipFile
             $r[0].Status | Should -Be 'Skipped'
+            $r[0].Reason | Should -Be 'MissingTools'
         }
         finally {
             Remove-Item $png -Force -ErrorAction SilentlyContinue
@@ -644,7 +679,7 @@ Describe 'Optimize-FoFile -ContinueOnError' -Tag Unit {
         }
     }
 
-    It 'Continues batch when -ContinueOnError is set even if SkipMissingTools is false' {
+    It 'Continues batch when -ContinueOnError is set even with MissingToolsPolicy Error' {
         $good = Join-Path $TestDrive 'continue-skip-good.png'
         $bad = Join-Path $TestDrive 'continue-skip-bad.png'
         New-FoTestPng -Path $good
@@ -665,7 +700,7 @@ Describe 'Optimize-FoFile -ContinueOnError' -Tag Unit {
                 }
             }
 
-            $results = @(Optimize-FoFile -Path @($BadPath, $GoodPath) -ContinueOnError -SkipMissingTools:$false -Confirm:$false)
+            $results = @(Optimize-FoFile -Path @($BadPath, $GoodPath) -ContinueOnError -MissingToolsPolicy Error -Confirm:$false)
             $results.Count | Should -Be 2
             @($results | Where-Object { $_.Status -eq 'Error' }).Count | Should -Be 1
             @($results | Where-Object { $_.Status -eq 'Optimized' }).Count | Should -Be 1

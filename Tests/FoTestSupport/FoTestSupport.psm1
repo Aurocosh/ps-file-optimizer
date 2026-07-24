@@ -334,6 +334,7 @@ $script:FoTestSupportFunctions = @(
     'Test-FoPluginBundleManifestFiles'
     'Find-FoPluginBundleManifestPath'
     'Set-FoAcknowledgedPluginBundleMinimum'
+    'Assert-FoPluginBundleInstalled'
     'Assert-FoPluginBundleVersionForOptimize'
     'Test-FoPluginDirectoryHasBinaries'
     'Get-FoDssimBundleSettings'

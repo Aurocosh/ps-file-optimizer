@@ -12,7 +12,7 @@ function Get-FoModuleDefaults {
         LogLevel          = 1
         ReportLogLevel    = $null
         ReportPath        = $null
-        SkipMissingTools  = $false
+        MissingToolsPolicy = 'Error'
         BackupPath        = $null
         BackupSuffix      = '.bak'
         OptimizedSuffix   = '.optimized'

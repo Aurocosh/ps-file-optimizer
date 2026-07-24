@@ -7,10 +7,10 @@ function Invoke-FoPluginChain {
     Builds an execution plan, runs each active step in order, applies output mode
     when the result is smaller, and returns a result object with status and sizes.
 
-    When Settings.SkipMissingTools is true, the entire file is skipped if the
-    execution plan reports any missing plugin executable, even though per-step
-    execution would skip individual missing tools when SkipMissingTools is false
-    (FileOptimizer parity).
+    MissingToolsPolicy controls required-tool gaps:
+    Error (default) fails the file; SkipTool continues other steps; SkipFile skips
+    the whole file. A missing portable plugin bundle (no Install-FoPlugins tree)
+    always fails unless PluginSearchMode is PathOnly.
 
     .PARAMETER Path
     File to optimize.
@@ -59,30 +59,39 @@ function Invoke-FoPluginChain {
         }
     }
 
-    if ($allMissing.Count -gt 0) {
-        if ($Settings.SkipMissingTools) {
-            Write-Warning "Skipping '$Path' - missing tools: $($allMissing -join ', ')."
-            return [PSCustomObject]@{
-                Path       = $Path
-                Status     = 'Skipped'
-                Reason     = 'MissingTools'
-                Groups     = $groupNames
-                Missing    = $allMissing
-                BytesSaved = 0
-                Steps      = @()
-            }
-        }
+    Assert-FoPluginBundleVersionForOptimize -Settings $Settings
 
-        if ($Settings.LogLevel -ge 2) {
-            Write-Host "Missing tools for '$Path' (continuing like FileOptimizer): $($allMissing -join ', ')"
+    $missingPolicy = [string]$Settings.MissingToolsPolicy
+    if ([string]::IsNullOrWhiteSpace($missingPolicy)) { $missingPolicy = 'Error' }
+
+    if ($allMissing.Count -gt 0) {
+        switch ($missingPolicy) {
+            'SkipFile' {
+                Write-Warning "Skipping '$Path' - missing tools: $($allMissing -join ', ')."
+                return [PSCustomObject]@{
+                    Path       = $Path
+                    Status     = 'Skipped'
+                    Reason     = 'MissingTools'
+                    Groups     = $groupNames
+                    Missing    = $allMissing
+                    BytesSaved = 0
+                    Steps      = @()
+                }
+            }
+            'SkipTool' {
+                if ($Settings.LogLevel -ge 2) {
+                    Write-Host "Missing tools for '$Path' (skipping those steps): $($allMissing -join ', ')"
+                }
+            }
+            default {
+                throw ("Required plugin tool(s) missing for '{0}': {1}. Run Install-FoPlugins to install the bundle, or set MissingToolsPolicy to SkipTool (skip individual steps) or SkipFile (skip this file)." -f $Path, ($allMissing -join ', '))
+            }
         }
     }
 
     if ($Settings.LogLevel -ge 2) {
         Write-Host ('Optimizing {0} via {1}' -f $Path, ($groupNames -join ', '))
     }
-
-    Assert-FoPluginBundleVersionForOptimize -Settings $Settings
 
     $workFile = Join-Path ([System.IO.Path]::GetTempPath()) ('FileOptimizer_work_{0}_{1}' -f ([guid]::NewGuid().ToString('N')), [System.IO.Path]::GetFileName($Path))
     Copy-Item -LiteralPath $Path -Destination $workFile -Force

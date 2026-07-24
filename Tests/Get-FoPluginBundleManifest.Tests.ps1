@@ -36,10 +36,23 @@ Describe 'Get-FoInstalledPluginBundleInfo' -Tag Unit {
 }
 
 Describe 'Assert-FoPluginBundleVersionForOptimize' -Tag Unit {
-    It 'Allows empty plugin directories (missing tools path)' {
+    It 'Fails hard when the portable plugin bundle is not installed' {
         $dir = Join-Path $TestDrive 'empty-plugins'
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
-        $settings = @{ PluginPath = $dir; AcknowledgedPluginBundleMinimum = '' }
+        $settings = @{
+            PluginPath                     = $dir
+            PluginSearchMode               = 'PortableOnly'
+            AcknowledgedPluginBundleMinimum = ''
+        }
+        { Assert-FoPluginBundleVersionForOptimize -Settings $settings } | Should -Throw '*Plugin bundle is not installed*'
+    }
+
+    It 'Allows PathOnly mode without a portable plugin folder' {
+        $settings = @{
+            PluginPath                     = $null
+            PluginSearchMode               = 'PathOnly'
+            AcknowledgedPluginBundleMinimum = ''
+        }
         { Assert-FoPluginBundleVersionForOptimize -Settings $settings } | Should -Not -Throw
     }
 
@@ -47,7 +60,7 @@ Describe 'Assert-FoPluginBundleVersionForOptimize' -Tag Unit {
         $dir = Join-Path $TestDrive 'legacy-plugins'
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
         [System.IO.File]::WriteAllBytes((Join-Path $dir 'oxipng.exe'), [byte[]](9, 9, 9))
-        $settings = @{ PluginPath = $dir; AcknowledgedPluginBundleMinimum = '' }
+        $settings = @{ PluginPath = $dir; PluginSearchMode = 'PortableFirst'; AcknowledgedPluginBundleMinimum = '' }
         { Assert-FoPluginBundleVersionForOptimize -Settings $settings } | Should -Throw '*below required minimum*'
     }
 
@@ -56,7 +69,7 @@ Describe 'Assert-FoPluginBundleVersionForOptimize' -Tag Unit {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
         [System.IO.File]::WriteAllBytes((Join-Path $dir 'oxipng.exe'), [byte[]](8, 8, 8))
         $min = Get-FoMinimumPluginBundleVersion
-        $settings = @{ PluginPath = $dir; AcknowledgedPluginBundleMinimum = $min }
+        $settings = @{ PluginPath = $dir; PluginSearchMode = 'PortableFirst'; AcknowledgedPluginBundleMinimum = $min }
         $warnings = $null
         Assert-FoPluginBundleVersionForOptimize -Settings $settings -WarningVariable warnings -WarningAction SilentlyContinue
         ($warnings | Out-String) | Should -Match 'acknowledgment recorded'
@@ -66,7 +79,7 @@ Describe 'Assert-FoPluginBundleVersionForOptimize' -Tag Unit {
         $dir = Join-Path $TestDrive 'legacy-stale-ack'
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
         [System.IO.File]::WriteAllBytes((Join-Path $dir 'oxipng.exe'), [byte[]](7, 7, 7))
-        $settings = @{ PluginPath = $dir; AcknowledgedPluginBundleMinimum = '1.0.0' }
+        $settings = @{ PluginPath = $dir; PluginSearchMode = 'PortableFirst'; AcknowledgedPluginBundleMinimum = '1.0.0' }
         { Assert-FoPluginBundleVersionForOptimize -Settings $settings } | Should -Throw '*below required minimum*'
     }
 
@@ -76,7 +89,7 @@ Describe 'Assert-FoPluginBundleVersionForOptimize' -Tag Unit {
         [System.IO.File]::WriteAllBytes((Join-Path $dir 'oxipng.exe'), [byte[]](1, 2, 3))
         $manifest = New-FoPluginBundleManifestObject -PluginDirectory $dir -BundleVersion (Get-FoMinimumPluginBundleVersion) -Architecture 64
         Save-FoPluginBundleManifest -Manifest $manifest -Path (Join-Path $dir (Get-FoPluginBundleManifestFileName))
-        $settings = @{ PluginPath = $dir; AcknowledgedPluginBundleMinimum = '' }
+        $settings = @{ PluginPath = $dir; PluginSearchMode = 'PortableFirst'; AcknowledgedPluginBundleMinimum = '' }
         { Assert-FoPluginBundleVersionForOptimize -Settings $settings } | Should -Not -Throw
     }
 }

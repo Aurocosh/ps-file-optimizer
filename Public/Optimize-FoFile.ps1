@@ -34,6 +34,10 @@ function Optimize-FoFile {
     .PARAMETER Recurse
     When Path is a directory, include files in subdirectories.
 
+    .PARAMETER MissingToolsPolicy
+    How to handle required plugin tools that are not found: Error (default),
+    SkipTool (skip those steps), or SkipFile (skip the whole file).
+
     .PARAMETER AcknowledgeOutdatedPlugins
     Persist acknowledgment of the current minimum plugin-bundle version and continue
     with a warning when the installed bundle is older than required.
@@ -71,9 +75,11 @@ function Optimize-FoFile {
         [string]$BackupSuffix,
         [string]$OptimizedSuffix,
         [string]$TempBackupPath,
-        [nullable[bool]]$SkipMissingTools,
         [nullable[bool]]$HistoryEnabled,
         [string]$HistoryPath,
+        [ValidateSet('Error', 'SkipTool', 'SkipFile')]
+        [string]$MissingToolsPolicy,
+        [nullable[bool]]$SkipMissingTools,
         [switch]$ShowProgress,
         [switch]$Recurse,
         [switch]$ContinueOnError,
