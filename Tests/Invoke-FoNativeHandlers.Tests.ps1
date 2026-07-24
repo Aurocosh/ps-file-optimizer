@@ -171,3 +171,47 @@ Describe 'Invoke-FoDefluffPipe timeout' -Tag Unit {
         $sw.Elapsed.TotalSeconds | Should -BeLessThan 10
     }
 }
+
+Describe 'Invoke-FoDefluffPipe concurrent streams' -Tag Unit {
+    It 'Does not deadlock when child streams large stdout while reading stdin' {
+        $workDir = Join-Path $TestDrive 'defluff-concurrent'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        $inputPath = Join-Path $workDir 'input.bin'
+        $outputPath = Join-Path $workDir 'output.bin'
+
+        # Larger than typical OS pipe buffer (~64KB) so sequential stdin-then-stdout deadlocks.
+        $payload = New-Object byte[] (256KB)
+        (New-Object Random 42).NextBytes($payload)
+        [System.IO.File]::WriteAllBytes($inputPath, $payload)
+
+        $echoPs1 = Join-Path $workDir 'echo-pipe.ps1'
+        @(
+            '$in = [Console]::OpenStandardInput()'
+            '$out = [Console]::OpenStandardOutput()'
+            '$buf = New-Object byte[] 8192'
+            'while (($n = $in.Read($buf, 0, $buf.Length)) -gt 0) {'
+            '    $out.Write($buf, 0, $n)'
+            '    $out.Flush()'
+            '}'
+        ) -join "`r`n" | Set-Content -LiteralPath $echoPs1 -Encoding Ascii
+
+        $echoCmd = Join-Path $workDir 'echo-pipe.cmd'
+        $psExe = Join-Path $PSHOME 'powershell.exe'
+        if (-not (Test-Path -LiteralPath $psExe)) {
+            $psExe = Join-Path $PSHOME 'pwsh.exe'
+        }
+        @(
+            '@echo off'
+            ('"{0}" -NoProfile -ExecutionPolicy Bypass -File "%~dp0echo-pipe.ps1"' -f $psExe)
+        ) -join "`r`n" | Set-Content -LiteralPath $echoCmd -Encoding Ascii
+
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        $exitCode = Invoke-FoDefluffPipe -InputPath $inputPath -OutputPath $outputPath -DefluffExe $echoCmd -TimeoutSeconds 15
+        $sw.Stop()
+
+        $exitCode | Should -Be 0
+        $sw.Elapsed.TotalSeconds | Should -BeLessThan 10
+        (Test-Path -LiteralPath $outputPath) | Should -Be $true
+        (Get-Item -LiteralPath $outputPath).Length | Should -Be $payload.Length
+    }
+}

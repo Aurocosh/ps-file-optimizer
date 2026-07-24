@@ -7,8 +7,7 @@ function Wait-FoHandlerProcessExit {
     if ($TimeoutSeconds -gt 0) {
         $timeoutMs = $TimeoutSeconds * 1000
         if (-not $Process.WaitForExit($timeoutMs)) {
-            try { $Process.Kill() } catch { Write-Debug $_.Exception.Message }
-            try { $Process.WaitForExit(5000) } catch { Write-Debug $_.Exception.Message }
+            Stop-FoHandlerProcess -Process $Process
             return $false
         }
         return $true
@@ -97,6 +96,67 @@ function Wait-FoGzipHandlerPipeline {
     }
 }
 
+function Complete-FoAsyncStreamCopy {
+    param(
+        $AsyncCopy,
+        [datetime]$Deadline
+    )
+
+    if (-not $AsyncCopy) { return $true }
+
+    while (-not $AsyncCopy.Handle.IsCompleted) {
+        if ((Get-Date) -ge $Deadline) {
+            return $false
+        }
+        Start-Sleep -Milliseconds 50
+    }
+
+    try {
+        $AsyncCopy.PowerShell.EndInvoke($AsyncCopy.Handle)
+    }
+    catch {
+        Write-Debug $_.Exception.Message
+    }
+    try {
+        $AsyncCopy.PowerShell.Dispose()
+    }
+    catch {
+        Write-Debug $_.Exception.Message
+    }
+    return $true
+}
+
+function Stop-FoAsyncStreamCopy {
+    param($AsyncCopy)
+
+    if (-not $AsyncCopy) { return }
+    try { $AsyncCopy.PowerShell.Stop() } catch { Write-Debug $_.Exception.Message }
+    try { $AsyncCopy.PowerShell.Dispose() } catch { Write-Debug $_.Exception.Message }
+}
+
+function Stop-FoHandlerProcess {
+    param([System.Diagnostics.Process]$Process)
+
+    if (-not $Process -or $Process.HasExited) { return }
+    try {
+        # Prefer entire process tree so cmd.exe /c stubs cannot leave child tools running.
+        $killTree = $Process.GetType().GetMethod('Kill', [type[]]@([bool]))
+        if ($killTree) {
+            $null = $killTree.Invoke($Process, @($true))
+        }
+        elseif ($env:OS -match 'Windows') {
+            $null = & $env:ComSpec /c "taskkill /T /F /PID $($Process.Id) >nul 2>nul"
+        }
+        else {
+            $Process.Kill()
+        }
+    }
+    catch {
+        Write-Debug $_.Exception.Message
+    }
+    try { $null = $Process.WaitForExit(5000) } catch { Write-Debug $_.Exception.Message }
+}
+
 function Invoke-FoDefluffPipe {
     param(
         [string]$InputPath,
@@ -125,73 +185,76 @@ function Invoke-FoDefluffPipe {
     $psi.CreateNoWindow = $true
 
     $p = [System.Diagnostics.Process]::Start($psi)
+    $inputStream = $null
+    $outputStream = $null
+    $stderrStream = $null
+    $stdinCopy = $null
+    $stdoutCopy = $null
+    $stderrCopy = $null
+    $timedOut = $false
     try {
-        if ($TimeoutSeconds -gt 0) {
-            $inputStream = [System.IO.File]::OpenRead($InputPath)
-            try {
-                $stdinCopy = Start-FoAsyncStreamCopy -From $inputStream -To $p.StandardInput.BaseStream
-                if (-not (Wait-FoAsyncStreamCopy -AsyncCopy $stdinCopy -TimeoutSeconds $TimeoutSeconds)) {
-                    try { $p.StandardInput.Close() } catch { Write-Debug $_.Exception.Message }
-                    if (-not $p.HasExited) { try { $p.Kill() } catch { Write-Debug $_.Exception.Message } }
-                    if (Test-Path -LiteralPath $OutputPath) {
-                        Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
-                    }
-                    return -1
-                }
-            }
-            finally {
-                $inputStream.Dispose()
-            }
-            $p.StandardInput.Close()
+        # Stdin, stdout, and stderr must run concurrently. Writing the full input before
+        # draining stdout deadlocks once the OS pipe buffer fills (~64KB).
+        $inputStream = [System.IO.File]::OpenRead($InputPath)
+        $outputStream = [System.IO.File]::Create($OutputPath)
+        $stderrStream = New-Object System.IO.MemoryStream
+
+        $stdinCopy = Start-FoAsyncStreamCopy -From $inputStream -To $p.StandardInput.BaseStream
+        $stdoutCopy = Start-FoAsyncStreamCopy -From $p.StandardOutput.BaseStream -To $outputStream
+        $stderrCopy = Start-FoAsyncStreamCopy -From $p.StandardError.BaseStream -To $stderrStream
+
+        $deadline = if ($TimeoutSeconds -gt 0) {
+            (Get-Date).AddSeconds($TimeoutSeconds)
         }
         else {
-            $inputStream = [System.IO.File]::OpenRead($InputPath)
-            try {
-                $inputStream.CopyTo($p.StandardInput.BaseStream)
-            }
-            finally {
-                $inputStream.Dispose()
-            }
-            $p.StandardInput.Close()
+            [datetime]::MaxValue
         }
 
-        $outputStream = [System.IO.File]::Create($OutputPath)
-        try {
-            if ($TimeoutSeconds -gt 0) {
-                $stdoutCopy = Start-FoAsyncStreamCopy -From $p.StandardOutput.BaseStream -To $outputStream
-                if (-not (Wait-FoGzipHandlerPipeline -Processes @($p) -TimeoutSeconds $TimeoutSeconds)) {
-                    if (Test-Path -LiteralPath $OutputPath) {
-                        Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
-                    }
-                    return -1
-                }
-                if (-not (Wait-FoAsyncStreamCopy -AsyncCopy $stdoutCopy -TimeoutSeconds 5)) {
-                    if (Test-Path -LiteralPath $OutputPath) {
-                        Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
-                    }
-                    return -1
-                }
-            }
-            else {
-                $p.StandardOutput.BaseStream.CopyTo($outputStream)
-                if (-not (Wait-FoHandlerProcessExit -Process $p -TimeoutSeconds 0)) {
-                    return -1
-                }
-            }
+        if (-not (Complete-FoAsyncStreamCopy -AsyncCopy $stdinCopy -Deadline $deadline)) {
+            $timedOut = $true
+            return -1
         }
-        finally {
-            $outputStream.Dispose()
+        $stdinCopy = $null
+        try { $p.StandardInput.Close() } catch { Write-Debug $_.Exception.Message }
+
+        while (-not $p.HasExited) {
+            if ((Get-Date) -ge $deadline) {
+                $timedOut = $true
+                return -1
+            }
+            Start-Sleep -Milliseconds 50
         }
-        $p.StandardOutput.Close()
-        $null = $p.StandardError.ReadToEnd()
+
+        $drainDeadline = if ($TimeoutSeconds -gt 0) { (Get-Date).AddSeconds(5) } else { [datetime]::MaxValue }
+        if (-not (Complete-FoAsyncStreamCopy -AsyncCopy $stdoutCopy -Deadline $drainDeadline)) {
+            $timedOut = $true
+            return -1
+        }
+        $stdoutCopy = $null
+        if (-not (Complete-FoAsyncStreamCopy -AsyncCopy $stderrCopy -Deadline $drainDeadline)) {
+            $timedOut = $true
+            return -1
+        }
+        $stderrCopy = $null
 
         if ($p.ExitCode -ne 0) { return $p.ExitCode }
         if (-not (Test-Path -LiteralPath $OutputPath)) { return 1 }
         return 0
     }
     finally {
-        if ($p -and -not $p.HasExited) { $p.Kill() }
+        Stop-FoHandlerProcess -Process $p
+        Stop-FoAsyncStreamCopy -AsyncCopy $stdinCopy
+        Stop-FoAsyncStreamCopy -AsyncCopy $stdoutCopy
+        Stop-FoAsyncStreamCopy -AsyncCopy $stderrCopy
+        foreach ($stream in @($inputStream, $outputStream, $stderrStream)) {
+            if ($stream) {
+                try { $stream.Dispose() } catch { Write-Debug $_.Exception.Message }
+            }
+        }
         if ($p) { $p.Dispose() }
+        if ($timedOut -and (Test-Path -LiteralPath $OutputPath)) {
+            Remove-Item -LiteralPath $OutputPath -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 
@@ -253,35 +316,56 @@ function Invoke-FoGzipRecompress {
 
         $inStream = [System.IO.File]::OpenRead($tempRaw)
         $outStream = [System.IO.File]::Create($OutputPath)
+        $stderrStream = New-Object System.IO.MemoryStream
+        $stdinCopy = $null
+        $stdoutCopy = $null
+        $stderrCopy = $null
         try {
-            if ($TimeoutSeconds -gt 0) {
-                $stdinCopy = Start-FoAsyncStreamCopy -From $inStream -To $cp.StandardInput.BaseStream
-                if (-not (Wait-FoAsyncStreamCopy -AsyncCopy $stdinCopy -TimeoutSeconds $TimeoutSeconds)) {
-                    return -1
-                }
-                $cp.StandardInput.Close()
-                $stdoutCopy = Start-FoAsyncStreamCopy -From $cp.StandardOutput.BaseStream -To $outStream
-                if (-not (Wait-FoGzipHandlerPipeline -Processes @($cp) -TimeoutSeconds $TimeoutSeconds)) {
-                    return -1
-                }
-                if (-not (Wait-FoAsyncStreamCopy -AsyncCopy $stdoutCopy -TimeoutSeconds 5)) {
-                    return -1
-                }
+            # Concurrent stdin/stdout/stderr — sequential copy deadlocks on large payloads.
+            $stdinCopy = Start-FoAsyncStreamCopy -From $inStream -To $cp.StandardInput.BaseStream
+            $stdoutCopy = Start-FoAsyncStreamCopy -From $cp.StandardOutput.BaseStream -To $outStream
+            $stderrCopy = Start-FoAsyncStreamCopy -From $cp.StandardError.BaseStream -To $stderrStream
+
+            $deadline = if ($TimeoutSeconds -gt 0) {
+                (Get-Date).AddSeconds($TimeoutSeconds)
             }
             else {
-                $inStream.CopyTo($cp.StandardInput.BaseStream)
-                $cp.StandardInput.Close()
-                $cp.StandardOutput.BaseStream.CopyTo($outStream)
-                $cp.WaitForExit()
+                [datetime]::MaxValue
             }
+
+            if (-not (Complete-FoAsyncStreamCopy -AsyncCopy $stdinCopy -Deadline $deadline)) {
+                return -1
+            }
+            $stdinCopy = $null
+            try { $cp.StandardInput.Close() } catch { Write-Debug $_.Exception.Message }
+
+            while (-not $cp.HasExited) {
+                if ((Get-Date) -ge $deadline) {
+                    return -1
+                }
+                Start-Sleep -Milliseconds 50
+            }
+
+            $drainDeadline = if ($TimeoutSeconds -gt 0) { (Get-Date).AddSeconds(5) } else { [datetime]::MaxValue }
+            if (-not (Complete-FoAsyncStreamCopy -AsyncCopy $stdoutCopy -Deadline $drainDeadline)) {
+                return -1
+            }
+            $stdoutCopy = $null
+            if (-not (Complete-FoAsyncStreamCopy -AsyncCopy $stderrCopy -Deadline $drainDeadline)) {
+                return -1
+            }
+            $stderrCopy = $null
         }
         finally {
+            Stop-FoHandlerProcess -Process $cp
+            Stop-FoAsyncStreamCopy -AsyncCopy $stdinCopy
+            Stop-FoAsyncStreamCopy -AsyncCopy $stdoutCopy
+            Stop-FoAsyncStreamCopy -AsyncCopy $stderrCopy
             $inStream.Dispose()
             $outStream.Dispose()
-            $cp.StandardOutput.Close()
+            $stderrStream.Dispose()
         }
 
-        $null = $cp.StandardError.ReadToEnd()
         if ($cp.ExitCode -ne 0) { return $cp.ExitCode }
         return 0
     }
