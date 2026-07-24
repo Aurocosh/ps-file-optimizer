@@ -12,6 +12,10 @@ param(
     [nullable[int]]$LogLevel,
     [nullable[int]]$ReportLogLevel,
     [string]$ReportPath,
+    [ValidateSet('Compact', 'Standard', 'Verbose')]
+    [string]$ReportVerbosity,
+    [ValidateSet('Auto', 'Bytes', 'KB', 'MB', 'GB')]
+    [string]$SizeDisplayUnit,
     [ValidateSet('Replace', 'OptimizedSuffix', 'BackupSuffix', 'BackupMove', 'TempMove')]
     [string]$OutputMode,
     [string]$BackupPath,
@@ -29,8 +33,10 @@ param(
     [switch]$ContinueOnError,
     [switch]$AcknowledgeOutdatedPlugins,
     [switch]$ShowHistory,
+    [switch]$ShowConfig,
     [switch]$Version,
     [int]$Last = 10,
+    [int]$LastBatches,
     [ValidateSet('Summary', 'Detailed', 'Object')]
     [string]$HistoryFormat = 'Summary'
 )
@@ -51,8 +57,27 @@ try {
         exit 0
     }
 
+    if ($ShowConfig) {
+        $cfg = Get-FoConfig -ConfigPath $ConfigPath
+        $cfg.GetEnumerator() | Sort-Object Name | ForEach-Object {
+            [PSCustomObject]@{ Name = $_.Key; Value = $_.Value }
+        } | Format-List | Out-Host
+        exit 0
+    }
+
     if ($ShowHistory) {
-        Get-FoHistory -Last $Last -HistoryPath $HistoryPath -Format $HistoryFormat
+        $histParams = @{
+            HistoryPath     = $HistoryPath
+            Format          = $HistoryFormat
+            SizeDisplayUnit = if ($SizeDisplayUnit) { $SizeDisplayUnit } else { 'Auto' }
+        }
+        if ($LastBatches -gt 0) {
+            $histParams.LastBatches = $LastBatches
+        }
+        else {
+            $histParams.Last = $Last
+        }
+        Get-FoHistory @histParams
         exit 0
     }
 
@@ -62,7 +87,7 @@ try {
     }
 
     $params = @{}
-    foreach ($key in @('Path','ConfigPath','Level','PluginSearchMode','PluginPath','LogLevel','ReportLogLevel','ReportPath','OutputMode','BackupPath','BackupSuffix','OptimizedSuffix','TempBackupPath','MissingToolsPolicy','SkipMissingTools','HistoryEnabled','HistoryPath','ShowProgress','WhatIf','Recurse','ContinueOnError','AcknowledgeOutdatedPlugins')) {
+    foreach ($key in @('Path','ConfigPath','Level','PluginSearchMode','PluginPath','LogLevel','ReportLogLevel','ReportPath','ReportVerbosity','SizeDisplayUnit','OutputMode','BackupPath','BackupSuffix','OptimizedSuffix','TempBackupPath','MissingToolsPolicy','SkipMissingTools','HistoryEnabled','HistoryPath','ShowProgress','WhatIf','Recurse','ContinueOnError','AcknowledgeOutdatedPlugins')) {
         if ($PSBoundParameters.ContainsKey($key)) { $params[$key] = $PSBoundParameters[$key] }
     }
 

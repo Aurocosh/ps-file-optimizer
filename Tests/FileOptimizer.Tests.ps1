@@ -3,8 +3,41 @@
 }
 
 Describe 'Format-FoFileSize' -Tag Unit {
-    It 'Formats bytes' {
+    It 'Formats bytes with Auto unit' {
         Format-FoFileSize -Bytes 1024 | Should -Be '1.0 KB'
+    }
+
+    It 'Formats fixed units' {
+        Format-FoFileSize -Bytes 2048 -Unit Bytes | Should -Be '2,048 B'
+        Format-FoFileSize -Bytes 2048 -Unit KB | Should -Be '2.0 KB'
+        Format-FoFileSize -Bytes 2MB -Unit MB | Should -Be '2.00 MB'
+        Format-FoFileSize -Bytes 2GB -Unit GB | Should -Be '2.00 GB'
+    }
+
+    It 'Formats size change strings' {
+        InModuleScope FileOptimizer {
+            Format-FoSizeChange -OriginalSize 2000 -FinalSize 1000 -Unit Bytes | Should -Be '2,000 B -> 1,000 B (-50%)'
+        }
+    }
+}
+
+Describe 'Format-FoOptimizeResultRow' -Tag Unit {
+    It 'Builds a Standard table row with blank OutputPath when unchanged' {
+        InModuleScope FileOptimizer {
+            $row = Format-FoOptimizeResultRow -Result ([PSCustomObject]@{
+                    Status       = 'Optimized'
+                    Path         = 'C:\data\a.png'
+                    OutputPath   = 'C:\data\a.png'
+                    BackupPath   = 'C:\tmp\a.png'
+                    OriginalSize = 2000
+                    FinalSize    = 1000
+                    OutputMode   = 'TempMove'
+                    DurationMs   = 12
+                }) -Unit Bytes
+            $row.OutputPath | Should -BeNullOrEmpty
+            $row.Size | Should -Be '2,000 B -> 1,000 B (-50%)'
+            $row.Duration | Should -Be '12 ms'
+        }
     }
 }
 

@@ -4,6 +4,8 @@ function Format-FoFileSize {
     param(
         [Parameter(Mandatory)]
         [long]$Bytes,
+        [ValidateSet('Auto', 'Bytes', 'KB', 'MB', 'GB')]
+        [string]$Unit = 'Auto',
         [switch]$IncludeBytes
     )
 
@@ -11,23 +13,48 @@ function Format-FoFileSize {
     $sign = if ($Bytes -lt 0) { '-' } else { '' }
     $ic = [System.Globalization.CultureInfo]::InvariantCulture
 
-    $formatted = if ($abs -ge 1GB) {
-        [string]::Format($ic, '{0:N2} GB', ($abs / 1GB))
-    }
-    elseif ($abs -ge 1MB) {
-        [string]::Format($ic, '{0:N2} MB', ($abs / 1MB))
-    }
-    elseif ($abs -ge 1KB) {
-        [string]::Format($ic, '{0:N1} KB', ($abs / 1KB))
-    }
-    else {
-        [string]::Format($ic, '{0:N0} B', $abs)
+    $resolvedUnit = $Unit
+    if ($resolvedUnit -eq 'Auto') {
+        if ($abs -ge 1GB) { $resolvedUnit = 'GB' }
+        elseif ($abs -ge 1MB) { $resolvedUnit = 'MB' }
+        elseif ($abs -ge 1KB) { $resolvedUnit = 'KB' }
+        else { $resolvedUnit = 'Bytes' }
     }
 
-    if ($IncludeBytes) {
+    $formatted = switch ($resolvedUnit) {
+        'GB' { [string]::Format($ic, '{0:N2} GB', ($abs / 1GB)) }
+        'MB' { [string]::Format($ic, '{0:N2} MB', ($abs / 1MB)) }
+        'KB' { [string]::Format($ic, '{0:N1} KB', ($abs / 1KB)) }
+        default { [string]::Format($ic, '{0:N0} B', $abs) }
+    }
+
+    if ($IncludeBytes -and $resolvedUnit -ne 'Bytes') {
         return [string]::Format($ic, '{0}{1} ({2:N0} B)', $sign, $formatted, $Bytes)
     }
     return ($sign + $formatted)
+}
+
+function Format-FoSizeChange {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)]
+        [long]$OriginalSize,
+        [Parameter(Mandatory)]
+        [long]$FinalSize,
+        [ValidateSet('Auto', 'Bytes', 'KB', 'MB', 'GB')]
+        [string]$Unit = 'Auto'
+    )
+
+    $pct = if ($OriginalSize -gt 0) {
+        [math]::Round((1 - $FinalSize / $OriginalSize) * 100, 1)
+    }
+    else { 0 }
+
+    return '{0} -> {1} (-{2}%)' -f `
+        (Format-FoFileSize -Bytes $OriginalSize -Unit $Unit), `
+        (Format-FoFileSize -Bytes $FinalSize -Unit $Unit), `
+        $pct
 }
 
 function Format-FoProcessArgument {

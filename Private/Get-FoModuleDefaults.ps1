@@ -12,6 +12,8 @@ function Get-FoModuleDefaults {
         LogLevel          = 1
         ReportLogLevel    = $null
         ReportPath        = $null
+        ReportVerbosity   = 'Standard'
+        SizeDisplayUnit   = 'Auto'
         MissingToolsPolicy = 'Error'
         BackupPath        = $null
         BackupSuffix      = '.bak'

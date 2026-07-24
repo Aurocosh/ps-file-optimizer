@@ -54,7 +54,7 @@ function Merge-FoSettings {
         Merge-FoConfigHashtableIntoSettings -Settings $settings -Config $localCfg
     }
 
-    $skipKeys = @('ConfigPath', 'InitializeConfig', 'Force', 'ShowHistory', 'HistoryFormat', 'Path', 'WhatIf', 'Confirm', 'Verbose', 'Debug', 'AcknowledgeOutdatedPlugins', 'ShowProgress', 'Recurse', 'ContinueOnError', 'SkipMissingTools')
+    $skipKeys = @('ConfigPath', 'InitializeConfig', 'Force', 'ShowHistory', 'HistoryFormat', 'ShowConfig', 'Path', 'WhatIf', 'Confirm', 'Verbose', 'Debug', 'AcknowledgeOutdatedPlugins', 'ShowProgress', 'Recurse', 'ContinueOnError', 'SkipMissingTools', 'Last', 'LastBatches')
     foreach ($key in $BoundParameters.Keys) {
         if ($key -in $skipKeys) { continue }
         if ($null -ne $BoundParameters[$key]) {
@@ -113,6 +113,24 @@ function Merge-FoSettings {
     if ($null -eq $settings.ReportLogLevel) {
         $settings.ReportLogLevel = $settings.LogLevel
     }
+
+    if ([string]::IsNullOrWhiteSpace([string]$settings.ReportVerbosity)) {
+        $settings.ReportVerbosity = 'Standard'
+    }
+    $verbosity = [string]$settings.ReportVerbosity
+    if ($verbosity -notin @('Compact', 'Standard', 'Verbose')) {
+        throw [ArgumentException]::new("ReportVerbosity must be Compact, Standard, or Verbose (got '$verbosity').")
+    }
+    $settings.ReportVerbosity = $verbosity
+
+    if ([string]::IsNullOrWhiteSpace([string]$settings.SizeDisplayUnit)) {
+        $settings.SizeDisplayUnit = 'Auto'
+    }
+    $sizeUnit = [string]$settings.SizeDisplayUnit
+    if ($sizeUnit -notin @('Auto', 'Bytes', 'KB', 'MB', 'GB')) {
+        throw [ArgumentException]::new("SizeDisplayUnit must be Auto, Bytes, KB, MB, or GB (got '$sizeUnit').")
+    }
+    $settings.SizeDisplayUnit = $sizeUnit
 
     Test-FoSafeSuffix -Value $settings.BackupSuffix -SettingName 'BackupSuffix'
     Test-FoSafeSuffix -Value $settings.OptimizedSuffix -SettingName 'OptimizedSuffix'

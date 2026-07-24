@@ -1,6 +1,7 @@
 param(
     [string[]]$Path,
     [int]$Last,
+    [int]$LastBatches,
     [string]$HistoryPath,
     [string]$ConfigPath,
     [switch]$WhatIf
@@ -18,11 +19,14 @@ try {
     if ($Path) {
         $results = @(Undo-FoOptimization -Path $Path -HistoryPath $hist -WhatIf:$WhatIf)
     }
+    elseif ($LastBatches -gt 0) {
+        $results = @(Undo-FoOptimization -LastBatches $LastBatches -HistoryPath $hist -WhatIf:$WhatIf)
+    }
     elseif ($Last -gt 0) {
         $results = @(Undo-FoOptimization -Last $Last -HistoryPath $hist -WhatIf:$WhatIf)
     }
     else {
-        [Console]::Error.WriteLine('Specify -Path or -Last.')
+        [Console]::Error.WriteLine('Specify -Path, -Last, or -LastBatches.')
         exit 1
     }
 

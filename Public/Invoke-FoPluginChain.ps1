@@ -117,9 +117,9 @@ function Invoke-FoPluginChain {
                         Accepted   = $result.Accepted
                         DurationMs = $result.DurationMs
                     }
-                    if ($Settings.LogLevel -ge 2 -and $result.Accepted) {
-                        $pct = if ($result.SizeBefore -gt 0) { [math]::Round((1 - $result.SizeAfter / $result.SizeBefore) * 100, 1) } else { 0 }
-                        Write-Host ('  {0}: {1} -> {2} (-{3}%)' -f $step.Name, (Format-FoFileSize $result.SizeBefore), (Format-FoFileSize $result.SizeAfter), $pct)
+                    if ((Get-FoReportVerbosity -Settings $Settings) -eq 'Verbose' -and $Settings.LogLevel -ge 2 -and $result.Accepted) {
+                        $unit = Get-FoSizeDisplayUnit -Settings $Settings
+                        Write-Host ('  {0}: {1}' -f $step.Name, (Format-FoSizeChange -OriginalSize $result.SizeBefore -FinalSize $result.SizeAfter -Unit $unit))
                     }
                 }
             }

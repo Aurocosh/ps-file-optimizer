@@ -16,6 +16,7 @@ function Get-FoEnginePrivateScriptNames {
         'Add-FoHistoryEntry'
         'Format-FoHistoryEntry'
         'Write-FoReport'
+        'Write-FoOptimizeResult'
         'Get-FoTargetFiles'
         'Invoke-FoRollback'
     )

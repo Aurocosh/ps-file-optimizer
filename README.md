@@ -29,11 +29,19 @@ Optimize-FoFile -Path '.\images\*.png'
 # Preview only
 .\Scripts\Optimize-File.ps1 .\images\*.png -WhatIf
 
-# View history
+# View history (entries or whole batches)
 .\Scripts\Show-History.ps1 -Last 10
+.\Scripts\Show-History.ps1 -LastBatches 1
 
-# Rollback last 3 optimizations
+# Rollback last 3 files, or the last optimization run (batch)
 .\Scripts\Undo-Optimization.ps1 -Last 3
+.\Scripts\Undo-Optimization.ps1 -LastBatches 1
+
+# Show merged configuration
+.\Scripts\Optimize-File.ps1 -ShowConfig
+
+# Compact one-line results; fixed size unit
+.\Scripts\Optimize-File.ps1 .\images\*.png -ReportVerbosity Compact -SizeDisplayUnit KB
 
 # Install all plugin binaries into .\Plugins64 (64-bit PS) or .\Plugins32 (32-bit PS)
 .\Scripts\Install-Plugins.ps1 -Mode FullPortable
@@ -111,12 +119,28 @@ If the portable plugin bundle is not installed at all (`Install-FoPlugins` never
 
 Use `-ContinueOnError` on `Optimize-FoFile` (or `Optimize-File.ps1`) to finish a multi-file batch after individual file failures.
 
+### Result output
+
+| `ReportVerbosity` | Behavior |
+|-------------------|----------|
+| `Compact` | One line per file: output path and size change |
+| `Standard` (default) | End-of-run table: OriginalPath, OutputPath (when different), BackupPath, size change, OutputMode, Duration |
+| `Verbose` | Per-file host lines (previous style) plus per-step size lines |
+
+`SizeDisplayUnit` defaults to `Auto` (pretty KB/MB/GB by file size). Set `Bytes`, `KB`, `MB`, or `GB` to force a single unit.
+
+```powershell
+.\Scripts\Optimize-File.ps1 -ShowConfig
+Get-FoConfig   # module / scripts
+```
+
 ## History and undo
 
-When `HistoryEnabled` is true (default), each successful optimization appends an entry to `history.json` (beside your config, or `HistoryPath`).
+When `HistoryEnabled` is true (default), each successful optimization appends an entry to `history.json` (beside your config, or `HistoryPath`). Each `Optimize-FoFile` / `Optimize-File.ps1` invocation shares one `BatchId` across all files in that run.
 
 | Field | Meaning |
 |-------|---------|
+| `BatchId` | Shared id for one optimize run (omit on older entries) |
 | `TargetPath` | User-visible path where the optimized file was written (undo restore destination) |
 | `OriginalPath` | Same value as `TargetPath` on each entry |
 | `OptimizedPath` | Optimized output path (same as `TargetPath` for in-place modes; sibling file for `OptimizedSuffix`) |
@@ -131,6 +155,7 @@ Reversible output modes: `TempMove`, `BackupSuffix`, `BackupMove`, `OptimizedSuf
   "Entries": [
     {
       "Id": "20260708-143000-001",
+      "BatchId": "20260708-143000-aabbccdd",
       "Timestamp": "2026-07-08T14:30:00",
       "TargetPath": "C:\\data\\photo.png",
       "OriginalPath": "C:\\data\\photo.png",
@@ -147,7 +172,9 @@ Reversible output modes: `TempMove`, `BackupSuffix`, `BackupMove`, `OptimizedSuf
 
 ```powershell
 Get-FoHistory -Last 10
+Get-FoHistory -LastBatches 1
 Undo-FoOptimization -Last 3
+Undo-FoOptimization -LastBatches 1
 ```
 
 Module overview: `Get-Help about_FileOptimizer -Full`

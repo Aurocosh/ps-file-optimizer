@@ -79,6 +79,7 @@ Describe 'Get-FoHistory -Format Object' -Tag Unit {
   "Entries": [
     {
       "Id": "test-id-1",
+      "BatchId": "batch-a",
       "Timestamp": "2026-01-01T00:00:00Z",
       "OriginalPath": "C:\\data\\photo.png",
       "OptimizedPath": "C:\\data\\photo.png",
@@ -96,6 +97,84 @@ Describe 'Get-FoHistory -Format Object' -Tag Unit {
 
         $entries.Count | Should -Be 1
         $entries[0].Id | Should -Be 'test-id-1'
+        $entries[0].BatchId | Should -Be 'batch-a'
         $entries[0].BytesSaved | Should -Be 200
+    }
+
+    It 'Filters by LastBatches using BatchId' {
+        $histDir = Join-Path $TestDrive 'history-batches'
+        New-Item -ItemType Directory -Path $histDir -Force | Out-Null
+        $histFile = Join-Path $histDir 'history.json'
+
+        @'
+{
+  "Version": 1,
+  "Entries": [
+    {
+      "Id": "old-1",
+      "BatchId": "batch-old",
+      "Timestamp": "2026-01-01T00:00:00",
+      "OriginalPath": "C:\\a.png",
+      "OptimizedPath": "C:\\a.png",
+      "OriginalSize": 10,
+      "FinalSize": 5,
+      "OutputMode": "TempMove",
+      "ReversalStatus": "Pending"
+    },
+    {
+      "Id": "new-1",
+      "BatchId": "batch-new",
+      "Timestamp": "2026-01-02T00:00:00",
+      "OriginalPath": "C:\\b.png",
+      "OptimizedPath": "C:\\b.png",
+      "OriginalSize": 10,
+      "FinalSize": 5,
+      "OutputMode": "TempMove",
+      "ReversalStatus": "Pending"
+    },
+    {
+      "Id": "new-2",
+      "BatchId": "batch-new",
+      "Timestamp": "2026-01-02T00:01:00",
+      "OriginalPath": "C:\\c.png",
+      "OptimizedPath": "C:\\c.png",
+      "OriginalSize": 10,
+      "FinalSize": 5,
+      "OutputMode": "TempMove",
+      "ReversalStatus": "Pending"
+    }
+  ]
+}
+'@ | Set-Content -LiteralPath $histFile -Encoding UTF8
+
+        $entries = @(Get-FoHistory -HistoryPath $histFile -Format Object -LastBatches 1)
+        $entries.Count | Should -Be 2
+        @($entries | ForEach-Object BatchId | Select-Object -Unique) | Should -Be @('batch-new')
+    }
+}
+
+Describe 'History BatchId' -Tag Unit {
+    It 'Stores BatchId on new history entries' {
+        InModuleScope FileOptimizer {
+            $histDir = Join-Path $TestDrive 'history-add-batch'
+            New-Item -ItemType Directory -Path $histDir -Force | Out-Null
+            $histFile = Join-Path $histDir 'history.json'
+            $settings = @{
+                HistoryEnabled = $true
+                HistoryPath    = $histFile
+            }
+            $result = [PSCustomObject]@{
+                Path         = 'C:\data\photo.png'
+                OriginalSize = 100
+                FinalSize    = 50
+                OutputPath   = 'C:\data\photo.png'
+                BackupPath   = 'C:\tmp\photo.png'
+                OutputMode   = 'TempMove'
+            }
+            Add-FoHistoryEntry -Result $result -Settings $settings -BatchId 'batch-xyz'
+            $data = Get-FoHistoryData -HistoryPath $histFile
+            $data.Entries[0].BatchId | Should -Be 'batch-xyz'
+            $result.BatchId | Should -Be 'batch-xyz'
+        }
     }
 }

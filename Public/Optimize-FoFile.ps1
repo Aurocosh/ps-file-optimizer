@@ -6,6 +6,7 @@ function Optimize-FoFile {
     .DESCRIPTION
     Resolves settings, selects pipeline groups per file extension, runs the plugin
     chain, and optionally records history. Supports -WhatIf for dry-run output.
+    Each invocation is one history batch when HistoryEnabled is true.
 
     .PARAMETER Path
     File or directory paths to optimize. Directories are not expanded unless -Recurse is set.
@@ -27,6 +28,12 @@ function Optimize-FoFile {
 
     .PARAMETER OutputMode
     TempMove, Replace, OptimizedSuffix, BackupSuffix, or BackupMove.
+
+    .PARAMETER ReportVerbosity
+    Compact, Standard (default), or Verbose console/report layout.
+
+    .PARAMETER SizeDisplayUnit
+    Auto (default pretty), Bytes, KB, MB, or GB for size display.
 
     .PARAMETER ShowProgress
     Show per-step progress during optimization.
@@ -69,6 +76,10 @@ function Optimize-FoFile {
         [ValidateRange(0, 3)]
         [nullable[int]]$ReportLogLevel,
         [string]$ReportPath,
+        [ValidateSet('Compact', 'Standard', 'Verbose')]
+        [string]$ReportVerbosity,
+        [ValidateSet('Auto', 'Bytes', 'KB', 'MB', 'GB')]
+        [string]$SizeDisplayUnit,
         [ValidateSet('Replace', 'OptimizedSuffix', 'BackupSuffix', 'BackupMove', 'TempMove')]
         [string]$OutputMode,
         [string]$BackupPath,
@@ -89,6 +100,7 @@ function Optimize-FoFile {
     begin {
         $script:FoBatchResults = [System.Collections.Generic.List[object]]::new()
         $script:FoBatchSettings = $null
+        $script:FoBatchId = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + ([guid]::NewGuid().ToString('N').Substring(0, 8))
     }
 
     process {
@@ -106,25 +118,38 @@ function Optimize-FoFile {
         }
         $script:FoBatchSettings = $settings
         $targets = Get-FoTargetFiles -Path $Path -Recurse:$Recurse
+        $verbosity = Get-FoReportVerbosity -Settings $settings
 
         foreach ($file in $targets) {
             $gate = Test-FoFileGate -Path $file -Settings $settings
             if (-not $gate.Pass) {
                 Write-FoLog -LogLevel $settings.LogLevel -RequiredLevel 1 -Message "Skipped $file ($($gate.Reason))"
-                $script:FoBatchResults.Add([PSCustomObject]@{ Path = $file; Status = 'Skipped'; Reason = $gate.Reason })
+                $skipped = [PSCustomObject]@{ Path = $file; Status = 'Skipped'; Reason = $gate.Reason }
+                $script:FoBatchResults.Add($skipped)
+                if ($verbosity -eq 'Verbose' -and $settings.LogLevel -ge 1) {
+                    Write-FoOptimizeResultVerboseLine -Result $skipped -Unit (Get-FoSizeDisplayUnit -Settings $settings)
+                }
                 continue
             }
 
             if ((Get-Item -LiteralPath $file).Length -eq 0) {
                 Write-FoLog -LogLevel $settings.LogLevel -RequiredLevel 1 -Message "Skipped $file (zero-byte file)"
-                $script:FoBatchResults.Add([PSCustomObject]@{ Path = $file; Status = 'Skipped'; Reason = 'ZeroByte' })
+                $skipped = [PSCustomObject]@{ Path = $file; Status = 'Skipped'; Reason = 'ZeroByte' }
+                $script:FoBatchResults.Add($skipped)
+                if ($verbosity -eq 'Verbose' -and $settings.LogLevel -ge 1) {
+                    Write-FoOptimizeResultVerboseLine -Result $skipped -Unit (Get-FoSizeDisplayUnit -Settings $settings)
+                }
                 continue
             }
 
             $groups = Get-FoPipelineGroupsForFile -Path $file -Settings $settings
             if ($groups.Count -eq 0) {
                 Write-FoLog -LogLevel $settings.LogLevel -RequiredLevel 1 -Message "Skipped $file (unsupported extension)"
-                $script:FoBatchResults.Add([PSCustomObject]@{ Path = $file; Status = 'Skipped'; Reason = 'Unsupported' })
+                $skipped = [PSCustomObject]@{ Path = $file; Status = 'Skipped'; Reason = 'Unsupported' }
+                $script:FoBatchResults.Add($skipped)
+                if ($verbosity -eq 'Verbose' -and $settings.LogLevel -ge 1) {
+                    Write-FoOptimizeResultVerboseLine -Result $skipped -Unit (Get-FoSizeDisplayUnit -Settings $settings)
+                }
                 continue
             }
 
@@ -132,27 +157,12 @@ function Optimize-FoFile {
                 try {
                     $result = Invoke-FoPluginChain -Path $file -Settings $settings -ShowProgress:$ShowProgress -Confirm:$false
                     if ($result.Status -eq 'Optimized') {
-                        if ($settings.LogLevel -ge 1) {
-                            Write-Host ('Optimized {0}: {1} -> {2} (-{3}%)' -f $file, (Format-FoFileSize $result.OriginalSize), (Format-FoFileSize $result.FinalSize), $result.PercentSaved)
-                        }
                         if ($settings.HistoryEnabled) {
-                            Add-FoHistoryEntry -Result $result -Settings $settings
+                            Add-FoHistoryEntry -Result $result -Settings $settings -BatchId $script:FoBatchId
                         }
                     }
-                    elseif ($result.Status -eq 'Unchanged' -and $settings.LogLevel -ge 1) {
-                        if ($result.Reason -eq 'MissingTools') {
-                            $missing = @($result.Missing)
-                            $hint = if ($missing.Count -gt 0) {
-                                "missing tools: $($missing -join ', ')"
-                            }
-                            else {
-                                'no plugin tools available'
-                            }
-                            Write-Host ("Unchanged {0}: {1} ({2}; check PluginPath or run Install-FoPlugins)" -f $file, (Format-FoFileSize $result.OriginalSize), $hint)
-                        }
-                        else {
-                            Write-Host "Unchanged $file`: $(Format-FoFileSize $result.OriginalSize) (already optimal)"
-                        }
+                    if ($verbosity -eq 'Verbose' -and $settings.LogLevel -ge 1) {
+                        Write-FoOptimizeResultVerboseLine -Result $result -Unit (Get-FoSizeDisplayUnit -Settings $settings)
                     }
                     $script:FoBatchResults.Add($result)
                 }
@@ -163,20 +173,35 @@ function Optimize-FoFile {
                     else {
                         Write-Error $_
                     }
-                    $script:FoBatchResults.Add([PSCustomObject]@{ Path = $file; Status = 'Error'; Reason = $_.Exception.Message })
+                    $err = [PSCustomObject]@{ Path = $file; Status = 'Error'; Reason = $_.Exception.Message }
+                    $script:FoBatchResults.Add($err)
+                    if ($verbosity -eq 'Verbose' -and $settings.LogLevel -ge 1) {
+                        Write-FoOptimizeResultVerboseLine -Result $err -Unit (Get-FoSizeDisplayUnit -Settings $settings)
+                    }
                     if (-not $ContinueOnError) { throw }
                 }
             }
             elseif ($WhatIfPreference) {
                 $result = Invoke-FoPluginChain -Path $file -Settings $settings -ShowProgress:$false -Confirm:$false
                 $script:FoBatchResults.Add($result)
+                if ($verbosity -eq 'Verbose' -and $settings.LogLevel -ge 1) {
+                    Write-FoOptimizeResultVerboseLine -Result $result -Unit (Get-FoSizeDisplayUnit -Settings $settings)
+                }
             }
         }
     }
 
     end {
-        if ($script:FoBatchSettings -and $script:FoBatchSettings.ReportPath -and $script:FoBatchResults.Count -gt 0) {
-            Write-FoReport -Results @($script:FoBatchResults) -Settings $script:FoBatchSettings -ReportPath $script:FoBatchSettings.ReportPath
+        if ($script:FoBatchSettings -and $script:FoBatchResults.Count -gt 0) {
+            $verbosity = Get-FoReportVerbosity -Settings $script:FoBatchSettings
+            # Verbose lines are emitted per file during process; Compact/Standard summarize at end.
+            if ($verbosity -ne 'Verbose') {
+                Write-FoOptimizeResults -Results @($script:FoBatchResults) -Settings $script:FoBatchSettings
+            }
+
+            if ($script:FoBatchSettings.ReportPath) {
+                Write-FoReport -Results @($script:FoBatchResults) -Settings $script:FoBatchSettings -ReportPath $script:FoBatchSettings.ReportPath
+            }
         }
         return @($script:FoBatchResults)
     }

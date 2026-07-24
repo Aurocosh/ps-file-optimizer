@@ -110,18 +110,31 @@ if (-not (Test-Path -LiteralPath $ModulePath)) {
 }
 
 $publishRoot = Split-Path -Parent $ModulePath
-Write-Host "Publishing FileOptimizer $moduleVersion to $Repository from $publishRoot using $($notesFile.Path)"
+$packagedManifest = Join-Path $ModulePath 'FileOptimizer.psd1'
+if (-not (Test-Path -LiteralPath $packagedManifest)) {
+    throw "Packaged module manifest not found: $packagedManifest"
+}
+
+$manifestContent = Get-Content -LiteralPath $packagedManifest -Raw
+$packagedManifestData = & ([scriptblock]::Create($manifestContent))
+$plainReleaseNotes = [string]$packagedManifestData.PrivateData.PSData.ReleaseNotes
+if ([string]::IsNullOrWhiteSpace($plainReleaseNotes)) {
+    throw "Packaged manifest is missing PrivateData.PSData.ReleaseNotes (plain-text Gallery notes required for $moduleVersion)."
+}
+
+Write-Host "Publishing FileOptimizer $moduleVersion to $Repository from $publishRoot (markdown notes gate: $($notesFile.Path))"
 
 if (-not $PSCmdlet.ShouldProcess($Repository, "Publish-Module FileOptimizer $moduleVersion")) {
     exit 0
 }
 
 # Path and RequiredVersion are different Publish-Module parameter sets; version comes from the packaged manifest.
+# Gallery ReleaseNotes are plain text — use the manifest field, not raw markdown from ReleaseNotes/*.md.
 $publishParams = @{
     Path         = $publishRoot
     NuGetApiKey  = $NuGetApiKey
     Repository   = $Repository
-    ReleaseNotes = @($notesFile.Content)
+    ReleaseNotes = @($plainReleaseNotes)
     Force        = $true
     ErrorAction  = 'Stop'
 }

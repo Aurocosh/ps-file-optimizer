@@ -37,7 +37,19 @@ function Get-FoHistoryData {
     if (-not (Test-Path -LiteralPath $path)) {
         return @{ Version = 1; Entries = @() }
     }
-    return Import-FoJsonFile -Path $path
+    $data = Import-FoJsonFile -Path $path
+    if ($null -eq $data) {
+        return @{ Version = 1; Entries = @() }
+    }
+    if ($data -isnot [hashtable]) {
+        $data = ConvertTo-FoHashtable -InputObject $data
+    }
+    # ConvertFrom-Json unwraps single-element arrays; keep Entries as Object[].
+    $data.Entries = @($data.Entries)
+    if (-not $data.ContainsKey('Version')) {
+        $data.Version = 1
+    }
+    return $data
 }
 
 function Save-FoHistoryData {
@@ -53,7 +65,8 @@ function Add-FoHistoryEntry {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '', Justification = 'Parameters are used inside the history lock scriptblock.')]
     param(
         $Result,
-        [hashtable]$Settings
+        [hashtable]$Settings,
+        [string]$BatchId
     )
 
     if (-not $Settings.HistoryEnabled) { return }
@@ -62,6 +75,7 @@ function Add-FoHistoryEntry {
         $data = Get-FoHistoryData -HistoryPath $Settings.HistoryPath
         $id = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + ([guid]::NewGuid().ToString('N').Substring(0, 8))
         # History entry fields:
+        # - BatchId: shared id for all files optimized in one Optimize-FoFile invocation
         # - TargetPath / OriginalPath: user-visible path where the optimized file was written (undo restore destination)
         # - OptimizedPath: same as TargetPath for in-place modes; sibling path for OptimizedSuffix
         # - BackupPath: location of pre-optimization bytes for reversible modes (TempMove, BackupSuffix, BackupMove)
@@ -69,6 +83,7 @@ function Add-FoHistoryEntry {
         $targetPath = $Result.Path
         $entry = @{
             Id             = $id
+            BatchId        = $BatchId
             Timestamp      = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ss')
             TargetPath     = $targetPath
             OriginalPath   = $targetPath
@@ -83,6 +98,9 @@ function Add-FoHistoryEntry {
         $data.Entries = @($data.Entries) + @($entry)
         Save-FoHistoryData -Data $data -HistoryPath $Settings.HistoryPath
         $Result | Add-Member -NotePropertyName HistoryId -NotePropertyValue $id -Force
+        if ($BatchId) {
+            $Result | Add-Member -NotePropertyName BatchId -NotePropertyValue $BatchId -Force
+        }
     }
 }
 
