@@ -43,13 +43,34 @@ function Get-FoPipelineGroupPrimaryExtensions {
         return $script:FoPipelineGroupPrimaryExtensions
     }
 
-    $byGroup = @{}
+    # Prefer an extension that uniquely maps to the group. Shared mappings (e.g. .ico →
+    # ICO + PNG) skip PNG-only steps such as TruePNG/PNGOut when used as the inventory
+    # sample, which would omit those tools from Install-FoPlugins FullPortable.
+    $extsByGroup = @{}
     $map = Get-FoExtensionMap
     foreach ($ext in $map.Keys) {
         foreach ($group in @($map[$ext])) {
-            if (-not $byGroup.ContainsKey($group)) {
-                $byGroup[$group] = $ext
+            if (-not $extsByGroup.ContainsKey($group)) {
+                $extsByGroup[$group] = [System.Collections.Generic.List[string]]::new()
             }
+            $extsByGroup[$group].Add($ext)
+        }
+    }
+
+    $byGroup = @{}
+    foreach ($group in $extsByGroup.Keys) {
+        $exts = @($extsByGroup[$group])
+        $unique = @(
+            $exts | Where-Object { @($map[$_]).Count -eq 1 } | Sort-Object
+        )
+        $candidates = if ($unique.Count -gt 0) { $unique } else { @($exts | Sort-Object) }
+
+        $canonical = '.' + $group.ToLowerInvariant()
+        if ($candidates -contains $canonical) {
+            $byGroup[$group] = $canonical
+        }
+        else {
+            $byGroup[$group] = $candidates[0]
         }
     }
 

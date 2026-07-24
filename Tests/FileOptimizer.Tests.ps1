@@ -752,11 +752,22 @@ Describe 'Get-FoRequiredPluginExecutables' -Tag Unit {
             $result = Install-FoPlugins -Mode FullPortable -Architecture 64 -DestinationPath $dir -WhatIf
             $result.ExecutablesNeeded.Count | Should -BeGreaterThan 50
             ($result.ExecutablesNeeded -contains 'oxipng.exe') | Should -Be $true
+            ($result.ExecutablesNeeded -contains 'truepng.exe') | Should -Be $true
+            ($result.ExecutablesNeeded -contains 'pngout.exe') | Should -Be $true
             ($result.ExecutablesNeeded -contains 'defluff.exe') | Should -Be $true
             ($result.ExecutablesNeeded -contains 'gswin64c.exe') | Should -Be $true
         }
         finally {
             Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    It 'Uses a PNG-unique extension for pipeline inventory (not shared .ico)' {
+        InModuleScope FileOptimizer {
+            $script:FoPipelineGroupPrimaryExtensions = $null
+            $primary = Get-FoPipelineGroupPrimaryExtensions
+            $primary['PNG'] | Should -Be '.png'
+            $primary['ICO'] | Should -BeIn @('.cur', '.ico', '.spl')
         }
     }
 

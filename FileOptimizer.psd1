@@ -1,5 +1,5 @@
 @{
-    ModuleVersion     = '1.0.3'
+    ModuleVersion     = '1.0.4'
     GUID              = 'a47c8e21-5f3b-4d92-9c1a-6e8b2d4f7c90'
     Author            = 'Aurocosh'
     Copyright         = '(c) PS-FileOptimizer contributors. FileOptimizer plugins are subject to their respective licenses.'
@@ -24,7 +24,7 @@
             Tags         = @('FileOptimizer', 'compression', 'optimization', 'PNG', 'CLI')
             LicenseUri   = 'https://www.gnu.org/licenses/agpl-3.0.html'
             ProjectUri   = 'https://github.com/Aurocosh/ps-file-optimizer'
-            ReleaseNotes = 'Hard-fail when the plugin bundle or required tools are missing by default (MissingToolsPolicy). See ReleaseNotes/1.0.3.md.'
+            ReleaseNotes = 'Install-FoPlugins FullPortable now includes TruePNG and PNGOut. See ReleaseNotes/1.0.4.md.'
         }
     }
 }
