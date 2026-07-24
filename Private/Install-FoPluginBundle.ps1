@@ -384,6 +384,27 @@ function Install-FoPluginBundleCore {
         }
 
         $sourcePlugins = Resolve-FoBundledPluginDirectory -ExtractRoot $extractRoot -ExpectedFolder $bundle.Folder
+
+        $manifestPath = Find-FoPluginBundleManifestPath -ExtractRoot $extractRoot
+        $manifest = $null
+        $usingPinnedBundle = -not $ArchiveUrl -and -not $env:FO_PLUGIN_BUNDLE_URL
+        if ($manifestPath) {
+            $manifest = Import-FoPluginBundleManifest -Path $manifestPath
+            $verify = Test-FoPluginBundleManifestFiles -Manifest $manifest -PluginDirectory $sourcePlugins
+            if (-not $verify.Ok) {
+                $parts = @()
+                if ($verify.Missing.Count) { $parts += "missing: $($verify.Missing -join ', ')" }
+                if ($verify.Mismatched.Count) { $parts += "hash mismatch: $($verify.Mismatched -join ', ')" }
+                throw "Plugin bundle manifest verification failed ($($parts -join '; '))."
+            }
+        }
+        elseif ($usingPinnedBundle) {
+            throw "Plugin bundle is missing $(Get-FoPluginBundleManifestFileName). Re-download with Install-FoPlugins (bundle format 1.1.0+ required)."
+        }
+        else {
+            Write-Warning "Plugin bundle has no $(Get-FoPluginBundleManifestFileName); installed plugins will not report a bundle version."
+        }
+
         $filesToCopy = Get-FoPluginInstallFilePlan -Executables $exesToInstall -SourcePluginDir $sourcePlugins
 
         $stageDir = Join-Path $tempRoot 'stage-plugins'
@@ -407,10 +428,14 @@ function Install-FoPluginBundleCore {
             throw "Plugin bundle is missing $($copyResult.Missing.Count) required file(s): $($copyResult.Missing -join ', ')"
         }
 
+        if ($manifestPath) {
+            Copy-Item -LiteralPath $manifestPath -Destination (Join-Path $stageDir (Get-FoPluginBundleManifestFileName)) -Force
+        }
+
         Publish-FoPluginInstallStage -StageDir $stageDir -DestinationPath $dest
         $stageDir = $null
 
-        if ($copyResult.Copied.Count -gt 0) {
+        if ($copyResult.Copied.Count -gt 0 -or $manifestPath) {
             Clear-FoPluginResolveCache
         }
 
@@ -421,6 +446,7 @@ function Install-FoPluginBundleCore {
             ArchiveUrl        = $url
             ArchiveFormat     = $bundle.Format
             BundleFolder      = $bundle.Folder
+            BundleVersion     = if ($manifest) { [string]$manifest.BundleVersion } else { $null }
             Downloaded        = $downloaded
             Extracted         = $extracted
             ExecutablesNeeded = $exesToInstall

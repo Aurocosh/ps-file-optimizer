@@ -16,6 +16,7 @@ Get-ChildItem -Path (Join-Path $PSScriptRoot 'Pipelines\*.ps1') -Exclude '_Helpe
 # Public cmdlets
 . (Join-Path $PSScriptRoot 'Public\Resolve-FoPluginExecutable.ps1')
 . (Join-Path $PSScriptRoot 'Private\Get-FoPluginBundleMetadata.ps1')
+. (Join-Path $PSScriptRoot 'Private\Get-FoPluginBundleManifest.ps1')
 . (Join-Path $PSScriptRoot 'Private\Get-FoDssimBundleMetadata.ps1')
 . (Join-Path $PSScriptRoot 'Private\Install-FoPluginBundle.ps1')
 . (Join-Path $PSScriptRoot 'Private\Install-FoDssimBundle.ps1')

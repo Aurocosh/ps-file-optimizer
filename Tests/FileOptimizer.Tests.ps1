@@ -14,6 +14,21 @@ Describe 'Merge-FoSettings' -Tag Unit {
         $s.Level | Should -Be 9
         $s.OutputMode | Should -Be 'TempMove'
     }
+
+    It 'Falls back when PluginPath does not exist' {
+        $fallback = Join-Path (Get-FoTestModuleRoot) 'Plugins64'
+        if (-not (Test-Path -LiteralPath $fallback)) {
+            $fallback = Join-Path (Get-FoTestModuleRoot) 'Plugins32'
+        }
+
+        $s = Merge-FoSettings -BoundParameters @{ PluginPath = 'C:\fo-missing-plugins-path-xyz' }
+        if (Test-Path -LiteralPath $fallback) {
+            $s.PluginPath | Should -Be ([System.IO.Path]::GetFullPath($fallback))
+        }
+        else {
+            $s.PluginPath | Should -BeNullOrEmpty
+        }
+    }
 }
 
 Describe 'Config merge' -Tag Unit {
@@ -564,10 +579,15 @@ Describe 'Optimize-FoFile history E2E' -Tag Unit {
 Describe 'Missing tools policy' -Tag Unit {
     It 'Continues per-step when tools missing (FileOptimizer parity)' {
         $png = Join-Path $env:TEMP "fo_miss_$(Get-Random).png"
+        $emptyPlugins = Join-Path $TestDrive 'empty-plugins-continue'
+        New-Item -ItemType Directory -Path $emptyPlugins -Force | Out-Null
         New-FoTestPng -Path $png
         try {
-            $r = Optimize-FoFile -Path $png -PluginPath 'C:\nonexistent_plugins' -PluginSearchMode PortableOnly -ErrorAction Stop
+            $r = Optimize-FoFile -Path $png -PluginPath $emptyPlugins -PluginSearchMode PortableOnly -ErrorAction Stop
             $r[0].Status | Should -BeIn @('Unchanged', 'Optimized')
+            if ($r[0].Status -eq 'Unchanged') {
+                $r[0].Reason | Should -Be 'MissingTools'
+            }
         }
         finally {
             Remove-Item $png -Force -ErrorAction SilentlyContinue
@@ -576,9 +596,11 @@ Describe 'Missing tools policy' -Tag Unit {
 
     It 'Skips with SkipMissingTools' {
         $png = Join-Path $env:TEMP "fo_skip_$(Get-Random).png"
+        $emptyPlugins = Join-Path $TestDrive 'empty-plugins-skip'
+        New-Item -ItemType Directory -Path $emptyPlugins -Force | Out-Null
         New-FoTestPng -Path $png
         try {
-            $r = Optimize-FoFile -Path $png -PluginPath 'C:\nonexistent_plugins' -PluginSearchMode PortableOnly -SkipMissingTools:$true
+            $r = Optimize-FoFile -Path $png -PluginPath $emptyPlugins -PluginSearchMode PortableOnly -SkipMissingTools:$true
             $r[0].Status | Should -Be 'Skipped'
         }
         finally {

@@ -38,7 +38,7 @@ function Merge-FoSettings {
         }
     }
 
-    $skipKeys = @('ConfigPath', 'InitializeConfig', 'Force', 'ShowHistory', 'HistoryFormat', 'Path', 'WhatIf', 'Confirm', 'Verbose', 'Debug')
+    $skipKeys = @('ConfigPath', 'InitializeConfig', 'Force', 'ShowHistory', 'HistoryFormat', 'Path', 'WhatIf', 'Confirm', 'Verbose', 'Debug', 'AcknowledgeOutdatedPlugins', 'ShowProgress', 'Recurse', 'ContinueOnError')
     foreach ($key in $BoundParameters.Keys) {
         if ($key -in $skipKeys) { continue }
         if ($null -ne $BoundParameters[$key]) {
@@ -56,6 +56,18 @@ function Merge-FoSettings {
 
     if (-not $settings.PluginPath) {
         $settings.PluginPath = Get-FoDefaultPluginPath
+    }
+    elseif (-not (Test-Path -LiteralPath $settings.PluginPath)) {
+        $stalePath = $settings.PluginPath
+        $fallback = Get-FoDefaultPluginPath
+        if ($fallback) {
+            Write-Warning "Configured PluginPath not found: '$stalePath'. Falling back to '$fallback'."
+            $settings.PluginPath = $fallback
+        }
+        else {
+            Write-Warning "Configured PluginPath not found: '$stalePath'. Install plugins with Install-FoPlugins or pass -PluginPath."
+            $settings.PluginPath = $null
+        }
     }
     if (-not $settings.TempBackupPath) {
         $settings.TempBackupPath = Join-Path $env:TEMP 'FileOptimizer\backups'

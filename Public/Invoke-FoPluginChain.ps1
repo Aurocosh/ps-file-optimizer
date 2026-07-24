@@ -82,6 +82,8 @@ function Invoke-FoPluginChain {
         Write-Host ('Optimizing {0} via {1}' -f $Path, ($groupNames -join ', '))
     }
 
+    Assert-FoPluginBundleVersionForOptimize -Settings $Settings
+
     $workFile = Join-Path ([System.IO.Path]::GetTempPath()) ('FileOptimizer_work_{0}_{1}' -f ([guid]::NewGuid().ToString('N')), [System.IO.Path]::GetFileName($Path))
     Copy-Item -LiteralPath $Path -Destination $workFile -Force
     $originalSize = (Get-Item -LiteralPath $Path).Length
@@ -118,10 +120,14 @@ function Invoke-FoPluginChain {
         $sw.Stop()
 
         if ($finalSize -ge $originalSize) {
+            $unchangedReason = $null
+            if ($stepLog.Count -eq 0 -and $allMissing.Count -gt 0) {
+                $unchangedReason = 'MissingTools'
+            }
             return [PSCustomObject]@{
                 Path         = $Path
                 Status       = 'Unchanged'
-                Reason       = $null
+                Reason       = $unchangedReason
                 Groups       = $groupNames
                 OriginalSize = $originalSize
                 FinalSize    = $originalSize
@@ -130,6 +136,7 @@ function Invoke-FoPluginChain {
                 OutputPath   = $Path
                 OriginalPath = $Path
                 BackupPath   = $null
+                Missing      = $allMissing
                 Steps        = $stepLog
                 DurationMs   = $sw.ElapsedMilliseconds
             }

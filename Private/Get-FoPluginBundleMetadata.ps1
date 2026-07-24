@@ -1,21 +1,22 @@
 # Plugin bundle metadata — ps-file-optimizer-aux GitHub Release (plain .zip).
 # CI cache keys in .github/workflows/ci.yml must be updated when Sha256 values below change.
 
-$script:FoPluginBundleVersion = '1.0.0'
-$script:FoPluginBundleReleaseTag = 'plugins-v1.0.0'
+$script:FoPluginBundleVersion = '1.1.0'
+$script:FoMinimumPluginBundleVersion = '1.1.0'
+$script:FoPluginBundleReleaseTag = 'plugins-v1.1.0'
 $script:FoPluginBundleFormat = 'zip'
 
 $script:FoPluginBundles = @{
     '64' = @{
-        Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.zip'
-        FileName = 'fo-plugins-win-x64-1.0.0.zip'
-        Sha256   = 'd2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0'
+        Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.1.0/fo-plugins-win-x64-1.1.0.zip'
+        FileName = 'fo-plugins-win-x64-1.1.0.zip'
+        Sha256   = '64cbf3ab2c8bd2dbd097b77286dd439d19f9c37f9fadbc1420ccefcd968847b2'
         Folder   = 'Plugins64'
     }
     '32' = @{
-        Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x86-1.0.0.zip'
-        FileName = 'fo-plugins-win-x86-1.0.0.zip'
-        Sha256   = '96bce923ca76a95db522eeea269a031a2b2a648fc0b44b45ef2a1fec202bc5b6'
+        Url      = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.1.0/fo-plugins-win-x86-1.1.0.zip'
+        FileName = 'fo-plugins-win-x86-1.1.0.zip'
+        Sha256   = '7ae02081cc2baf7e4caa976bac0798beacf7feb42f3d1e54e1182e18f3960b0c'
         Folder   = 'Plugins32'
     }
 }
@@ -214,6 +215,8 @@ function Get-FoPluginBundleSettings {
         Sha256       = $entry.Sha256
         Format       = $script:FoPluginBundleFormat
         Folder       = $entry.Folder
+        BundleVersion = $script:FoPluginBundleVersion
+        MinimumVersion = $script:FoMinimumPluginBundleVersion
     }
 }
 

@@ -12,6 +12,7 @@ foreach ($name in (Get-FoTestSupportPrivateScriptNames)) {
 . (Join-Path $PSScriptRoot 'Private\Get-FoImageInfo.ps1')
 . (Join-Path $PSScriptRoot 'Private\Compare-FoImage.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Get-FoPluginBundleMetadata.ps1')
+. (Join-Path $script:FoModuleRoot 'Private\Get-FoPluginBundleManifest.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Install-FoPluginBundle.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Get-FoDssimBundleMetadata.ps1')
 . (Join-Path $script:FoModuleRoot 'Private\Install-FoDssimBundle.ps1')
@@ -323,6 +324,18 @@ $script:FoTestSupportFunctions = @(
     'Resolve-FoPluginArchitectureFromPath'
     'Get-FoGhostscriptExecutableName'
     'Remove-FoInstalledPluginArchitectures'
+    'Get-FoPluginBundleManifestFileName'
+    'Get-FoMinimumPluginBundleVersion'
+    'Compare-FoPluginBundleVersion'
+    'New-FoPluginBundleManifestObject'
+    'Save-FoPluginBundleManifest'
+    'Import-FoPluginBundleManifest'
+    'Get-FoInstalledPluginBundleInfo'
+    'Test-FoPluginBundleManifestFiles'
+    'Find-FoPluginBundleManifestPath'
+    'Set-FoAcknowledgedPluginBundleMinimum'
+    'Assert-FoPluginBundleVersionForOptimize'
+    'Test-FoPluginDirectoryHasBinaries'
     'Get-FoDssimBundleSettings'
     'Test-FoDssimCompareAvailable'
     'Test-FoCompareAllowMissingDssim'

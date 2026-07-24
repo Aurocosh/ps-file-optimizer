@@ -200,8 +200,8 @@ $env:FO_RUN_INSTALL_INTEGRATION = '1'
 Override bundle URL for mirrors or pre-release testing:
 
 ```powershell
-$env:FO_PLUGIN_BUNDLE_URL = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.0.0/fo-plugins-win-x64-1.0.0.zip'
-$env:FO_PLUGIN_BUNDLE_SHA256 = 'd2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0'
+$env:FO_PLUGIN_BUNDLE_URL = 'https://github.com/Aurocosh/ps-file-optimizer-aux/releases/download/plugins-v1.1.0/fo-plugins-win-x64-1.1.0.zip'
+$env:FO_PLUGIN_BUNDLE_SHA256 = '64cbf3ab2c8bd2dbd097b77286dd439d19f9c37f9fadbc1420ccefcd968847b2'
 ```
 
 Or run the manual smoke script:

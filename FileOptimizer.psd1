@@ -1,5 +1,5 @@
 @{
-    ModuleVersion     = '1.0.1'
+    ModuleVersion     = '1.0.2'
     GUID              = 'a47c8e21-5f3b-4d92-9c1a-6e8b2d4f7c90'
     Author            = 'Aurocosh'
     Copyright         = '(c) PS-FileOptimizer contributors. FileOptimizer plugins are subject to their respective licenses.'
@@ -24,7 +24,7 @@
             Tags         = @('FileOptimizer', 'compression', 'optimization', 'PNG', 'CLI')
             LicenseUri   = 'https://www.gnu.org/licenses/agpl-3.0.html'
             ProjectUri   = 'https://github.com/Aurocosh/ps-file-optimizer'
-            ReleaseNotes = 'Fix DefluffPipe (and Gzip compress) stdin/stdout deadlock that hung PNG/GZIP/ZIP optimization on larger files. See ReleaseNotes/1.0.1.md.'
+            ReleaseNotes = 'Plugin bundle 1.1.0 with fo-plugin-bundle.json version tracking and minimum-version gate; PluginPath fallback fixes. See ReleaseNotes/1.0.2.md.'
         }
     }
 }

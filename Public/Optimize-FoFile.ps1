@@ -34,6 +34,10 @@ function Optimize-FoFile {
     .PARAMETER Recurse
     When Path is a directory, include files in subdirectories.
 
+    .PARAMETER AcknowledgeOutdatedPlugins
+    Persist acknowledgment of the current minimum plugin-bundle version and continue
+    with a warning when the installed bundle is older than required.
+
     .EXAMPLE
     Optimize-FoFile -Path .\images\photo.png
 
@@ -72,7 +76,8 @@ function Optimize-FoFile {
         [string]$HistoryPath,
         [switch]$ShowProgress,
         [switch]$Recurse,
-        [switch]$ContinueOnError
+        [switch]$ContinueOnError,
+        [switch]$AcknowledgeOutdatedPlugins
     )
 
     begin {
@@ -82,7 +87,17 @@ function Optimize-FoFile {
 
     process {
         if (-not $Path) { return }
+
+        if ($AcknowledgeOutdatedPlugins) {
+            $min = Get-FoMinimumPluginBundleVersion
+            $ackConfig = if ($ConfigPath) { $ConfigPath } else { $null }
+            Set-FoAcknowledgedPluginBundleMinimum -MinimumVersion $min -ConfigPath $ackConfig
+        }
+
         $settings = Merge-FoSettings -BoundParameters $PSBoundParameters
+        if ($AcknowledgeOutdatedPlugins) {
+            $settings.AcknowledgedPluginBundleMinimum = Get-FoMinimumPluginBundleVersion
+        }
         $script:FoBatchSettings = $settings
         $targets = Get-FoTargetFiles -Path $Path -Recurse:$Recurse
 
@@ -119,7 +134,19 @@ function Optimize-FoFile {
                         }
                     }
                     elseif ($result.Status -eq 'Unchanged' -and $settings.LogLevel -ge 1) {
-                        Write-Host "Unchanged $file`: $(Format-FoFileSize $result.OriginalSize) (already optimal)"
+                        if ($result.Reason -eq 'MissingTools') {
+                            $missing = @($result.Missing)
+                            $hint = if ($missing.Count -gt 0) {
+                                "missing tools: $($missing -join ', ')"
+                            }
+                            else {
+                                'no plugin tools available'
+                            }
+                            Write-Host ("Unchanged {0}: {1} ({2}; check PluginPath or run Install-FoPlugins)" -f $file, (Format-FoFileSize $result.OriginalSize), $hint)
+                        }
+                        else {
+                            Write-Host "Unchanged $file`: $(Format-FoFileSize $result.OriginalSize) (already optimal)"
+                        }
                     }
                     $script:FoBatchResults.Add($result)
                 }

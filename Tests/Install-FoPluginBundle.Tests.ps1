@@ -7,20 +7,20 @@ Describe 'Get-FoPluginBundleSettings' -Tag Unit {
         $settings = Get-FoPluginBundleSettings
         $settings.Architecture | Should -Be '64'
         $settings.Url | Should -Match 'ps-file-optimizer-aux'
-        $settings.FileName | Should -Be 'fo-plugins-win-x64-1.0.0.zip'
+        $settings.FileName | Should -Be 'fo-plugins-win-x64-1.1.0.zip'
         $settings.Format | Should -Be 'zip'
         $settings.Folder | Should -Be 'Plugins64'
-        $settings.Sha256 | Should -Be 'd2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0'
+        $settings.Sha256 | Should -Be '64cbf3ab2c8bd2dbd097b77286dd439d19f9c37f9fadbc1420ccefcd968847b2'
     }
 
     It 'Resolves x86 bundle metadata when Architecture is 32' {
         $settings = Get-FoPluginBundleSettings -Architecture 32
         $settings.Architecture | Should -Be '32'
-        $settings.FileName | Should -Be 'fo-plugins-win-x86-1.0.0.zip'
+        $settings.FileName | Should -Be 'fo-plugins-win-x86-1.1.0.zip'
         $settings.Folder | Should -Be 'Plugins32'
         $settings.Format | Should -Be 'zip'
-        $settings.Url | Should -Match 'plugins-v1\.0\.0/fo-plugins-win-x86'
-        $settings.Sha256 | Should -Be '96bce923ca76a95db522eeea269a031a2b2a648fc0b44b45ef2a1fec202bc5b6'
+        $settings.Url | Should -Match 'plugins-v1\.1\.0/fo-plugins-win-x86'
+        $settings.Sha256 | Should -Be '7ae02081cc2baf7e4caa976bac0798beacf7feb42f3d1e54e1182e18f3960b0c'
     }
 
     It 'ArchiveUrl override uses supplied SHA256' {

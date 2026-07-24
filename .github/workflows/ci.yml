@@ -1,8 +1,8 @@
 name: CI
 
 # Bundle cache keys — bump when pins change in Get-FoPluginBundleMetadata.ps1 / Get-FoDssimBundleMetadata.ps1
-# Plugins x64 SHA256: d2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0
-# Plugins x86 SHA256: 96bce923ca76a95db522eeea269a031a2b2a648fc0b44b45ef2a1fec202bc5b6
+# Plugins x64 SHA256: 64cbf3ab2c8bd2dbd097b77286dd439d19f9c37f9fadbc1420ccefcd968847b2
+# Plugins x86 SHA256: 7ae02081cc2baf7e4caa976bac0798beacf7feb42f3d1e54e1182e18f3960b0c
 # DSSIM SHA256:       c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c
 
 on:
@@ -36,7 +36,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/FoPlugins64
-          key: fo-ci-plugins64-v1.0.0-d2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0-dssim-c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c
+          key: fo-ci-plugins64-v1.1.0-64cbf3ab2c8bd2dbd097b77286dd439d19f9c37f9fadbc1420ccefcd968847b2-dssim-c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c
 
       - name: Install plugin bundle
         shell: pwsh
@@ -81,7 +81,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.temp }}/FoBundleArchiveCache
-          key: fo-ci-bundles-v1.0.0-d2889306b31c3bb8b356e2d6de0d5f893f26e2e334812c0e541b9c0fe65a04a0-96bce923ca76a95db522eeea269a031a2b2a648fc0b44b45ef2a1fec202bc5b6-dssim-c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c
+          key: fo-ci-bundles-v1.1.0-64cbf3ab2c8bd2dbd097b77286dd439d19f9c37f9fadbc1420ccefcd968847b2-7ae02081cc2baf7e4caa976bac0798beacf7feb42f3d1e54e1182e18f3960b0c-dssim-c9cb7089a62fd8c2655e778fc576d9f1f453eb3ecfb98bb6914f1ff086ceda4c
 
       - name: Integration tests
         shell: pwsh

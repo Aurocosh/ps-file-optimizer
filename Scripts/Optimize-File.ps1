@@ -25,6 +25,7 @@ param(
     [switch]$WhatIf,
     [switch]$Recurse,
     [switch]$ContinueOnError,
+    [switch]$AcknowledgeOutdatedPlugins,
     [switch]$ShowHistory,
     [switch]$Version,
     [int]$Last = 10,
@@ -59,7 +60,7 @@ try {
     }
 
     $params = @{}
-    foreach ($key in @('Path','ConfigPath','Level','PluginSearchMode','PluginPath','LogLevel','ReportLogLevel','ReportPath','OutputMode','BackupPath','BackupSuffix','OptimizedSuffix','TempBackupPath','SkipMissingTools','HistoryEnabled','HistoryPath','ShowProgress','WhatIf','Recurse','ContinueOnError')) {
+    foreach ($key in @('Path','ConfigPath','Level','PluginSearchMode','PluginPath','LogLevel','ReportLogLevel','ReportPath','OutputMode','BackupPath','BackupSuffix','OptimizedSuffix','TempBackupPath','SkipMissingTools','HistoryEnabled','HistoryPath','ShowProgress','WhatIf','Recurse','ContinueOnError','AcknowledgeOutdatedPlugins')) {
         if ($PSBoundParameters.ContainsKey($key)) { $params[$key] = $PSBoundParameters[$key] }
     }
 

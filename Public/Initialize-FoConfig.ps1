@@ -61,13 +61,10 @@ function Initialize-FoConfig {
     if ($PSCmdlet.ShouldProcess($target, 'Write config template')) {
         $content = Get-Content -LiteralPath $template -Raw -Encoding UTF8
         $tempBackup = Join-Path $env:TEMP 'FileOptimizer\backups'
-        $pluginPath = Get-FoDefaultPluginPath
-        if (-not $pluginPath) {
-            $folder = if ([Environment]::Is64BitProcess) { 'Plugins64' } else { 'Plugins32' }
-            $pluginPath = Join-Path $script:FoModuleRoot $folder
-        }
+        # Leave PluginPath empty so Get-FoDefaultPluginPath resolves against the
+        # currently loaded module (survives Gallery version folder upgrades).
         $content = $content.Replace('__FO_TEMP_BACKUP__', ($tempBackup -replace '\\', '\\'))
-        $content = $content.Replace('__FO_PLUGIN_PATH__', ($pluginPath -replace '\\', '\\'))
+        $content = $content.Replace('__FO_PLUGIN_PATH__', '')
         Set-Content -LiteralPath $target -Value $content -Encoding UTF8
         Write-Host "Config written to: $target"
     }

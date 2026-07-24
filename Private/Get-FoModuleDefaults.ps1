@@ -53,6 +53,7 @@ function Get-FoModuleDefaults {
         PNGWolfIterations = -1
         PluginTimeoutSeconds = 1800
         MaxPluginStderrBytes = 1048576
+        AcknowledgedPluginBundleMinimum = ''
     }
 }
 
