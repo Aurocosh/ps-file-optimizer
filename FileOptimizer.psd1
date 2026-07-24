@@ -1,5 +1,5 @@
 @{
-    ModuleVersion     = '1.1.0'
+    ModuleVersion     = '1.1.1'
     GUID              = 'a47c8e21-5f3b-4d92-9c1a-6e8b2d4f7c90'
     Author            = 'Aurocosh'
     Copyright         = '(c) PS-FileOptimizer contributors. FileOptimizer plugins are subject to their respective licenses.'
@@ -26,20 +26,16 @@
             ProjectUri   = 'https://github.com/Aurocosh/ps-file-optimizer'
             # Plain text only (PowerShell Gallery does not render markdown).
             ReleaseNotes = @'
-1.1.0
+1.1.1
 
-Report verbosity, size display units, history batches, and show-config.
+Fix ReportVerbosity so Compact and Standard actually change host output.
 
-Features
+Fixes
 
-- SizeDisplayUnit / -SizeDisplayUnit: Auto (default pretty KB/MB/GB), or fixed Bytes, KB, MB, GB.
-- ReportVerbosity / -ReportVerbosity:
-  - Compact — one line per file (output path and size change)
-  - Standard (default) — end-of-run table: paths, backup, size change, OutputMode, Duration
-  - Verbose — previous per-file host lines plus per-step size lines
-- Optimization history records a BatchId per Optimize-FoFile / Optimize-File.ps1 run.
-- Undo-FoOptimization -LastBatches N and Get-FoHistory -LastBatches N (CLI: Undo-Optimization.ps1 / Show-History.ps1).
-- Optimize-File.ps1 -ShowConfig prints the merged configuration (Get-FoConfig for module users).
+- Per-step and detailed WhatIf dumps from Invoke-FoPluginChain are emitted only when ReportVerbosity is Verbose (they previously always printed, so Compact/Standard looked the same).
+- Compact mode now summarizes WhatIf results (path: what-if (N steps)).
+- Standard mode writes its end-of-run table via Write-Host so it shows consistently when results are captured by the CLI.
+- Optimize result objects use a tighter default display set so Steps no longer floods the console.
 '@
         }
     }

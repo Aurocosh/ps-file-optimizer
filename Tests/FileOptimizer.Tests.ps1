@@ -41,6 +41,48 @@ Describe 'Format-FoOptimizeResultRow' -Tag Unit {
     }
 }
 
+Describe 'ReportVerbosity host output' -Tag Unit {
+    It 'Keeps Compact and Verbose ReportVerbosity settings distinct' {
+        InModuleScope FileOptimizer {
+            $compact = Merge-FoSettings -BoundParameters @{ ReportVerbosity = 'Compact' }
+            $verbose = Merge-FoSettings -BoundParameters @{ ReportVerbosity = 'Verbose' }
+            Get-FoReportVerbosity -Settings $compact | Should -Be 'Compact'
+            Get-FoReportVerbosity -Settings $verbose | Should -Be 'Verbose'
+        }
+    }
+
+    It 'Formats Compact WhatIf summary lines' {
+        InModuleScope FileOptimizer {
+            $line = Format-FoOptimizeResultCompactLine -Result ([PSCustomObject]@{
+                    Path   = 'C:\a.png'
+                    Status = 'WhatIf'
+                    Steps  = @(@{}, @{}, @{})
+                })
+            $line | Should -Be 'C:\a.png: what-if (3 steps)'
+        }
+    }
+
+    It 'Builds Standard table text with size change' {
+        InModuleScope FileOptimizer {
+            $row = Format-FoOptimizeResultRow -Result ([PSCustomObject]@{
+                    Status       = 'Optimized'
+                    Path         = 'C:\a.png'
+                    OutputPath   = 'C:\a.png'
+                    BackupPath   = 'C:\bak\a.png'
+                    OriginalSize = 2000
+                    FinalSize    = 1000
+                    OutputMode   = 'TempMove'
+                    DurationMs   = 9
+                }) -Unit Bytes
+            $row.OriginalPath | Should -Be 'C:\a.png'
+            $row.Size | Should -Be '2,000 B -> 1,000 B (-50%)'
+            $table = @($row) | Format-Table -Property Status, OriginalPath, OutputPath, BackupPath, Size, OutputMode, Duration -AutoSize | Out-String
+            $table | Should -Match 'OriginalPath'
+            $table | Should -Match '2,000 B -> 1,000 B'
+        }
+    }
+}
+
 Describe 'Merge-FoSettings' -Tag Unit {
     It 'Explicit parameter overrides defaults' {
         $s = Merge-FoSettings -BoundParameters @{ Level = 9 }

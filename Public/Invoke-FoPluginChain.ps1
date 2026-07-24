@@ -39,24 +39,29 @@ function Invoke-FoPluginChain {
     $allMissing = @($plan.Plans | ForEach-Object { $_.Missing } | Select-Object -Unique)
     $allSteps = @($plan.Plans | ForEach-Object { $_.Steps })
     $optimizeAction = 'Optimize via {0}' -f ($groupNames -join ', ')
+    $reportVerbosity = Get-FoReportVerbosity -Settings $Settings
+    $verboseHost = $reportVerbosity -eq 'Verbose'
 
     if (-not $PSCmdlet.ShouldProcess($Path, $optimizeAction)) {
-        foreach ($p in $plan.Plans) {
-            Write-Host ('WHATIF: Would optimize {0} via {1} ({2} steps) [OutputMode={3}]' -f $Path, $p.GroupName, $p.Steps.Count, $Settings.OutputMode)
-            foreach ($step in $p.Steps) {
-                Write-Host ('WHATIF:   {0}' -f $step.Name)
+        # Detailed WhatIf step lists only in Verbose; Compact/Standard summarize at end of Optimize-FoFile.
+        if ($verboseHost) {
+            foreach ($p in $plan.Plans) {
+                Write-Host ('WHATIF: Would optimize {0} via {1} ({2} steps) [OutputMode={3}]' -f $Path, $p.GroupName, $p.Steps.Count, $Settings.OutputMode)
+                foreach ($step in $p.Steps) {
+                    Write-Host ('WHATIF:   {0}' -f $step.Name)
+                }
+            }
+            if ($allMissing.Count -gt 0) {
+                Write-Host ('WHATIF:   missing tools: {0}' -f ($allMissing -join ', '))
             }
         }
-        if ($allMissing.Count -gt 0) {
-            Write-Host ('WHATIF:   missing tools: {0}' -f ($allMissing -join ', '))
-        }
-        return [PSCustomObject]@{
+        return (Set-FoOptimizeResultDisplay -Result ([PSCustomObject]@{
             Path    = $Path
             Status  = 'WhatIf'
             Groups  = $groupNames
             Steps   = $allSteps
             Missing = $allMissing
-        }
+        }))
     }
 
     Assert-FoPluginBundleVersionForOptimize -Settings $Settings
@@ -68,7 +73,7 @@ function Invoke-FoPluginChain {
         switch ($missingPolicy) {
             'SkipFile' {
                 Write-Warning "Skipping '$Path' - missing tools: $($allMissing -join ', ')."
-                return [PSCustomObject]@{
+                return (Set-FoOptimizeResultDisplay -Result ([PSCustomObject]@{
                     Path       = $Path
                     Status     = 'Skipped'
                     Reason     = 'MissingTools'
@@ -76,10 +81,10 @@ function Invoke-FoPluginChain {
                     Missing    = $allMissing
                     BytesSaved = 0
                     Steps      = @()
-                }
+                }))
             }
             'SkipTool' {
-                if ($Settings.LogLevel -ge 2) {
+                if ($verboseHost -and $Settings.LogLevel -ge 2) {
                     Write-Host "Missing tools for '$Path' (skipping those steps): $($allMissing -join ', ')"
                 }
             }
@@ -89,7 +94,7 @@ function Invoke-FoPluginChain {
         }
     }
 
-    if ($Settings.LogLevel -ge 2) {
+    if ($verboseHost -and $Settings.LogLevel -ge 2) {
         Write-Host ('Optimizing {0} via {1}' -f $Path, ($groupNames -join ', '))
     }
 
@@ -117,7 +122,7 @@ function Invoke-FoPluginChain {
                         Accepted   = $result.Accepted
                         DurationMs = $result.DurationMs
                     }
-                    if ((Get-FoReportVerbosity -Settings $Settings) -eq 'Verbose' -and $Settings.LogLevel -ge 2 -and $result.Accepted) {
+                    if ($verboseHost -and $Settings.LogLevel -ge 2 -and $result.Accepted) {
                         $unit = Get-FoSizeDisplayUnit -Settings $Settings
                         Write-Host ('  {0}: {1}' -f $step.Name, (Format-FoSizeChange -OriginalSize $result.SizeBefore -FinalSize $result.SizeAfter -Unit $unit))
                     }
@@ -133,7 +138,7 @@ function Invoke-FoPluginChain {
             if ($stepLog.Count -eq 0 -and $allMissing.Count -gt 0) {
                 $unchangedReason = 'MissingTools'
             }
-            return [PSCustomObject]@{
+            return (Set-FoOptimizeResultDisplay -Result ([PSCustomObject]@{
                 Path         = $Path
                 Status       = 'Unchanged'
                 Reason       = $unchangedReason
@@ -148,11 +153,11 @@ function Invoke-FoPluginChain {
                 Missing      = $allMissing
                 Steps        = $stepLog
                 DurationMs   = $sw.ElapsedMilliseconds
-            }
+            }))
         }
 
         $outputResult = Invoke-FoOutputMode -SourceFile $workFile -TargetPath $Path -Settings $Settings
-        return [PSCustomObject]@{
+        return (Set-FoOptimizeResultDisplay -Result ([PSCustomObject]@{
             Path         = $Path
             Status       = 'Optimized'
             Reason       = $null
@@ -167,7 +172,7 @@ function Invoke-FoPluginChain {
             OutputMode   = $Settings.OutputMode
             Steps        = $stepLog
             DurationMs   = $sw.ElapsedMilliseconds
-        }
+        }))
     }
     finally {
         if (Test-Path -LiteralPath $workFile) { Remove-Item -LiteralPath $workFile -Force -ErrorAction SilentlyContinue }

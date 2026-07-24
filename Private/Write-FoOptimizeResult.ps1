@@ -1,3 +1,25 @@
+function Set-FoOptimizeResultDisplay {
+    param(
+        [Parameter(Mandatory)]
+        $Result
+    )
+
+    $display = [string[]]@(
+        'Status'
+        'Path'
+        'OriginalSize'
+        'FinalSize'
+        'PercentSaved'
+        'OutputMode'
+        'DurationMs'
+        'Reason'
+    )
+    $propertySet = [System.Management.Automation.PSPropertySet]::new('DefaultDisplayPropertySet', $display)
+    $members = [System.Management.Automation.PSMemberInfo[]]@($propertySet)
+    $Result | Add-Member -MemberType MemberSet -Name PSStandardMembers -Value $members -Force
+    return $Result
+}
+
 function Get-FoSizeDisplayUnit {
     param([hashtable]$Settings)
 
@@ -107,8 +129,9 @@ function Write-FoOptimizeResultVerboseLine {
     }
 }
 
-function Write-FoOptimizeResultCompactLine {
+function Format-FoOptimizeResultCompactLine {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory)]
         $Result,
@@ -118,17 +141,34 @@ function Write-FoOptimizeResultCompactLine {
 
     $outputPath = if ($Result.OutputPath) { $Result.OutputPath } else { $Result.Path }
     if ($Result.Status -eq 'Optimized' -and $null -ne $Result.OriginalSize) {
-        Write-Host ('{0}: {1}' -f $outputPath, (Format-FoSizeChange -OriginalSize $Result.OriginalSize -FinalSize $Result.FinalSize -Unit $Unit))
+        return '{0}: {1}' -f $outputPath, (Format-FoSizeChange -OriginalSize $Result.OriginalSize -FinalSize $Result.FinalSize -Unit $Unit)
     }
-    elseif ($Result.Status -eq 'Unchanged' -and $null -ne $Result.OriginalSize) {
-        Write-Host ('{0}: {1} (unchanged)' -f $outputPath, (Format-FoFileSize -Bytes $Result.OriginalSize -Unit $Unit))
+    if ($Result.Status -eq 'Unchanged' -and $null -ne $Result.OriginalSize) {
+        return '{0}: {1} (unchanged)' -f $outputPath, (Format-FoFileSize -Bytes $Result.OriginalSize -Unit $Unit)
     }
-    elseif ($Result.Status -eq 'Skipped') {
-        Write-Host ('{0}: skipped ({1})' -f $Result.Path, $Result.Reason)
+    if ($Result.Status -eq 'Skipped') {
+        return '{0}: skipped ({1})' -f $Result.Path, $Result.Reason
     }
-    elseif ($Result.Status -eq 'Error') {
-        Write-Host ('{0}: error ({1})' -f $Result.Path, $Result.Reason)
+    if ($Result.Status -eq 'Error') {
+        return '{0}: error ({1})' -f $Result.Path, $Result.Reason
     }
+    if ($Result.Status -eq 'WhatIf') {
+        $stepCount = if ($Result.Steps) { @($Result.Steps).Count } else { 0 }
+        return '{0}: what-if ({1} steps)' -f $Result.Path, $stepCount
+    }
+    return '{0}: {1}' -f $Result.Path, $Result.Status
+}
+
+function Write-FoOptimizeResultCompactLine {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $Result,
+        [ValidateSet('Auto', 'Bytes', 'KB', 'MB', 'GB')]
+        [string]$Unit = 'Auto'
+    )
+
+    Write-Host (Format-FoOptimizeResultCompactLine -Result $Result -Unit $Unit)
 }
 
 function Write-FoOptimizeResults {
@@ -161,7 +201,10 @@ function Write-FoOptimizeResults {
                     Format-FoOptimizeResultRow -Result $r -Unit $unit
                 }
             )
-            $rows | Format-Table -Property Status, OriginalPath, OutputPath, BackupPath, Size, OutputMode, Duration -AutoSize | Out-Host
+            $table = ($rows | Format-Table -Property Status, OriginalPath, OutputPath, BackupPath, Size, OutputMode, Duration -AutoSize | Out-String)
+            if (-not [string]::IsNullOrWhiteSpace($table)) {
+                Write-Host $table.TrimEnd()
+            }
         }
     }
 }
